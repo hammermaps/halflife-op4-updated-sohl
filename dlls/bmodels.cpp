@@ -40,7 +40,7 @@
 //
 Vector VecBModelOrigin(entvars_t* pevBModel)
 {
-	return pevBModel->absmin + (pevBModel->size * 0.5);
+	return (pevBModel->absmin + pevBModel->absmax) * 0.5;  // LRC - bug fix
 }
 
 // =================== FUNC_WALL ==============================================
@@ -287,6 +287,8 @@ public:
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
 
+	STATE GetState() override { return m_iState; }  // LRC
+
 	static TYPEDESCRIPTION m_SaveData[];
 
 	float m_flFanFriction;
@@ -294,6 +296,7 @@ public:
 	float m_flVolume;
 	float m_pitch;
 	int m_sounds;
+	STATE m_iState;  // LRC
 };
 
 TYPEDESCRIPTION CFuncRotating::m_SaveData[] =
@@ -437,6 +440,8 @@ void CFuncRotating::Spawn()
 	{
 		SetTouch(&CFuncRotating::HurtTouch);
 	}
+
+	m_iState = STATE_OFF;  // LRC
 
 	Precache();
 }
@@ -595,6 +600,7 @@ void CFuncRotating::SpinUp()
 		fabs(vecAVel.y) >= fabs(pev->movedir.y * pev->speed) &&
 		fabs(vecAVel.z) >= fabs(pev->movedir.z * pev->speed))
 	{
+		m_iState = STATE_ON;  // LRC
 		pev->avelocity = pev->movedir * pev->speed; // set speed in case we overshot
 		EMIT_SOUND_DYN(ENT(pev), CHAN_STATIC, (char*)STRING(pev->noiseRunning),
 			m_flVolume, m_flAttenuation, SND_CHANGE_PITCH | SND_CHANGE_VOL, FANPITCHMAX);
@@ -634,6 +640,7 @@ void CFuncRotating::SpinDown()
 	if (((vecdir > 0) && (vecAVel.x <= 0 && vecAVel.y <= 0 && vecAVel.z <= 0)) ||
 		((vecdir < 0) && (vecAVel.x >= 0 && vecAVel.y >= 0 && vecAVel.z >= 0)))
 	{
+		m_iState = STATE_OFF;  // LRC
 		pev->avelocity = g_vecZero; // set speed in case we overshot
 
 		// stop sound, we're done

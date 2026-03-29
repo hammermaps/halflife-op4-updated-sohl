@@ -22,6 +22,7 @@
 #include "gamerules.h"
 #include "game.h"
 #include "pm_shared.h"
+#include "movewith.h"
 
 void EntvarsKeyvalue(entvars_t* pev, KeyValueData* pkvd);
 
@@ -210,6 +211,14 @@ void DispatchKeyValue(edict_t* pentKeyvalue, KeyValueData* pkvd)
 	if (!pEntity)
 		return;
 
+	// LRC - MoveWith for all entities
+	if (FStrEq(pkvd->szKeyName, "movewith"))
+	{
+		pEntity->m_MoveWith = ALLOC_STRING(pkvd->szValue);
+		pkvd->fHandled = static_cast<int32>(true);
+		return;
+	}
+
 	pkvd->fHandled = static_cast<int32>(pEntity->KeyValue(pkvd));
 }
 
@@ -242,6 +251,9 @@ void DispatchThink(edict_t* pent)
 	{
 		if (FBitSet(pEntity->pev->flags, FL_DORMANT))
 			ALERT(at_error, "Dormant entity %s is thinking!!\n", STRING(pEntity->pev->classname));
+
+		// LRC - correct m_fNextThink if the engine has changed pev->nextthink
+		pEntity->ThinkCorrection();
 
 		pEntity->Think();
 	}
@@ -573,6 +585,23 @@ TYPEDESCRIPTION CBaseEntity::m_SaveData[] =
 		DEFINE_FIELD(CBaseEntity, m_pfnTouch, FIELD_FUNCTION),
 		DEFINE_FIELD(CBaseEntity, m_pfnUse, FIELD_FUNCTION),
 		DEFINE_FIELD(CBaseEntity, m_pfnBlocked, FIELD_FUNCTION),
+
+		// LRC - MoveWith fields
+		DEFINE_FIELD(CBaseEntity, m_MoveWith, FIELD_STRING),
+		DEFINE_FIELD(CBaseEntity, m_pMoveWith, FIELD_CLASSPTR),
+		DEFINE_FIELD(CBaseEntity, m_pChildMoveWith, FIELD_CLASSPTR),
+		DEFINE_FIELD(CBaseEntity, m_pSiblingMoveWith, FIELD_CLASSPTR),
+		DEFINE_FIELD(CBaseEntity, m_iLFlags, FIELD_INTEGER),
+		DEFINE_FIELD(CBaseEntity, m_vecMoveWithOffset, FIELD_VECTOR),
+		DEFINE_FIELD(CBaseEntity, m_vecRotWithOffset, FIELD_VECTOR),
+		DEFINE_FIELD(CBaseEntity, m_activated, FIELD_BOOLEAN),
+		// don't save m_pAssistLink, rebuild on restore
+		DEFINE_FIELD(CBaseEntity, m_vecPostAssistVel, FIELD_VECTOR),
+		DEFINE_FIELD(CBaseEntity, m_vecPostAssistAVel, FIELD_VECTOR),
+
+		// LRC - Think/NextThink fields
+		DEFINE_FIELD(CBaseEntity, m_fNextThink, FIELD_TIME),
+		DEFINE_FIELD(CBaseEntity, m_fPevNextThink, FIELD_TIME),
 };
 
 
@@ -603,6 +632,9 @@ bool CBaseEntity::Restore(CRestore& restore)
 		SET_MODEL(ENT(pev), STRING(pev->model));
 		UTIL_SetSize(pev, mins, maxs); // Reset them
 	}
+
+	// LRC - correct think time after restore
+	ThinkCorrection();
 
 	return status;
 }
@@ -762,4 +794,188 @@ CBaseEntity* CBaseEntity::Create(const char* szName, const Vector& vecOrigin, co
 	pEntity->pev->angles = vecAngles;
 	DispatchSpawn(pEntity->edict());
 	return pEntity;
+}
+
+
+//=========================================================
+// LRC - ShouldToggle version using GetState()
+//=========================================================
+int CBaseEntity::ShouldToggle(USE_TYPE useType)
+{
+	STATE currentState = GetState();
+	if (useType != USE_TOGGLE && useType != USE_SET)
+	{
+		switch (currentState)
+		{
+		case STATE_ON:
+		case STATE_TURN_ON:
+			if (useType == USE_ON)
+				return 0;
+			break;
+		case STATE_OFF:
+		case STATE_TURN_OFF:
+			if (useType == USE_OFF)
+				return 0;
+			break;
+		}
+	}
+	return 1;
+}
+
+
+//=========================================================
+// LRC - CBaseToggle::GetState, mapping toggle states to global states
+//=========================================================
+STATE CBaseToggle::GetState()
+{
+	switch (m_toggle_state)
+	{
+	case TS_AT_TOP:
+		return STATE_ON;
+	case TS_AT_BOTTOM:
+		return STATE_OFF;
+	case TS_GOING_UP:
+		return STATE_TURN_ON;
+	case TS_GOING_DOWN:
+		return STATE_TURN_OFF;
+	default:
+		return STATE_OFF;
+	}
+}
+
+
+//=========================================================
+// LRC - Activate: called after all entities have been spawned
+// and after loading a saved game.
+//=========================================================
+void CBaseEntity::Activate()
+{
+	// LRC - rebuild the new assistlist as the game starts
+	if (m_activated)
+		return;
+
+	m_activated = true;
+
+	// set up MoveWith connections
+	InitMoveWith();
+
+	// entity-specific init after MoveWith setup
+	PostSpawn();
+}
+
+
+//=========================================================
+// LRC - InitMoveWith: called by Activate to set up MoveWith
+//=========================================================
+void CBaseEntity::InitMoveWith()
+{
+	if (!m_MoveWith)
+		return;
+
+	CBaseEntity* pParent = UTIL_FindEntityByTargetname(NULL, STRING(m_MoveWith));
+	if (!pParent)
+	{
+		ALERT(at_console, "Missing movewith entity %s\n", STRING(m_MoveWith));
+		return;
+	}
+
+	m_pMoveWith = pParent;
+	m_vecMoveWithOffset = pev->origin - pParent->pev->origin;
+	m_vecRotWithOffset = pev->angles - pParent->pev->angles;
+
+	// insert into parent's child list
+	m_pSiblingMoveWith = pParent->m_pChildMoveWith;
+	pParent->m_pChildMoveWith = this;
+
+	// add parent to the assist list if not already there
+	if (pParent->m_iLFlags & LF_DOASSIST)
+		return;
+
+	pParent->m_iLFlags |= LF_DOASSIST;
+
+	// add to global assist list (headed by CWorld::World)
+	if (CWorld::World)
+	{
+		pParent->m_pAssistLink = CWorld::World->m_pAssistLink;
+		CWorld::World->m_pAssistLink = pParent;
+	}
+}
+
+
+//=========================================================
+// LRC - SetNextThink
+// Set next think time relative to current time
+//=========================================================
+void CBaseEntity::SetNextThink(float delay, bool correctSpeed)
+{
+	// LRC - m_fNextThink is needed so that we can tell IsThinking
+	m_fNextThink = pev->ltime + delay;
+	m_fPevNextThink = m_fNextThink;
+	pev->nextthink = m_fPevNextThink;
+}
+
+
+//=========================================================
+// LRC - AbsoluteNextThink
+// Set next think time as an absolute (global) time
+//=========================================================
+void CBaseEntity::AbsoluteNextThink(float time, bool correctSpeed)
+{
+	m_fNextThink = time;
+	m_fPevNextThink = m_fNextThink;
+	pev->nextthink = m_fPevNextThink;
+}
+
+
+//=========================================================
+// LRC - SetEternalThink
+// Think continuously forever
+//=========================================================
+void CBaseEntity::SetEternalThink()
+{
+	// set nextthink to the current time; the engine will ensure we keep thinking
+	m_fNextThink = pev->ltime;
+	m_fPevNextThink = m_fNextThink;
+	pev->nextthink = m_fPevNextThink;
+}
+
+
+//=========================================================
+// LRC - DontThink
+// Cancel any pending thinks
+//=========================================================
+void CBaseEntity::DontThink()
+{
+	m_fNextThink = 0;
+	m_fPevNextThink = 0;
+	pev->nextthink = 0;
+}
+
+
+//=========================================================
+// LRC - ResetThink
+// Called by parent when a think needs to be aborted
+//=========================================================
+void CBaseEntity::ResetThink()
+{
+	m_fNextThink = 0;
+	m_fPevNextThink = 0;
+	pev->nextthink = 0;
+	SetThink(NULL);
+}
+
+
+//=========================================================
+// LRC - ThinkCorrection
+// Checks in case the engine has changed our nextthink behind our back.
+// If it has, we correct m_fNextThink to match.
+//=========================================================
+void CBaseEntity::ThinkCorrection()
+{
+	if (pev->nextthink != m_fPevNextThink)
+	{
+		// The engine changed nextthink without telling us. Update accordingly.
+		m_fNextThink += pev->nextthink - m_fPevNextThink;
+		m_fPevNextThink = pev->nextthink;
+	}
 }

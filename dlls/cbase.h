@@ -87,6 +87,15 @@ typedef enum
 	USE_TOGGLE = 3
 } USE_TYPE;
 
+// LRC- the states an entity can be in, for GetState()
+typedef enum
+{
+	STATE_OFF = 0,
+	STATE_TURN_ON,
+	STATE_ON,
+	STATE_TURN_OFF,
+} STATE;
+
 extern void FireTargets(const char* targetName, CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
 
 typedef void (CBaseEntity::*BASEPTR)();
@@ -168,6 +177,27 @@ public:
 	*/
 	byte m_EFlags = 0;
 
+	// LRC - MoveWith system: entity parenting
+	CBaseEntity* m_pMoveWith;		  // entity this one moves with
+	int m_MoveWith;					  // targetname string of the MoveWith entity
+	CBaseEntity* m_pChildMoveWith;	  // one of the entities moving with this one
+	CBaseEntity* m_pSiblingMoveWith;  // linked list: another entity moving with the same parent
+	Vector m_vecMoveWithOffset;		  // position offset relative to parent's origin
+	Vector m_vecRotWithOffset;		  // angle offset relative to parent's angles
+	CBaseEntity* m_pAssistLink;		  // link to next entity in the AssistList
+	Vector m_vecPostAssistVel;		  // velocity to apply after assist processing
+	Vector m_vecPostAssistAVel;		  // angular velocity to apply after assist processing
+
+	// LRC - Think/NextThink system
+	float m_fNextThink;		  // when a think will be performed (may differ from pev->nextthink)
+	float m_fPevNextThink;	  // always set equal to pev->nextthink to detect engine changes
+
+	int m_iLFlags;			  // LRC flags (pev->spawnflags and pev->flags are full)
+
+	Vector m_vecSpawnOffset;  // fix things that MoveWith a door that Starts Open
+
+	bool m_activated;		  // signifies entity has been activated (moved here from func_train)
+
 	virtual ~CBaseEntity() {}
 
 	// initialization functions
@@ -177,7 +207,14 @@ public:
 	virtual bool Save(CSave& save);
 	virtual bool Restore(CRestore& restore);
 	virtual int ObjectCaps() { return FCAP_ACROSS_TRANSITION; }
-	virtual void Activate() {}
+	virtual void Activate();
+
+	// LRC - for postponing work until PostThink time
+	virtual void DesiredAction() {}
+	// LRC - called by Activate() for entity-specific init
+	virtual void PostSpawn() {}
+	// LRC - called by Activate() to set up MoveWith values
+	void InitMoveWith();
 
 	// Setup the object->object collision box (pev->mins / pev->maxs is the object->world collision box)
 	virtual void SetObjectCollisionBox();
@@ -202,6 +239,7 @@ public:
 	virtual CSquadMonster* MySquadMonsterPointer() { return NULL; }
 	virtual COFSquadTalkMonster* MySquadTalkMonsterPointer() { return nullptr; }
 	virtual int GetToggleState() { return TS_AT_TOP; }
+	virtual STATE GetState() { return STATE_OFF; }  // LRC
 	virtual void AddPoints(int score, bool bAllowNegativeScore) {}
 	virtual void AddPointsToTeam(int score, bool bAllowNegativeScore) {}
 	virtual bool AddPlayerItem(CBasePlayerItem* pItem) { return 0; }
@@ -280,6 +318,17 @@ public:
 	void EXPORT SUB_FadeOut();
 	void EXPORT SUB_CallUseToggle() { this->Use(this, this, USE_TOGGLE, 0); }
 	bool ShouldToggle(USE_TYPE useType, bool currentState);
+	int ShouldToggle(USE_TYPE useType);  // LRC - version using GetState()
+
+	// LRC - Think/NextThink wrapper methods
+	virtual void SetNextThink(float delay) { SetNextThink(delay, false); }
+	virtual void SetNextThink(float delay, bool correctSpeed);
+	virtual void AbsoluteNextThink(float time) { AbsoluteNextThink(time, false); }
+	virtual void AbsoluteNextThink(float time, bool correctSpeed);
+	void SetEternalThink();
+	void DontThink();
+	void ResetThink();
+	void ThinkCorrection();
 	void FireBullets(unsigned int cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq = 4, int iDamage = 0, entvars_t* pevAttacker = NULL);
 	Vector FireBulletsPlayer(unsigned int cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq = 4, int iDamage = 0, entvars_t* pevAttacker = NULL, int shared_rand = 0);
 
@@ -580,6 +629,8 @@ public:
 	static TYPEDESCRIPTION m_SaveData[];
 
 	int GetToggleState() override { return m_toggle_state; }
+	// LRC - GetState using toggle_state
+	STATE GetState() override;
 	float GetDelay() override { return m_flWait; }
 
 	// common member functions

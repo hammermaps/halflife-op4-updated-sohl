@@ -36,6 +36,7 @@
 #include "ctf/ctfplay_gamerules.h"
 #include "world.h"
 #include "ctf/CItemCTF.h"
+#include "movewith.h"
 
 CGlobalState gGlobalState;
 
@@ -511,6 +512,9 @@ void CWorld::Spawn()
 	{
 		ResetTeamScores();
 	}
+
+	// LRC - set up the world's MoveWith assist list
+	m_pAssistLink = NULL;
 }
 
 void CWorld::Precache()

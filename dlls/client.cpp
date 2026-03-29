@@ -47,6 +47,7 @@
 #include "pm_shared.h"
 #include "pm_defs.h"
 #include "UserMessages.h"
+#include "movewith.h"
 
 #include "ctf/CTFGoal.h"
 #include "ctf/CTFGoalFlag.h"
@@ -981,6 +982,9 @@ void StartFrame()
 
 	gpGlobals->teamplay = teamplay.value;
 	g_ulFrameCount++;
+
+	// LRC - process the MoveWith assist list
+	CheckAssistList();
 
 	const bool allowBunnyHopping = sv_allowbunnyhopping.value != 0;
 

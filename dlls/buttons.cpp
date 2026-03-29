@@ -1232,9 +1232,12 @@ public:
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
 
+	STATE GetState() override { return m_iState; }  // LRC
+
 	static TYPEDESCRIPTION m_SaveData[];
 
 	float m_flDelay;
+	STATE m_iState;  // LRC
 };
 
 
@@ -1314,12 +1317,14 @@ void EXPORT CEnvSpark::SparkStart(CBaseEntity* pActivator, CBaseEntity* pCaller,
 	SetUse(&CEnvSpark::SparkStop);
 	SetThink(&CEnvSpark::SparkThink);
 	pev->nextthink = gpGlobals->time + (0.1 + RANDOM_FLOAT(0, m_flDelay));
+	m_iState = STATE_ON;  // LRC
 }
 
 void EXPORT CEnvSpark::SparkStop(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
 	SetUse(&CEnvSpark::SparkStart);
 	SetThink(NULL);
+	m_iState = STATE_OFF;  // LRC
 }
 
 #define SF_BTARGET_USE 0x0001

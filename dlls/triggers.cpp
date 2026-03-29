@@ -281,6 +281,8 @@ public:
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
 
+	STATE GetState() override { return m_iState; }  // LRC
+
 	static TYPEDESCRIPTION m_SaveData[];
 
 	int m_cTargets;							  // the total number of targets in this manager's fire list.
@@ -288,6 +290,7 @@ public:
 	float m_startTime;						  // Time we started firing
 	int m_iTargetName[MAX_MULTI_TARGETS];	  // list if indexes into global string array
 	float m_flTargetDelay[MAX_MULTI_TARGETS]; // delay (in seconds) from time of manager fire to target fire
+	STATE m_iState;							  // LRC
 private:
 	inline bool IsClone() { return (pev->spawnflags & SF_MULTIMAN_CLONE) != 0; }
 	inline bool ShouldClone()
@@ -401,6 +404,7 @@ void CMultiManager::ManagerThink()
 
 	if (m_index >= m_cTargets) // have we fired all targets?
 	{
+		m_iState = STATE_OFF;  // LRC - we've finished
 		SetThink(NULL);
 		if (IsClone())
 		{
@@ -445,6 +449,8 @@ void CMultiManager::ManagerUse(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 	m_hActivator = pActivator;
 	m_index = 0;
 	m_startTime = gpGlobals->time;
+
+	m_iState = STATE_ON;  // LRC - we're firing targets
 
 	SetUse(NULL); // disable use until all targets have fired
 

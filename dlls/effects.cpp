@@ -1835,6 +1835,8 @@ public:
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
 	bool KeyValue(KeyValueData* pkvd) override;
 
+	STATE GetState() override { return m_iState; }  // LRC
+
 	inline float Amplitude() { return pev->scale; }
 	inline float Frequency() { return pev->dmg_save; }
 	inline float Duration() { return pev->dmg_take; }
@@ -1846,6 +1848,7 @@ public:
 	inline void SetRadius(float radius) { pev->dmg = radius; }
 
 private:
+	STATE m_iState;  // LRC
 };
 
 LINK_ENTITY_TO_CLASS(env_shake, CShake);
@@ -1903,6 +1906,7 @@ bool CShake::KeyValue(KeyValueData* pkvd)
 
 void CShake::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	m_iState = STATE_ON;  // LRC
 	UTIL_ScreenShake(pev->origin, Amplitude(), Frequency(), Duration(), Radius());
 }
 
@@ -1914,6 +1918,8 @@ public:
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
 	bool KeyValue(KeyValueData* pkvd) override;
 
+	STATE GetState() override { return m_iState; }  // LRC
+
 	inline float Duration() { return pev->dmg_take; }
 	inline float HoldTime() { return pev->dmg_save; }
 
@@ -1921,6 +1927,7 @@ public:
 	inline void SetHoldTime(float hold) { pev->dmg_save = hold; }
 
 private:
+	STATE m_iState;  // LRC
 };
 
 LINK_ENTITY_TO_CLASS(env_fade, CFade);
@@ -1959,6 +1966,7 @@ bool CFade::KeyValue(KeyValueData* pkvd)
 
 void CFade::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	m_iState = STATE_ON;  // LRC
 	int fadeFlags = 0;
 
 	if ((pev->spawnflags & SF_FADE_IN) == 0)
