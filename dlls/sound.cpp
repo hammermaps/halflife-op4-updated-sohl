@@ -1967,32 +1967,11 @@ void CSpeaker::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE
 {
 	bool fActive = (pev->nextthink > 0.0);
 
-	// fActive is true only if an announcement is pending
-
-	if (useType != USE_TOGGLE)
-	{
-		// ignore if we're just turning something on that's already on, or
-		// turning something off that's already off.
-		if ((fActive && useType == USE_ON) || (!fActive && useType == USE_OFF))
-			return;
-	}
-
-	if (useType == USE_ON)
-	{
-		// turn on announcements
-		SetNextThink(0.1);
+	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
+	if (!ShouldToggle(useType, fActive))
 		return;
-	}
-
-	if (useType == USE_OFF)
-	{
-		// turn off announcements
-		DontThink();
-		return;
-	}
 
 	// Toggle announcements
-
 
 	if (fActive)
 	{

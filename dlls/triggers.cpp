@@ -979,6 +979,10 @@ void CTriggerHurt::RadiationThink()
 //
 void CBaseTrigger::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
+	if (!ShouldToggle(useType, pev->solid == SOLID_TRIGGER))
+		return;
+
 	if (pev->solid == SOLID_NOT)
 	{ // if the trigger is off, turn it on
 		pev->solid = SOLID_TRIGGER;
@@ -2561,6 +2565,10 @@ void CTriggerPlayerFreeze::Spawn()
 
 void CTriggerPlayerFreeze::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
+	if (!ShouldToggle(useType, m_bUnFrozen))
+		return;
+
 	m_bUnFrozen = !m_bUnFrozen;
 
 	//TODO: not made for multiplayer

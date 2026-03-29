@@ -198,9 +198,19 @@ void CMultiSource::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE u
 		return;
 	}
 
-	// CONSIDER: a Use input to the multisource always toggles.  Could check useType for ON/OFF/TOGGLE
-
-	m_rgTriggered[i - 1] ^= 1;
+	// LRC - respect USE_ON / USE_OFF / USE_TOGGLE
+	if (useType == USE_ON)
+	{
+		m_rgTriggered[i - 1] = 1;
+	}
+	else if (useType == USE_OFF)
+	{
+		m_rgTriggered[i - 1] = 0;
+	}
+	else
+	{
+		m_rgTriggered[i - 1] ^= 1;
+	}
 
 	//
 	if (IsTriggered(pActivator))
