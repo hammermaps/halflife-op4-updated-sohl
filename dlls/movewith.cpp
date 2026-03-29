@@ -79,6 +79,8 @@ void CheckAssistList()
 	CBaseEntity* pCurrent = pWorld->m_pAssistLink;
 	while (pCurrent)
 	{
+		CBaseEntity* pNext = pCurrent->m_pAssistLink;  // save next before processing
+
 		if (FBitSet(pCurrent->m_iLFlags, LF_POSTASSISTVEL))
 		{
 			ClearBits(pCurrent->m_iLFlags, LF_POSTASSISTVEL);
@@ -91,7 +93,7 @@ void CheckAssistList()
 			pCurrent->pev->avelocity = pCurrent->m_vecPostAssistAVel;
 		}
 
-		pCurrent = pCurrent->m_pAssistLink;
+		pCurrent = pNext;
 	}
 
 	CheckDesiredList();

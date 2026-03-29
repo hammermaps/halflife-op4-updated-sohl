@@ -879,6 +879,24 @@ void CBaseEntity::InitMoveWith()
 		return;
 	}
 
+	// check for circular reference
+	CBaseEntity* pTest = pParent;
+	int loopbreaker = MAX_MOVEWITH_DEPTH;
+	while (pTest)
+	{
+		if (pTest == this)
+		{
+			ALERT(at_error, "Circular MoveWith reference: %s\n", STRING(pev->classname));
+			return;
+		}
+		pTest = pTest->m_pMoveWith;
+		if (--loopbreaker <= 0)
+		{
+			ALERT(at_error, "MoveWith chain too deep for %s\n", STRING(pev->classname));
+			return;
+		}
+	}
+
 	m_pMoveWith = pParent;
 	m_vecMoveWithOffset = pev->origin - pParent->pev->origin;
 	m_vecRotWithOffset = pev->angles - pParent->pev->angles;
