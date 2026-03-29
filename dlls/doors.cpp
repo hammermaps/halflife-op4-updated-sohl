@@ -669,12 +669,12 @@ void CBaseDoor::DoorHitTop()
 	else
 	{
 		// In flWait seconds, DoorGoDown will fire, unless wait is -1, then door stays open
-		pev->nextthink = pev->ltime + m_flWait;
+		SetNextThink(m_flWait);
 		SetThink(&CBaseDoor::DoorGoDown);
 
 		if (m_flWait == -1)
 		{
-			pev->nextthink = -1;
+			DontThink();
 		}
 	}
 
@@ -1089,7 +1089,7 @@ void CMomentaryDoor::DoorMoveDone()
 	// Use call might immediately follow the end of this move
 	//This think function will be replaced by LinearMove if that happens.
 	SetThink(&CMomentaryDoor::StopMoveSound);
-	pev->nextthink = pev->ltime + 0.1f;
+	SetNextThink(0.1f);
 }
 
 void CMomentaryDoor::StopMoveSound()

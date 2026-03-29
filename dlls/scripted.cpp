@@ -135,7 +135,7 @@ void CCineMonster::Spawn()
 	if (FStringNull(pev->targetname) || !FStringNull(m_iszIdle))
 	{
 		SetThink(&CCineMonster::CineThink);
-		pev->nextthink = gpGlobals->time + 1.0;
+		SetNextThink(1.0);
 		// Wait to be used?
 		if (!FStringNull(pev->targetname))
 			m_startTime = gpGlobals->time + 1E6;
@@ -191,7 +191,7 @@ void CCineMonster::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE u
 	{
 		// if not, try finding them
 		SetThink(&CCineMonster::CineThink);
-		pev->nextthink = gpGlobals->time;
+		SetNextThink(0);
 	}
 }
 
@@ -474,7 +474,7 @@ void CCineMonster::CineThink()
 	{
 		CancelScript();
 		ALERT(at_aiconsole, "script \"%s\" can't find monster \"%s\"\n", STRING(pev->targetname), STRING(m_iszEntity));
-		pev->nextthink = gpGlobals->time + 1.0;
+		SetNextThink(1.0);
 	}
 }
 
@@ -555,7 +555,7 @@ void CCineMonster::SequenceDone(CBaseMonster* pMonster)
 	if ((pev->spawnflags & SF_SCRIPT_REPEATABLE) == 0)
 	{
 		SetThink(&CCineMonster::SUB_Remove);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 	}
 
 	// This is done so that another sequence can take over the monster when triggered by the first
@@ -1018,7 +1018,7 @@ void CScriptedSentence::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_T
 		return;
 	//	ALERT( at_console, "Firing sentence: %s\n", STRING(m_iszSentence) );
 	SetThink(&CScriptedSentence::FindThink);
-	pev->nextthink = gpGlobals->time;
+	SetNextThink(0);
 }
 
 
@@ -1031,7 +1031,7 @@ void CScriptedSentence::Spawn()
 	if (FStringNull(pev->targetname))
 	{
 		SetThink(&CScriptedSentence::FindThink);
-		pev->nextthink = gpGlobals->time + 1.0;
+		SetNextThink(1.0);
 	}
 
 	switch (pev->impulse)
@@ -1070,14 +1070,14 @@ void CScriptedSentence::FindThink()
 		if ((pev->spawnflags & SF_SENTENCE_ONCE) != 0)
 			UTIL_Remove(this);
 		SetThink(&CScriptedSentence::DelayThink);
-		pev->nextthink = gpGlobals->time + m_flDuration + m_flRepeat;
+		SetNextThink(m_flDuration + m_flRepeat);
 		m_active = false;
 		//		ALERT( at_console, "%s: found monster %s\n", STRING(m_iszSentence), STRING(m_iszEntity) );
 	}
 	else
 	{
 		//		ALERT( at_console, "%s: can't find monster %s\n", STRING(m_iszSentence), STRING(m_iszEntity) );
-		pev->nextthink = gpGlobals->time + m_flRepeat + 0.5;
+		SetNextThink(m_flRepeat + 0.5);
 	}
 }
 
@@ -1086,7 +1086,7 @@ void CScriptedSentence::DelayThink()
 {
 	m_active = true;
 	if (FStringNull(pev->targetname))
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 	SetThink(&CScriptedSentence::FindThink);
 }
 
@@ -1231,7 +1231,7 @@ LINK_ENTITY_TO_CLASS(monster_furniture, CFurniture);
 void CFurniture::Die()
 {
 	SetThink(&CFurniture::SUB_Remove);
-	pev->nextthink = gpGlobals->time;
+	SetNextThink(0);
 }
 
 //=========================================================

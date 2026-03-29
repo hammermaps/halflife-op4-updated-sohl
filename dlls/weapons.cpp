@@ -461,7 +461,7 @@ void CBasePlayerItem::FallInit()
 	SetTouch(&CBasePlayerItem::DefaultTouch);
 	SetThink(&CBasePlayerItem::FallThink);
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
 
 //=========================================================
@@ -473,7 +473,7 @@ void CBasePlayerItem::FallInit()
 //=========================================================
 void CBasePlayerItem::FallThink()
 {
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	if ((pev->flags & FL_ONGROUND) != 0)
 	{
@@ -531,7 +531,7 @@ void CBasePlayerItem::AttemptToMaterialize()
 		return;
 	}
 
-	pev->nextthink = time;
+	AbsoluteNextThink(time);
 }
 
 //=========================================================
@@ -571,7 +571,7 @@ CBaseEntity* CBasePlayerItem::Respawn()
 
 		// not a typo! We want to know when the weapon the player just picked up should respawn! This new entity we created is the replacement,
 		// but when it should respawn is based on conditions belonging to the weapon that was taken.
-		pNewWeapon->pev->nextthink = g_pGameRules->FlWeaponRespawnTime(this);
+		pNewWeapon->AbsoluteNextThink(g_pGameRules->FlWeaponRespawnTime(this));
 	}
 	else
 	{
@@ -628,14 +628,14 @@ void CBasePlayerItem::Drop()
 {
 	SetTouch(NULL);
 	SetThink(&CBasePlayerItem::SUB_Remove);
-	pev->nextthink = gpGlobals->time + .1;
+	SetNextThink(.1);
 }
 
 void CBasePlayerItem::Kill()
 {
 	SetTouch(NULL);
 	SetThink(&CBasePlayerItem::SUB_Remove);
-	pev->nextthink = gpGlobals->time + .1;
+	SetNextThink(.1);
 }
 
 void CBasePlayerItem::Holster()
@@ -653,7 +653,7 @@ void CBasePlayerItem::AttachToPlayer(CBasePlayer* pPlayer)
 	pev->modelindex = 0;	  // server won't send down to clients if modelindex == 0
 	pev->model = iStringNull;
 	pev->owner = pPlayer->edict();
-	pev->nextthink = gpGlobals->time + .1;
+	SetNextThink(.1);
 	SetTouch(NULL);
 	SetThink(NULL); // Clear FallThink function so it can't run while attached to player.
 }
@@ -680,7 +680,7 @@ void CBasePlayerWeapon::AddToPlayer(CBasePlayer* pPlayer)
 	{
 		//This is an exhaustible weapon that has no ammo left. Don't add it, queue it up for destruction instead.
 		SetThink(&CSatchel::DestroyItem);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 		return false;
 	}
 	*/
@@ -939,7 +939,7 @@ CBaseEntity* CBasePlayerAmmo::Respawn()
 	UTIL_SetOrigin(pev, g_pGameRules->VecAmmoRespawnSpot(this)); // move to wherever I'm supposed to repawn.
 
 	SetThink(&CBasePlayerAmmo::Materialize);
-	pev->nextthink = g_pGameRules->FlAmmoRespawnTime(this);
+	AbsoluteNextThink(g_pGameRules->FlAmmoRespawnTime(this));
 
 	return this;
 }
@@ -974,7 +974,7 @@ void CBasePlayerAmmo::DefaultTouch(CBaseEntity* pOther)
 		{
 			SetTouch(NULL);
 			SetThink(&CBasePlayerAmmo::SUB_Remove);
-			pev->nextthink = gpGlobals->time + .1;
+			SetNextThink(.1);
 		}
 	}
 	else if (gEvilImpulse101)
@@ -982,7 +982,7 @@ void CBasePlayerAmmo::DefaultTouch(CBaseEntity* pOther)
 		// evil impulse 101 hack, kill always
 		SetTouch(NULL);
 		SetThink(&CBasePlayerAmmo::SUB_Remove);
-		pev->nextthink = gpGlobals->time + .1;
+		SetNextThink(.1);
 	}
 }
 
@@ -1040,7 +1040,7 @@ bool CBasePlayerWeapon::ExtractClipAmmo(CBasePlayerWeapon* pWeapon)
 void CBasePlayerWeapon::RetireWeapon()
 {
 	SetThink(&CBasePlayerWeapon::CallDoRetireWeapon);
-	pev->nextthink = gpGlobals->time + 0.01f;
+	SetNextThink(0.01f);
 }
 
 void CBasePlayerWeapon::DoRetireWeapon()
@@ -1172,7 +1172,7 @@ void CWeaponBox::Kill()
 		while (pWeapon)
 		{
 			pWeapon->SetThink(&CBasePlayerItem::SUB_Remove);
-			pWeapon->pev->nextthink = gpGlobals->time + 0.1;
+			pWeapon->SetNextThink(0.1);
 			pWeapon = pWeapon->m_pNext;
 		}
 	}

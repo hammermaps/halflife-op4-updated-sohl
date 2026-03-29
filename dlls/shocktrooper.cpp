@@ -321,7 +321,7 @@ void CShockTrooper::GibMonster()
 
 	// don't remove players!
 	SetThink(&CBaseMonster::SUB_Remove);
-	pev->nextthink = gpGlobals->time;
+	SetNextThink(0);
 }
 
 //=========================================================
@@ -2294,7 +2294,7 @@ void CShockTrooperRepel::RepelUse(CBaseEntity* pActivator, CBaseEntity* pCaller,
 	pBeam->SetFlags(BEAM_FSOLID);
 	pBeam->SetColor(255, 255, 255);
 	pBeam->SetThink(&CBeam::SUB_Remove);
-	pBeam->pev->nextthink = gpGlobals->time + -4096.0 * tr.flFraction / pGrunt->pev->velocity.z + 0.5;
+	pBeam->SetNextThink(-4096.0 * tr.flFraction / pGrunt->pev->velocity.z + 0.5);
 
 	UTIL_Remove(this);
 }

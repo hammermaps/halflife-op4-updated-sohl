@@ -3021,7 +3021,7 @@ void CHGruntAllyRepel::RepelUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 		pBeam->SetFlags(BEAM_FSOLID);
 		pBeam->SetColor(255, 255, 255);
 		pBeam->SetThink(&CBeam::SUB_Remove);
-		pBeam->pev->nextthink = gpGlobals->time + -4096.0 * tr.flFraction / pGrunt->pev->velocity.z + 0.5;
+		pBeam->SetNextThink(-4096.0 * tr.flFraction / pGrunt->pev->velocity.z + 0.5);
 
 		UTIL_Remove(this);
 	}

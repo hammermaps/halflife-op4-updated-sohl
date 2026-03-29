@@ -112,7 +112,7 @@ void CSqueakGrenade::Spawn()
 
 	SetTouch(&CSqueakGrenade::SuperBounceTouch);
 	SetThink(&CSqueakGrenade::HuntThink);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	m_flNextHunt = gpGlobals->time + 1E6;
 
 	pev->flags |= FL_MONSTER;
@@ -154,7 +154,7 @@ void CSqueakGrenade::Killed(entvars_t* pevAttacker, int iGib)
 	pev->model = iStringNull; // make invisible
 	SetThink(&CSqueakGrenade::SUB_Remove);
 	SetTouch(NULL);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	// since squeak grenades never leave a body behind, clear out their takedamage now.
 	// Squeaks do a bit of radius damage when they pop, and that radius damage will
@@ -199,7 +199,7 @@ void CSqueakGrenade::HuntThink()
 	}
 
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	// explode when ready
 	if (gpGlobals->time >= m_flDie)
@@ -481,7 +481,7 @@ void CSqueak::Holster()
 	{
 		m_pPlayer->ClearWeaponBit(m_iId);
 		SetThink(&CSqueak::DestroyItem);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 		return;
 	}
 
