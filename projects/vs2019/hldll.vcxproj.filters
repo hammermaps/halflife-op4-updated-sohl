@@ -75,6 +75,9 @@
     <ClCompile Include="..\..\dlls\airtank.cpp">
       <Filter>Source Files\dlls</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\dlls\alias.cpp">
+      <Filter>Source Files\dlls</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\dlls\animating.cpp">
       <Filter>Source Files\dlls</Filter>
     </ClCompile>
@@ -429,6 +432,9 @@
     <ClCompile Include="..\..\dlls\loader.cpp">
       <Filter>Source Files\dlls</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\dlls\locus.cpp">
+      <Filter>Source Files\dlls</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\dlls\zombie_barney.cpp">
       <Filter>Source Files\dlls</Filter>
     </ClCompile>
@@ -596,6 +602,9 @@
     <ClInclude Include="..\..\dlls\activitymap.h">
       <Filter>Header Files\dlls</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\dlls\alias.h">
+      <Filter>Header Files\dlls</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\dlls\animation.h">
       <Filter>Header Files\dlls</Filter>
     </ClInclude>
@@ -648,6 +657,9 @@
       <Filter>Header Files\dlls</Filter>
     </ClInclude>
     <ClInclude Include="..\..\dlls\items.h">
+      <Filter>Header Files\dlls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\dlls\locus.h">
       <Filter>Header Files\dlls</Filter>
     </ClInclude>
     <ClInclude Include="..\..\dlls\monsterevent.h">

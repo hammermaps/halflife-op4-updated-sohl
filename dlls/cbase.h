@@ -41,6 +41,7 @@ CBaseEntity
 #define FCAP_ONOFF_USE 0x00000020		  // can be used by the player
 #define FCAP_DIRECTIONAL_USE 0x00000040	  // Player sends +/- 1 when using (currently only tracktrains)
 #define FCAP_MASTER 0x00000080			  // Can be used to "master" other entities (like multisource)
+#define FCAP_ONLYDIRECT_USE 0x00000100	  // LRC - can't use this entity through a wall
 
 // UNDONE: This will ignore transition volumes (trigger_transition), but not the PVS!!!
 #define FCAP_FORCE_TRANSITION 0x00000080 // ALWAYS goes across transitions
@@ -84,7 +85,10 @@ typedef enum
 	USE_OFF = 0,
 	USE_ON = 1,
 	USE_SET = 2,
-	USE_TOGGLE = 3
+	USE_TOGGLE = 3,
+	USE_KILL = 4,	// LRC - remove/kill the target entity
+	USE_SAME = 5,	// LRC - preserve the previous use state
+	USE_NOT = 6		// LRC - invert the current state
 } USE_TYPE;
 
 // LRC- the states an entity can be in, for GetState()
@@ -240,6 +244,12 @@ public:
 	virtual COFSquadTalkMonster* MySquadTalkMonsterPointer() { return nullptr; }
 	virtual int GetToggleState() { return TS_AT_TOP; }
 	virtual STATE GetState() { return STATE_OFF; }  // LRC
+
+	// LRC - loci: resolve positions, velocities, and ratios from entity references
+	virtual Vector CalcPosition(CBaseEntity* pLocus) { return pev->origin; }
+	virtual Vector CalcVelocity(CBaseEntity* pLocus) { return pev->velocity; }
+	virtual float CalcRatio(CBaseEntity* pLocus) { return 0; }
+
 	virtual void AddPoints(int score, bool bAllowNegativeScore) {}
 	virtual void AddPointsToTeam(int score, bool bAllowNegativeScore) {}
 	virtual bool AddPlayerItem(CBasePlayerItem* pItem) { return 0; }
@@ -541,6 +551,7 @@ class CBaseDelay : public CBaseEntity
 public:
 	float m_flDelay;
 	int m_iszKillTarget;
+	EHANDLE m_hActivator;  // LRC - moved here from CBaseToggle
 
 	bool KeyValue(KeyValueData* pkvd) override;
 	bool Save(CSave& save) override;
@@ -616,7 +627,6 @@ public:
 
 	int m_cTriggersLeft; // trigger_counter only, # of activations remaining
 	float m_flHeight;
-	EHANDLE m_hActivator;
 	void (CBaseToggle::*m_pfnCallWhenMoveDone)();
 	Vector m_vecFinalDest;
 	Vector m_vecFinalAngle;

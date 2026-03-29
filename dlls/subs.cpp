@@ -194,6 +194,7 @@ TYPEDESCRIPTION CBaseDelay::m_SaveData[] =
 	{
 		DEFINE_FIELD(CBaseDelay, m_flDelay, FIELD_FLOAT),
 		DEFINE_FIELD(CBaseDelay, m_iszKillTarget, FIELD_STRING),
+		DEFINE_FIELD(CBaseDelay, m_hActivator, FIELD_EHANDLE),  // LRC - moved here from CBaseToggle
 };
 
 IMPLEMENT_SAVERESTORE(CBaseDelay, CBaseEntity);
@@ -260,7 +261,15 @@ void FireTargets(const char* targetName, CBaseEntity* pActivator, CBaseEntity* p
 		if (pTarget && (pTarget->pev->flags & FL_KILLME) == 0) // Don't use dying ents
 		{
 			ALERT(at_aiconsole, "Found: %s, firing (%s)\n", STRING(pTarget->pev->classname), targetName);
-			pTarget->Use(pActivator, pCaller, useType, value);
+			// LRC - USE_KILL handling
+			if (useType == USE_KILL)
+			{
+				UTIL_Remove(pTarget);
+			}
+			else
+			{
+				pTarget->Use(pActivator, pCaller, useType, value);
+			}
 		}
 	}
 }
@@ -275,6 +284,17 @@ void CBaseDelay::SUB_UseTargets(CBaseEntity* pActivator, USE_TYPE useType, float
 	//
 	if (FStringNull(pev->target) && FStringNull(m_iszKillTarget))
 		return;
+
+	// LRC - allow changing of usetype
+	if (useType == USE_SAME)
+	{
+		// don't change the use type
+	}
+	else if (useType == USE_NOT)
+	{
+		// invert the current state
+		useType = USE_TOGGLE;
+	}
 
 	//
 	// check for a delay
@@ -295,18 +315,8 @@ void CBaseDelay::SUB_UseTargets(CBaseEntity* pActivator, USE_TYPE useType, float
 		pTemp->m_flDelay = 0; // prevent "recursion"
 		pTemp->pev->target = pev->target;
 
-		// HACKHACK
-		// This wasn't in the release build of Half-Life.  We should have moved m_hActivator into this class
-		// but changing member variable hierarchy would break save/restore without some ugly code.
-		// This code is not as ugly as that code
-		if (pActivator && pActivator->IsPlayer()) // If a player activates, then save it
-		{
-			pTemp->pev->owner = pActivator->edict();
-		}
-		else
-		{
-			pTemp->pev->owner = NULL;
-		}
+		// LRC - now using m_hActivator
+		pTemp->m_hActivator = pActivator;
 
 		return;
 	}
@@ -314,20 +324,11 @@ void CBaseDelay::SUB_UseTargets(CBaseEntity* pActivator, USE_TYPE useType, float
 	//
 	// kill the killtargets
 	//
-
+	// LRC - now just USE_KILLs its killtarget, for consistency.
 	if (!FStringNull(m_iszKillTarget))
 	{
-		edict_t* pentKillTarget = NULL;
-
 		ALERT(at_aiconsole, "KillTarget: %s\n", STRING(m_iszKillTarget));
-		pentKillTarget = FIND_ENTITY_BY_TARGETNAME(NULL, STRING(m_iszKillTarget));
-		while (!FNullEnt(pentKillTarget))
-		{
-			UTIL_Remove(CBaseEntity::Instance(pentKillTarget));
-
-			ALERT(at_aiconsole, "killing %s\n", STRING(pentKillTarget->v.classname));
-			pentKillTarget = FIND_ENTITY_BY_TARGETNAME(pentKillTarget, STRING(m_iszKillTarget));
-		}
+		FireTargets(STRING(m_iszKillTarget), pActivator, this, USE_KILL, value);
 	}
 
 	//
@@ -375,12 +376,9 @@ void SetMovedir(entvars_t* pev)
 
 void CBaseDelay::DelayThink()
 {
-	CBaseEntity* pActivator = NULL;
+	// LRC - now using m_hActivator
+	CBaseEntity* pActivator = m_hActivator;
 
-	if (pev->owner != NULL) // A player activated this on delay
-	{
-		pActivator = CBaseEntity::Instance(pev->owner);
-	}
 	// The use type is cached (and stashed) in pev->button
 	SUB_UseTargets(pActivator, (USE_TYPE)pev->button, 0);
 	REMOVE_ENTITY(ENT(pev));
@@ -403,7 +401,6 @@ TYPEDESCRIPTION CBaseToggle::m_SaveData[] =
 		DEFINE_FIELD(CBaseToggle, m_vecAngle2, FIELD_VECTOR), // UNDONE: Position could go through transition, but also angle?
 		DEFINE_FIELD(CBaseToggle, m_cTriggersLeft, FIELD_INTEGER),
 		DEFINE_FIELD(CBaseToggle, m_flHeight, FIELD_FLOAT),
-		DEFINE_FIELD(CBaseToggle, m_hActivator, FIELD_EHANDLE),
 		DEFINE_FIELD(CBaseToggle, m_pfnCallWhenMoveDone, FIELD_FUNCTION),
 		DEFINE_FIELD(CBaseToggle, m_vecFinalDest, FIELD_POSITION_VECTOR),
 		DEFINE_FIELD(CBaseToggle, m_vecFinalAngle, FIELD_VECTOR),
