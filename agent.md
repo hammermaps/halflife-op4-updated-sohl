@@ -127,7 +127,7 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 1** | Core Infrastructure (MoveWith, Think/NextThink, State) | ✅ Complete |
 | **Phase 2** | Base Entity Enhancements (USE types, Alias, Locus, Triggers) | ✅ Complete |
 | **Phase 2.5** | Entity USE_TYPE Compliance (ShouldToggle for toggle entities) | ✅ Complete |
-| **Phase 3** | Entity-Specific Enhancements (Monsters, Doors, Buttons, etc.) | 🔲 Pending |
+| **Phase 3** | Entity-Specific Enhancements (Monsters, Doors, Buttons, etc.) | 🔧 In Progress (3A partial) |
 | **Phase 4** | Visual & Client-Side Features (Fog, Sky, HUD, Particles) | 🔲 Pending |
 | **Phase 5** | New Entity Definitions & Polish | 🔲 Pending |
 

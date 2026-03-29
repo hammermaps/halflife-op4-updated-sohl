@@ -18,7 +18,19 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
 - Updated `CMultiSource` to respect `USE_ON`/`USE_OFF`.
 - Simplified `CSpeaker::ToggleUse` to use `ShouldToggle`.
 
-**Phase 3–5** — 🔲 Pending
+**Phase 3 (Entity-Specific Enhancements)** — 🔧 **IN PROGRESS**
+- Phase 3A (Monster/NPC Enhancements) — partially implemented:
+  - Header declarations: `m_iClass`, `m_iPlayerReact`, `HasCustomGibs()`, `SF_MONSTER_NO_YELLOW_BLOBS`, `SF_MONSTER_NO_WPN_DROP`, custom gib `SpawnRandomGibs` overload
+  - Custom model support for all monster files (agrunt, apache, barnacle, barney, bigmomma, bloater, bullsquid, controller, gargantua, genericmonster, gman, hassassin, headcrab, hgrunt, houndeye, ichthyosaur, islave, leech, nihilanth, osprey, rat, roach, scientist, turret, zombie)
+  - Core monster logic: `m_iClass`/`m_iPlayerReact` KeyValue handlers, stuck warning with `SF_MONSTER_NO_YELLOW_BLOBS`, `info_monster_goal` entity
+  - Talk monster: `m_iszDecline`/`m_iszSpeakAs` save/restore + KeyValue, `DeclineFollowing()`
+  - Combat: custom gib model support via `HasCustomGibs()`, `studio.h` include
+  - Scripted: `PreciseAttack()` implementation, `TaskComplete()` for immediate play start
+  - Monster-specific: hornet allegiance (agrunt), `monster_bullsquid` link, `SF_MONSTER_NO_WPN_DROP` (hgrunt), `m_iPlayerReact` override (islave), osprey loop breaker + unit fallback, postdisaster sitting scientist
+- Phases 3B–3J — headers declared, implementation pending
+  - Header declarations added for: `SF_DOOR_FORCETOUCHABLE`, `SF_BEAM_TRIPPED`, `GetTripEntity()`, `SF_TRACKTRAIN_NOYAW`/`AVELOCITY`/`AVEL_GEARS`, `m_vecMasterAvel`/`m_vecBaseAvel`, `DesiredAction()`, turn/avel type constants, `IsAction()`/`PreciseAttack()`/`InitIdleThink()`, script repeat/priority members, breakable respawn/whenhit fields
+
+**Phase 4–5** — 🔲 Pending
 
 ## Guiding Principles
 

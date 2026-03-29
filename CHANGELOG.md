@@ -2,6 +2,32 @@
 
 ## Spirit of Half-Life Integration
 
+### Phase 3A — Monster/NPC Enhancements (In Progress)
+
+* Added `m_iClass` and `m_iPlayerReact` member variables to `CBaseMonster` for monster allegiance and player reaction overrides
+* Added `HasCustomGibs()` virtual method to `CBaseMonster` for custom gib model support
+* Added `SF_MONSTER_NO_YELLOW_BLOBS` (128) and `SF_MONSTER_NO_WPN_DROP` (1024) spawnflags
+* Added custom `SpawnRandomGibs` overload accepting a custom gib model string
+* Added `#include "studio.h"` to combat.cpp for custom gib model counting
+* Added custom model support (`pev->model` override) to all monster files: agrunt, apache, barnacle, barney, bigmomma, bloater, bullsquid, controller, gargantua, genericmonster, gman, hassassin, headcrab (both variants), hgrunt, houndeye, ichthyosaur, islave, leech, nihilanth, osprey, rat, roach, scientist (both variants), turret (all variants), zombie
+* Added null model safety check in `monster_generic` — prevents crash when model is not set
+* Added `m_iClass`/`m_iPlayerReact` KeyValue handlers to `CBaseMonster::KeyValue()`
+* Added `info_monster_goal` point entity for monsters to shoot at
+* Added `m_iszDecline`/`m_iszSpeakAs` save/restore fields and KeyValue handlers to `CTalkMonster`
+* Added `DeclineFollowing()` with `m_iszDecline` support to `CTalkMonster`
+* Added `HasCustomGibs()` check in `CBaseMonster::GibMonster()` — custom gibs are spawned before human/alien gib fallback
+* Added `PreciseAttack()` implementation to `CCineMonster` for scripted_action precision targeting
+* Added `TaskComplete()` to `TASK_PLAY_SCRIPT` StartTask for immediate playback start
+* Added hornet allegiance inheritance from alien grunt's `m_iClass` in `CAGrunt`
+* Added `LINK_ENTITY_TO_CLASS(monster_bullsquid, CBullsquid)` alongside existing `monster_bullchicken`
+* Added `SF_MONSTER_NO_WPN_DROP` support in `CHGrunt::GibMonster()` and weapon drop handler
+* Added `m_iPlayerReact` override in `CISlave::IRelationship()`
+* Added osprey loop breaker (max 100 iterations) and `m_iUnits = 4` fallback
+* Added postdisaster sitting scientist support (skip forced `SF_MONSTER_PREDISASTER`)
+* Added conditional health default for barney (`if (pev->health == 0)`)
+* Added `m_iClass` classification override in `CRat::Classify()`
+* Added Phase 3B–3J header declarations: `SF_DOOR_FORCETOUCHABLE`, `SF_BEAM_TRIPPED`, `GetTripEntity()`, tracktrain flags, turn/avel types, `DesiredAction()`, `IsAction()`/`InitIdleThink()`, script repeat/priority, breakable respawn/whenhit
+
 ### Phase 2.5 — Entity USE_TYPE Compliance
 
 * Added `ShouldToggle` to `CBaseDoor::Use()` — doors now respect `USE_ON` / `USE_OFF` instead of always toggling
