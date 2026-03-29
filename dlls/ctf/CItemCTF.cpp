@@ -81,7 +81,7 @@ void CItemCTF::Spawn()
 	if ((pev->spawnflags & SF_ITEMCTF_RANDOM_SPAWN) != 0)
 	{
 		SetThink(&CItemCTF::DropThink);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 	}
 
 	m_iLastTouched = 0;
@@ -106,7 +106,7 @@ void CItemCTF::DropPreThink()
 	{
 		SetThink(&CItemCTF::DropThink);
 
-		pev->nextthink = V_max(0, g_flPowerupRespawnTime - 5) + gpGlobals->time;
+		SetNextThink(V_max(0, g_flPowerupRespawnTime - 5));
 	}
 }
 
@@ -221,7 +221,7 @@ void CItemCTF::CarryThink()
 	{
 		if ((m_iItemFlag & pOwner->m_iItems) != 0)
 		{
-			pev->nextthink = gpGlobals->time + 20;
+			SetNextThink(20);
 		}
 		else
 		{
@@ -256,7 +256,7 @@ void CItemCTF::ItemTouch(CBaseEntity* pOther)
 			pev->owner = pOther->edict();
 
 			SetThink(&CItemCTF::CarryThink);
-			pev->nextthink = gpGlobals->time + 20.0;
+			SetNextThink(20.0);
 
 			m_flPickupTime = gpGlobals->time;
 
@@ -321,7 +321,7 @@ void CItemCTF::DropItem(CBasePlayer* pPlayer, bool bForceRespawn)
 	else
 	{
 		SetThink(&CItemCTF::DropPreThink);
-		pev->nextthink = gpGlobals->time + 5.0;
+		SetNextThink(5.0);
 	}
 }
 
@@ -362,7 +362,7 @@ void CItemCTF::ScatterItem(CBasePlayer* pPlayer)
 
 	SetTouch(&CItemCTF::ItemTouch);
 	SetThink(&CItemCTF::DropPreThink);
-	pev->nextthink = gpGlobals->time + 5.0;
+	SetNextThink(5.0);
 
 	m_iLastTouched = pPlayer->entindex();
 	m_flNextTouchTime = 5.0 + gpGlobals->time;
@@ -413,7 +413,7 @@ void CItemCTF::ThrowItem(CBasePlayer* pPlayer)
 
 	SetTouch(&CItemCTF::ItemTouch);
 	SetThink(&CItemCTF::DropPreThink);
-	pev->nextthink = gpGlobals->time + 5.0;
+	SetNextThink(5.0);
 
 	m_iLastTouched = pPlayer->entindex();
 	m_flNextTouchTime = 5.0 + gpGlobals->time;

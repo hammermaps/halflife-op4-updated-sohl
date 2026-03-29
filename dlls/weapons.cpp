@@ -531,7 +531,7 @@ void CBasePlayerItem::AttemptToMaterialize()
 		return;
 	}
 
-	pev->nextthink = time;
+	AbsoluteNextThink(time);
 }
 
 //=========================================================
@@ -571,7 +571,7 @@ CBaseEntity* CBasePlayerItem::Respawn()
 
 		// not a typo! We want to know when the weapon the player just picked up should respawn! This new entity we created is the replacement,
 		// but when it should respawn is based on conditions belonging to the weapon that was taken.
-		pNewWeapon->pev->nextthink = g_pGameRules->FlWeaponRespawnTime(this);
+		pNewWeapon->AbsoluteNextThink(g_pGameRules->FlWeaponRespawnTime(this));
 	}
 	else
 	{
@@ -939,7 +939,7 @@ CBaseEntity* CBasePlayerAmmo::Respawn()
 	UTIL_SetOrigin(pev, g_pGameRules->VecAmmoRespawnSpot(this)); // move to wherever I'm supposed to repawn.
 
 	SetThink(&CBasePlayerAmmo::Materialize);
-	pev->nextthink = g_pGameRules->FlAmmoRespawnTime(this);
+	AbsoluteNextThink(g_pGameRules->FlAmmoRespawnTime(this));
 
 	return this;
 }
