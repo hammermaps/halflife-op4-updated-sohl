@@ -274,7 +274,10 @@ void CHeadCrab::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/headcrab.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/headcrab.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-12, -12, 0), Vector(12, 12, 24));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -302,7 +305,9 @@ void CHeadCrab::Precache()
 	PRECACHE_SOUND_ARRAY(pDeathSounds);
 	PRECACHE_SOUND_ARRAY(pBiteSounds);
 
-	PRECACHE_MODEL("models/headcrab.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/headcrab.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 }
 
 
@@ -493,7 +498,10 @@ LINK_ENTITY_TO_CLASS(monster_babycrab, CBabyCrab);
 void CBabyCrab::Spawn()
 {
 	CHeadCrab::Spawn();
-	SET_MODEL(ENT(pev), "models/baby_headcrab.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/baby_headcrab.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	pev->rendermode = kRenderTransTexture;
 	pev->renderamt = 192;
 	UTIL_SetSize(pev, Vector(-12, -12, 0), Vector(12, 12, 24));
@@ -503,7 +511,9 @@ void CBabyCrab::Spawn()
 
 void CBabyCrab::Precache()
 {
-	PRECACHE_MODEL("models/baby_headcrab.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/baby_headcrab.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	CHeadCrab::Precache();
 }
 

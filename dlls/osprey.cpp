@@ -149,7 +149,10 @@ void COsprey::Spawn()
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(ENT(pev), "models/osprey.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/osprey.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-400, -400, -100), Vector(400, 400, 32));
 	UTIL_SetOrigin(pev, pev->origin);
 
@@ -177,6 +180,9 @@ void COsprey::Spawn()
 		SetNextThink(1.0);
 	}
 
+	if (pev->speed == 0)
+		pev->speed = 80;
+
 	m_pos2 = pev->origin;
 	m_ang2 = pev->angles;
 	m_vel2 = pev->velocity;
@@ -187,7 +193,9 @@ void COsprey::Precache()
 {
 	UTIL_PrecacheOther("monster_human_grunt");
 
-	PRECACHE_MODEL("models/osprey.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/osprey.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_MODEL("models/HVR.mdl");
 
 	PRECACHE_SOUND("apache/ap_rotor4.wav");

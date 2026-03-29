@@ -668,7 +668,10 @@ void CScientist::Spawn()
 
 	Precache();
 
-	SET_MODEL(ENT(pev), GetScientistModel());
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), GetScientistModel());
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -699,7 +702,9 @@ void CScientist::Spawn()
 //=========================================================
 void CScientist::Precache()
 {
-	PRECACHE_MODEL(GetScientistModel());
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING(GetScientistModel());
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_SOUND("scientist/sci_pain1.wav");
 	PRECACHE_SOUND("scientist/sci_pain2.wav");
 	PRECACHE_SOUND("scientist/sci_pain3.wav");
@@ -1281,8 +1286,10 @@ typedef enum
 //
 void CSittingScientist::Spawn()
 {
-	PRECACHE_MODEL(GetScientistModel());
-	SET_MODEL(ENT(pev), GetScientistModel());
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING(GetScientistModel());
+	PRECACHE_MODEL(STRING(pev->model));
+	SET_MODEL(ENT(pev), STRING(pev->model));
 	Precache();
 	InitBoneControllers();
 

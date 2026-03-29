@@ -42,7 +42,7 @@ LINK_ENTITY_TO_CLASS(monster_rat, CRat);
 //=========================================================
 int CRat::Classify()
 {
-	return CLASS_INSECT;
+	return m_iClass ? m_iClass : CLASS_INSECT;
 }
 
 //=========================================================
@@ -71,7 +71,10 @@ void CRat::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/bigrat.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/bigrat.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(0, 0, 0), Vector(0, 0, 0));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -90,7 +93,9 @@ void CRat::Spawn()
 //=========================================================
 void CRat::Precache()
 {
-	PRECACHE_MODEL("models/bigrat.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/bigrat.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 }
 
 //=========================================================
