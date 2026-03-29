@@ -1,0 +1,133 @@
+# Agent Guide
+
+This document provides context for AI coding agents working on this repository.
+
+## Project Overview
+
+This is **Half-Life: Opposing Force Updated** with **Spirit of Half-Life (SOHL)** modifications. It is a C/C++ game SDK based on the GoldSrc (Half-Life 1) engine, providing an updated and bug-fixed version of the Opposing Force expansion pack source code.
+
+The project targets **32-bit x86** platforms (Windows and Linux).
+
+## Repository Structure
+
+```
+cl_dll/          - Client-side DLL source code (HUD, rendering, input, VGUI)
+dlls/            - Server-side DLL source code (game logic, monsters, weapons, maps)
+  ctf/           - Capture The Flag game mode
+  rope/          - Rope entity system
+  weapons/       - Weapon-specific code
+common/          - Shared headers between client and server
+engine/          - Engine API headers
+external/        - Third-party libraries and headers
+fgd/             - Forge Game Data files for level editors
+game_shared/     - Code shared between client and server (voice, VGUI utilities, bot)
+lib/             - Precompiled libraries
+linux/           - Linux Makefiles and build output
+network/         - Network delta definitions
+pm_shared/       - Player movement prediction code (shared client/server)
+projects/        - Visual Studio solution and project files
+  vs2019/        - Visual Studio 2019+ solution
+public/          - Public engine headers
+utils/           - Utility tools (studiomdl, etc.)
+docs/            - Documentation
+  tutorials/     - Tutorials
+```
+
+## Build Instructions
+
+### Windows
+
+Requirements: Visual Studio 2019 or newer.
+
+```
+msbuild projects/vs2019/projects.sln -t:rebuild -property:Configuration=Release -maxcpucount:2
+```
+
+Output:
+- `projects/vs2019/Release/hl_cdll/client.dll` (client DLL)
+- `projects/vs2019/Release/hldll/hl.dll` (server DLL)
+
+### Linux
+
+Requirements: GCC 9+ or Clang with C++17 support, `g++-multilib`, `libgl1-mesa-dev`.
+
+```bash
+sudo apt install -y g++-multilib clang libgl1-mesa-dev
+cd linux
+make COMPILER=g++ CFG=release -j$(nproc)
+```
+
+Output:
+- `linux/release/client.so` (client DLL)
+- `linux/release/hl.so` (server DLL)
+
+## CI/CD
+
+The GitHub Actions workflow (`.github/workflows/ci-cd.yml`) builds on every push and pull request:
+- **Linux-x86**: Builds with both `g++` and `clang++`
+- **Win32**: Builds with MSBuild (Visual Studio)
+
+## Coding Conventions
+
+### Formatting (`.clang-format`)
+
+- Based on LLVM style with Allman (opening brace on new line) brace style
+- **Indentation**: Tabs, width 4
+- **No column limit** (`ColumnLimit: 0`)
+- Pointer alignment: Left (`int* ptr`)
+- Includes are **not** sorted automatically
+- Short blocks, case labels, and functions allowed on a single line
+
+### Linting (`.clang-tidy`)
+
+Only two checks are enabled:
+- `readability-delete-null-pointer` — flags unnecessary `delete` on null pointer
+- `readability-implicit-bool-conversion` — flags implicit bool conversions (pointer conditions allowed)
+
+### Naming
+
+- Classes use `C` prefix (e.g., `COFAllyMonster`, `CDrillSergeant`, `CRecruit`)
+- Header guards and macros use uppercase with underscores
+- Member functions use PascalCase
+- The codebase follows original Half-Life SDK naming conventions
+
+### General Style
+
+- C++ with C-style patterns common in GoldSrc SDK code
+- `#include` order follows existing file patterns — do not reorder
+- Extensive use of inheritance hierarchies for monsters and weapons
+- Game entity classes inherit from `CBaseEntity` / `CBaseMonster` / `CSquadMonster` etc.
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `dlls/cbase.h` | Base entity class definitions |
+| `dlls/monsters.h` | Monster-related declarations |
+| `dlls/weapons.h` | Weapon base classes and declarations |
+| `dlls/player.h` | Player class definition |
+| `dlls/game.h` | Game-wide CVARs and settings |
+| `dlls/skill.h` | Skill/difficulty level definitions |
+| `dlls/util.h` | Server-side utility functions and macros |
+| `cl_dll/hud.h` | Client HUD class definition |
+| `pm_shared/pm_shared.h` | Shared player movement code |
+
+## Scope of Changes
+
+The following types of changes are **in scope**:
+- Bug fixes
+- Code improvements (refactoring, generalizing, simplifying)
+- Fixing game-breaking bugs in game assets
+
+The following types of changes are **out of scope**:
+- Graphical upgrades
+- Physics engine changes
+- Other engine changes
+- Gameplay changes
+
+## Testing
+
+There is no automated test suite. Verify changes by:
+1. Ensuring the project **builds successfully** on both Windows (MSBuild) and Linux (Make)
+2. Reviewing compiler warnings
+3. Manual in-game testing when applicable
