@@ -232,8 +232,7 @@ void COsprey::FindAllThink()
 	if (m_iUnits == 0)
 	{
 		ALERT(at_console, "osprey error: no grunts to resupply\n");
-		UTIL_Remove(this);
-		return;
+		m_iUnits = 4; // LRC - just make the grunts
 	}
 	SetThink(&COsprey::FlyThink);
 	SetNextThink(0.1);
@@ -412,8 +411,11 @@ void COsprey::FlyThink()
 			{
 				SetThink(&COsprey::DeployThink);
 			}
+			int loopbreaker = 100; // LRC - prevent infinite loops
 			do
 			{
+				if (--loopbreaker <= 0)
+					break;
 				m_pGoalEnt = CBaseEntity::Instance(FIND_ENTITY_BY_TARGETNAME(NULL, STRING(m_pGoalEnt->pev->target)));
 			} while (m_pGoalEnt->pev->speed < 400 && !HasDead());
 			UpdateGoal();

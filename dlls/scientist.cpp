@@ -1305,7 +1305,8 @@ void CSittingScientist::Spawn()
 
 	m_afCapability = bits_CAP_HEAR | bits_CAP_TURN_HEAD;
 
-	SetBits(pev->spawnflags, SF_MONSTER_PREDISASTER); // predisaster only!
+	if (!FBitSet(pev->spawnflags, SF_MONSTER_PREDISASTER))
+		SetBits(pev->spawnflags, SF_MONSTER_PREDISASTER); // predisaster only!
 
 	if (pev->body == -1)
 	{														 // -1 chooses a random head

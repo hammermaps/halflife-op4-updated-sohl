@@ -152,8 +152,12 @@ int CISlave::Classify()
 int CISlave::IRelationship(CBaseEntity* pTarget)
 {
 	if ((pTarget->IsPlayer()))
+	{
+		if (m_iPlayerReact) // LRC - player reaction overridden
+			return CBaseMonster::IRelationship(pTarget);
 		if ((pev->spawnflags & SF_MONSTER_WAIT_UNTIL_PROVOKED) != 0 && (m_afMemory & bits_MEMORY_PROVOKED) == 0)
 			return R_NO;
+	}
 	return CBaseMonster::IRelationship(pTarget);
 }
 

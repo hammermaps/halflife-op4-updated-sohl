@@ -662,6 +662,12 @@ int CCineMonster::IgnoreConditions()
 	return SCRIPT_BREAK_CONDITIONS;
 }
 
+// LRC - should monster do a precise attack at the scripted target?
+bool CCineMonster::PreciseAttack()
+{
+	return IsAction() && !FStringNull(m_iszAttack);
+}
+
 
 void ScriptEntityCancel(edict_t* pentCine)
 {
