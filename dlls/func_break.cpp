@@ -478,7 +478,7 @@ void CBreakable::BreakTouch(CBaseEntity* pOther)
 			m_flDelay = 0.1;
 		}
 
-		pev->nextthink = pev->ltime + m_flDelay;
+		SetNextThink(m_flDelay);
 	}
 }
 
@@ -773,7 +773,7 @@ void CBreakable::Die()
 	SUB_UseTargets(NULL, USE_TOGGLE, 0);
 
 	SetThink(&CBreakable::SUB_Remove);
-	pev->nextthink = pev->ltime + 0.1;
+	SetNextThink(0.1);
 	if (!FStringNull(m_iszSpawnObject))
 		CBaseEntity::Create((char*)STRING(m_iszSpawnObject), VecBModelOrigin(pev), pev->angles, edict());
 

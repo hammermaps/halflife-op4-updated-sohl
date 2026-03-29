@@ -131,7 +131,7 @@ void CRecharge::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useT
 		return;
 	}
 
-	pev->nextthink = pev->ltime + 0.25;
+	SetNextThink(0.25);
 	SetThink(&CRecharge::Off);
 
 	// Time to recharge yet?
@@ -197,7 +197,7 @@ void CRecharge::Off()
 
 	if ((0 == m_iJuice) && ((m_iReactivate = g_pGameRules->FlHEVChargerRechargeTime()) > 0))
 	{
-		pev->nextthink = pev->ltime + m_iReactivate;
+		SetNextThink(m_iReactivate);
 		SetThink(&CRecharge::Recharge);
 	}
 	else
