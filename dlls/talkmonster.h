@@ -174,6 +174,10 @@ public:
 	bool m_fStartSuspicious;
 
 	EHANDLE m_hTalkTarget; // who to look at while talking
+
+	string_t m_iszDecline;  // LRC - refuse to accompany sentence
+	string_t m_iszSpeakAs;  // LRC - speak with different voice group
+
 	CUSTOM_SCHEDULES;
 };
 

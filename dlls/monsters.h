@@ -52,6 +52,8 @@
 #define SF_MONSTER_WAIT_FOR_SCRIPT 128 //spawnflag that makes monsters wait to check for attacking until the script is done or they've been attacked
 #define SF_MONSTER_PREDISASTER 256	   //this is a predisaster scientist or barney. Influences how they speak.
 #define SF_MONSTER_FADECORPSE 512	   // Fade out corpse after death
+#define SF_MONSTER_NO_YELLOW_BLOBS 128 // LRC - if stuck, don't show error blobs
+#define SF_MONSTER_NO_WPN_DROP 1024    // LRC - never drop weapon
 #define SF_MONSTER_FALL_TO_GROUND 0x80000000
 
 // specialty spawnflags
@@ -183,6 +185,7 @@ public:
 	static void SpawnHeadGib(entvars_t* pevVictim);
 	static void SpawnRandomGibs(entvars_t* pevVictim, int cGibs, const GibData& gibData);
 	static void SpawnRandomGibs(entvars_t* pevVictim, int cGibs, bool human);
+	static void SpawnRandomGibs(entvars_t* pevVictim, int cGibs, int notfirst, const char* szGibModel);
 	static void SpawnStickyGibs(entvars_t* pevVictim, Vector vecOrigin, int cGibs);
 
 	int m_bloodColor;

@@ -27,3 +27,4 @@
 #define SF_DOOR_USE_ONLY 256   // door must be opened by player's use button.
 #define SF_DOOR_NOMONSTERS 512 // Monster can't open
 #define SF_DOOR_SILENT 0x80000000
+#define SF_DOOR_FORCETOUCHABLE 1024 // LRC - opens when touched even if named/use-only

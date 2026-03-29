@@ -47,6 +47,11 @@ enum SS_INTERRUPT
 #define SCRIPT_FINISHSCHED_DEFAULT 0
 #define SCRIPT_FINISHSCHED_AMBUSH 1
 
+// LRC - rearranged into flags
+#define SCRIPT_TURNTYPE_NONE 0
+#define SCRIPT_TURNTYPE_FACETARGET 1
+#define SCRIPT_TURNTYPE_FACE 2
+
 class CCineMonster : public CBaseMonster
 {
 public:
@@ -79,6 +84,9 @@ public:
 	virtual void FixScriptMonsterSchedule(CBaseMonster* pMonster);
 	bool CanInterrupt();
 	void AllowInterrupt(bool fAllow);
+	inline bool IsAction() { return FClassnameIs(pev, "scripted_action"); } // LRC
+	bool PreciseAttack(); // LRC - should monster do a precise attack?
+	void EXPORT InitIdleThink(); // LRC
 	int IgnoreConditions() override;
 
 	int m_iszIdle;	 // string index for idle animation
@@ -98,12 +106,13 @@ public:
 	//	Vector m_vecOrigOrigin;
 	bool m_interruptable;
 	STATE m_iState;  // LRC - state tracking
+
+	string_t m_iszAttack;    // LRC - attack target for scripted_action
+	string_t m_iszMoveTarget; // LRC - move target for scripted_action
+	int m_iRepeats;          // LRC - number of times to repeat
+	int m_iRepeatsLeft;      // LRC - remaining repeats
+	float m_fRepeatFrame;    // LRC - frame to repeat from
+	int m_iPriority;         // LRC - script priority
 };
 
-class CCineAI : public CCineMonster
-{
-	bool StartSequence(CBaseMonster* pTarget, int iszSeq, bool completeOnEmpty) override;
-	void PossessEntity() override;
-	bool FCanOverrideState() override;
-	void FixScriptMonsterSchedule(CBaseMonster* pMonster) override;
-};
+// LRC - CCineAI removed, obsolete. aiscripted_sequence now links to CCineMonster.
