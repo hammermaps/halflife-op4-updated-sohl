@@ -1,5 +1,46 @@
 # Half-Life: Opposing Force Updated changelog
 
+## Spirit of Half-Life Integration
+
+### Phase 2 — Base Entity Enhancements
+
+* Added new USE types: `USE_KILL`, `USE_SAME`, `USE_NOT` to the `USE_TYPE` enum
+* Added `FCAP_ONLYDIRECT_USE` capability flag for entities that can't be used through walls
+* Moved `m_hActivator` from `CBaseToggle` to `CBaseDelay` for wider accessibility
+* Enhanced `SUB_UseTargets` to handle `USE_SAME` (preserve state), `USE_NOT` (invert), and `USE_KILL` (remove entity)
+* Enhanced `FireTargets` to remove entities when called with `USE_KILL`
+* Updated `DelayThink` to use `m_hActivator` (EHANDLE) instead of `pev->owner` hack
+* Created Alias system (`dlls/alias.h`, `dlls/alias.cpp`):
+  - `CBaseAlias` — base class for alias entities with linked list support
+  - `info_alias` — simple alias pointing to one or more entities
+  - `trigger_changealias` — dynamically changes alias targets
+* Created Locus system (`dlls/locus.h`, `dlls/locus.cpp`):
+  - `CalcLocus_Position`, `CalcLocus_Velocity`, `CalcLocus_Ratio` utility functions
+  - `calc_position`, `calc_velocity`, `calc_ratio` point entities
+  - Added `CalcPosition()`, `CalcVelocity()`, `CalcRatio()` virtual methods to `CBaseEntity`
+* Enhanced `CMultiManager` with new fields: master, wait/maxwait, mode, threadname, triggerstate
+* Added `multi_watcher` — watches multiple entity states with AND/OR logic
+* Added `trigger_command` — executes server console commands
+* Added `trigger_changecvar` — changes server CVars when triggered
+* Added `trigger_inout` — fires on enter/leave with entity tracking
+* Added `trigger_bounce` — bounces touching entities
+* Added `trigger_onsight` — fires when entities can see each other (line-of-sight)
+* Added `trigger_startpatrol` — starts monster patrol routes
+* Added `trigger_motion` — applies position/angle/velocity to entities via locus
+* Added `motion_manager` — continuous motion control entity
+* Added `render_fx_fader` — smooth entity render amount fading
+* Fixed pre-existing `DontThink()` bug in `set_suicide_frame()` (`dlls/client.cpp`)
+* Added all new files to Linux Makefile and Visual Studio 2019 project
+
+### Phase 1 — Core Infrastructure (Previously Implemented)
+
+* MoveWith entity parenting system (`dlls/movewith.h`, `dlls/movewith.cpp`)
+* Think/NextThink wrapper system (`SetNextThink`, `AbsoluteNextThink`, `DontThink`, `ThinkCorrection`)
+* State system (`STATE_OFF`, `STATE_TURN_ON`, `STATE_ON`, `STATE_TURN_OFF`)
+* Entity assist list for physics coordination
+* `ShouldToggle()` using `GetState()`
+* `info_movewith` entity
+
 ## Changes in V1.1.0
 
 Most changes from Half-Life Updated up until V1.1.0 are included. HL25 gameplay changes were not backported to be on par with the "vanilla" game.
