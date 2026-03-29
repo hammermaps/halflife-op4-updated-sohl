@@ -388,6 +388,14 @@ public:
 	CBasePlayerWeapon* GetWeaponPtr() override { return this; }
 	float GetNextAttackDelay(float delay);
 
+	// LRC - weapons override SetNextThink to use gpGlobals->time instead of ltime
+	void SetNextThink(float delay) override
+	{
+		m_fNextThink = gpGlobals->time + delay;
+		m_fPevNextThink = m_fNextThink;
+		pev->nextthink = m_fPevNextThink;
+	}
+
 	float m_flPumpTime;
 	int m_fInSpecialReload;		   // Are we in the middle of a reload for the shotguns
 	float m_flNextPrimaryAttack;   // soonest time ItemPostFrame will call PrimaryAttack

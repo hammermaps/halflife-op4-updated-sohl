@@ -36,11 +36,15 @@ public:
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
 
+	// LRC
+	STATE GetState() override { return m_iState; }
+
 	static TYPEDESCRIPTION m_SaveData[];
 
 private:
 	int m_iStyle;
 	int m_iszPattern;
+	STATE m_iState;  // LRC
 };
 LINK_ENTITY_TO_CLASS(light, CLight);
 
@@ -96,11 +100,20 @@ void CLight::Spawn()
 	{
 		//		CHANGE_METHOD(ENT(pev), em_use, light_use);
 		if (FBitSet(pev->spawnflags, SF_LIGHT_START_OFF))
+		{
 			LIGHT_STYLE(m_iStyle, "a");
+			m_iState = STATE_OFF;  // LRC
+		}
 		else if (!FStringNull(m_iszPattern))
+		{
 			LIGHT_STYLE(m_iStyle, (char*)STRING(m_iszPattern));
+			m_iState = STATE_ON;  // LRC
+		}
 		else
+		{
 			LIGHT_STYLE(m_iStyle, "m");
+			m_iState = STATE_ON;  // LRC
+		}
 	}
 }
 
@@ -119,11 +132,13 @@ void CLight::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType
 			else
 				LIGHT_STYLE(m_iStyle, "m");
 			ClearBits(pev->spawnflags, SF_LIGHT_START_OFF);
+			m_iState = STATE_ON;  // LRC
 		}
 		else
 		{
 			LIGHT_STYLE(m_iStyle, "a");
 			SetBits(pev->spawnflags, SF_LIGHT_START_OFF);
+			m_iState = STATE_OFF;  // LRC
 		}
 	}
 }

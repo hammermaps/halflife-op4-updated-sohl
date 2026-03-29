@@ -119,6 +119,7 @@ LINK_ENTITY_TO_CLASS(aiscripted_sequence, CCineAI);
 
 void CCineMonster::Spawn()
 {
+	m_iState = STATE_OFF;  // LRC
 	// pev->solid = SOLID_TRIGGER;
 	// UTIL_SetSize(pev, Vector(-8, -8, -8), Vector(8, 8, 8));
 	pev->solid = SOLID_NOT;

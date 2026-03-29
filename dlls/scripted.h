@@ -97,6 +97,7 @@ public:
 	int m_saved_effects;
 	//	Vector m_vecOrigOrigin;
 	bool m_interruptable;
+	STATE m_iState;  // LRC - state tracking
 };
 
 class CCineAI : public CCineMonster

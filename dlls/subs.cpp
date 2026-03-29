@@ -26,6 +26,7 @@
 #include "saverestore.h"
 #include "nodes.h"
 #include "doors.h"
+#include "movewith.h"
 
 extern bool FEntIsVisible(entvars_t* pev, entvars_t* pevTarget);
 
@@ -114,6 +115,68 @@ void CBaseEntity::SUB_Remove()
 		// this situation can screw up monsters who can't tell their entity pointers are invalid.
 		pev->health = 0;
 		ALERT(at_aiconsole, "SUB_Remove called on entity with health > 0\n");
+	}
+
+	// LRC - remove from the assist list to prevent dangling pointers
+	if (m_iLFlags & LF_DOASSIST)
+	{
+		CBaseEntity* pWorld = CWorld::World;
+		if (pWorld)
+		{
+			CBaseEntity* pPrev = NULL;
+			CBaseEntity* pCur = pWorld->m_pAssistLink;
+			while (pCur != NULL)
+			{
+				if (pCur == this)
+				{
+					if (pPrev)
+						pPrev->m_pAssistLink = m_pAssistLink;
+					else
+						pWorld->m_pAssistLink = m_pAssistLink;
+					break;
+				}
+				pPrev = pCur;
+				pCur = pCur->m_pAssistLink;
+			}
+		}
+		m_iLFlags &= ~LF_DOASSIST;
+		m_pAssistLink = NULL;
+	}
+
+	// LRC - remove from parent's MoveWith child list
+	if (m_pMoveWith)
+	{
+		// remove from parent's child list
+		CBaseEntity* pPrev = NULL;
+		CBaseEntity* pCur = m_pMoveWith->m_pChildMoveWith;
+		while (pCur != NULL)
+		{
+			if (pCur == this)
+			{
+				if (pPrev)
+					pPrev->m_pSiblingMoveWith = m_pSiblingMoveWith;
+				else
+					m_pMoveWith->m_pChildMoveWith = m_pSiblingMoveWith;
+				break;
+			}
+			pPrev = pCur;
+			pCur = pCur->m_pSiblingMoveWith;
+		}
+		m_pMoveWith = NULL;
+	}
+
+	// LRC - do the same thing if another entity is moving with _me_
+	if (m_pChildMoveWith)
+	{
+		CBaseEntity* pCur = m_pChildMoveWith;
+		while (pCur != NULL)
+		{
+			CBaseEntity* pNext = pCur->m_pSiblingMoveWith;
+			pCur->m_pMoveWith = NULL;
+			pCur->m_pSiblingMoveWith = NULL;
+			pCur = pNext;
+		}
+		m_pChildMoveWith = NULL;
 	}
 
 	REMOVE_ENTITY(ENT(pev));
@@ -430,7 +493,7 @@ void CBaseToggle::LinearMoveDone()
 
 	UTIL_SetOrigin(pev, m_vecFinalDest);
 	pev->velocity = g_vecZero;
-	pev->nextthink = -1;
+	DontThink();  // LRC
 	if (m_pfnCallWhenMoveDone)
 		(this->*m_pfnCallWhenMoveDone)();
 }
@@ -583,3 +646,20 @@ bool FEntIsVisible(
 
 	return false;
 }
+
+
+//=========================================================
+// LRC - info_movewith entity
+// A point entity that can be parented to another entity
+//=========================================================
+class CInfoMoveWith : public CPointEntity
+{
+public:
+	void Spawn() override
+	{
+		pev->solid = SOLID_NOT;
+		pev->movetype = MOVETYPE_NONE;
+	}
+};
+
+LINK_ENTITY_TO_CLASS(info_movewith, CInfoMoveWith);

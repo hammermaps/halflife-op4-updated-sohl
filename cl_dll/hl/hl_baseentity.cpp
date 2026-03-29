@@ -44,9 +44,19 @@ void CBaseEntity::MakeDormant() {}
 bool CBaseEntity::IsDormant() { return false; }
 bool CBaseEntity::IsInWorld() { return true; }
 bool CBaseEntity::ShouldToggle(USE_TYPE useType, bool currentState) { return false; }
+int CBaseEntity::ShouldToggle(USE_TYPE useType) { return 0; }  // LRC
 int CBaseEntity::DamageDecal(int bitsDamageType) { return -1; }
 CBaseEntity* CBaseEntity::Create(const char* szName, const Vector& vecOrigin, const Vector& vecAngles, edict_t* pentOwner) { return NULL; }
 void CBaseEntity::SUB_Remove() {}
+// LRC stubs
+void CBaseEntity::Activate() {}
+void CBaseEntity::InitMoveWith() {}
+void CBaseEntity::SetNextThink(float delay, bool correctSpeed) {}
+void CBaseEntity::AbsoluteNextThink(float time, bool correctSpeed) {}
+void CBaseEntity::SetEternalThink() {}
+void CBaseEntity::DontThink() {}
+void CBaseEntity::ResetThink() {}
+void CBaseEntity::ThinkCorrection() {}
 
 // CBaseDelay Stubs
 bool CBaseDelay::KeyValue(struct KeyValueData_s*) { return false; }
@@ -81,6 +91,7 @@ void CBaseToggle::PlaySentence(const char* pszSentence, float duration, float vo
 void CBaseToggle::PlaySentenceCore(const char* pszSentence, float duration, float volume, float attenuation) {}
 void CBaseToggle::PlayScriptedSentence(const char* pszSentence, float duration, float volume, float attenuation, bool bConcurrent, CBaseEntity* pListener) {}
 void CBaseToggle::SentenceStop() {}
+STATE CBaseToggle::GetState() { return STATE_ON; }  // LRC
 
 // CGrenade Stubs
 void CGrenade::BounceSound() {}
