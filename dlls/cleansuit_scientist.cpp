@@ -1243,7 +1243,7 @@ void CSittingCleansuitScientist::Spawn()
 	ResetSequenceInfo();
 
 	SetThink(&CSittingCleansuitScientist::SittingThink);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	DROP_TO_FLOOR(ENT(pev));
 }
@@ -1374,7 +1374,7 @@ void CSittingCleansuitScientist::SittingThink()
 		pev->frame = 0;
 		SetBoneController(0, m_headTurn);
 	}
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
 
 // prepare sitting scientist to answer a question

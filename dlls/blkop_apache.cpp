@@ -147,7 +147,7 @@ void COFBlackOpsApache::Spawn()
 		SetTouch(&COFBlackOpsApache::FlyTouch);
 	}
 
-	pev->nextthink = gpGlobals->time + 1.0;
+	SetNextThink(1.0);
 
 	m_iRockets = 10;
 }
@@ -182,7 +182,7 @@ void COFBlackOpsApache::NullThink()
 {
 	StudioFrameAdvance();
 	FCheckAITrigger();
-	pev->nextthink = gpGlobals->time + 0.5;
+	SetNextThink(0.5);
 }
 
 
@@ -190,7 +190,7 @@ void COFBlackOpsApache::StartupUse(CBaseEntity* pActivator, CBaseEntity* pCaller
 {
 	SetThink(&COFBlackOpsApache::HuntThink);
 	SetTouch(&COFBlackOpsApache::FlyTouch);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	SetUse(NULL);
 }
 
@@ -206,7 +206,7 @@ void COFBlackOpsApache::Killed(entvars_t* pevAttacker, int iGib)
 	UTIL_SetSize(pev, Vector(-32, -32, -64), Vector(32, 32, 0));
 	SetThink(&COFBlackOpsApache::DyingThink);
 	SetTouch(&COFBlackOpsApache::CrashTouch);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	pev->health = 0;
 	pev->takedamage = DAMAGE_NO;
 	pev->deadflag = DEAD_DYING;
@@ -224,7 +224,7 @@ void COFBlackOpsApache::Killed(entvars_t* pevAttacker, int iGib)
 void COFBlackOpsApache::DyingThink()
 {
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	pev->avelocity = pev->avelocity * 1.02;
 
@@ -294,7 +294,7 @@ void COFBlackOpsApache::DyingThink()
 
 		// don't stop it we touch a entity
 		pev->flags &= ~FL_ONGROUND;
-		pev->nextthink = gpGlobals->time + 0.2;
+		SetNextThink(0.2);
 		return;
 	}
 	else
@@ -410,7 +410,7 @@ void COFBlackOpsApache::DyingThink()
 		MESSAGE_END();
 
 		SetThink(&COFBlackOpsApache::SUB_Remove);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 	}
 }
 
@@ -435,7 +435,7 @@ void COFBlackOpsApache::CrashTouch(CBaseEntity* pOther)
 	{
 		SetTouch(NULL);
 		m_flNextRocket = gpGlobals->time;
-		pev->nextthink = gpGlobals->time;
+		SetNextThink(0);
 	}
 }
 
@@ -450,7 +450,7 @@ void COFBlackOpsApache::GibMonster()
 void COFBlackOpsApache::HuntThink()
 {
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	UpdateShockEffect();
 
@@ -1036,7 +1036,7 @@ void COFBlackOpsApacheHVR::Spawn()
 	m_vecForward = gpGlobals->v_forward;
 	pev->gravity = 0.5;
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	pev->dmg = 150;
 }
@@ -1077,7 +1077,7 @@ void COFBlackOpsApacheHVR::IgniteThink()
 
 	// set to accelerate
 	SetThink(&COFBlackOpsApacheHVR::AccelerateThink);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
 
 
@@ -1100,5 +1100,5 @@ void COFBlackOpsApacheHVR::AccelerateThink()
 	// re-aim
 	pev->angles = UTIL_VecToAngles(pev->velocity);
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }

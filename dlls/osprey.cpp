@@ -174,7 +174,7 @@ void COsprey::Spawn()
 
 	if ((pev->spawnflags & SF_WAITFORTRIGGER) == 0)
 	{
-		pev->nextthink = gpGlobals->time + 1.0;
+		SetNextThink(1.0);
 	}
 
 	m_pos2 = pev->origin;
@@ -203,7 +203,7 @@ void COsprey::Precache()
 
 void COsprey::CommandUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
 
 void COsprey::FindAllThink()
@@ -228,7 +228,7 @@ void COsprey::FindAllThink()
 		return;
 	}
 	SetThink(&COsprey::FlyThink);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	m_startTime = gpGlobals->time;
 }
 
@@ -260,7 +260,7 @@ void COsprey::DeployThink()
 	m_hRepel[3] = MakeGrunt(vecSrc);
 
 	SetThink(&COsprey::HoverThink);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
 
 
@@ -311,7 +311,7 @@ CBaseMonster* COsprey::MakeGrunt(Vector vecSrc)
 			pBeam->SetFlags(BEAM_FSOLID);
 			pBeam->SetColor(255, 255, 255);
 			pBeam->SetThink(&CBeam::SUB_Remove);
-			pBeam->pev->nextthink = gpGlobals->time + -4096.0 * tr.flFraction / pGrunt->pev->velocity.z + 0.5;
+			pBeam->SetNextThink(-4096.0 * tr.flFraction / pGrunt->pev->velocity.z + 0.5);
 
 			// ALERT( at_console, "%d at %.0f %.0f %.0f\n", i, m_vecOrigin[i].x, m_vecOrigin[i].y, m_vecOrigin[i].z );
 			pGrunt->m_vecLastPosition = m_vecOrigin[i];
@@ -341,7 +341,7 @@ void COsprey::HoverThink()
 		SetThink(&COsprey::FlyThink);
 	}
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	UTIL_MakeAimVectors(pev->angles);
 	Update();
 }
@@ -386,7 +386,7 @@ void COsprey::UpdateGoal()
 void COsprey::FlyThink()
 {
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	UpdateShockEffect();
 
@@ -500,7 +500,7 @@ void COsprey::Flight()
 
 void COsprey::HitTouch(CBaseEntity* pOther)
 {
-	pev->nextthink = gpGlobals->time + 2.0;
+	SetNextThink(2.0);
 }
 
 
@@ -535,7 +535,7 @@ void COsprey::Killed(entvars_t* pevAttacker, int iGib)
 	UTIL_SetSize(pev, Vector(-32, -32, -64), Vector(32, 32, 0));
 	SetThink(&COsprey::DyingThink);
 	SetTouch(&COsprey::CrashTouch);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	pev->health = 0;
 	pev->takedamage = DAMAGE_NO;
 	pev->deadflag = DEAD_DYING;
@@ -550,7 +550,7 @@ void COsprey::CrashTouch(CBaseEntity* pOther)
 	{
 		SetTouch(NULL);
 		m_startTime = gpGlobals->time;
-		pev->nextthink = gpGlobals->time;
+		SetNextThink(0);
 		m_velocity = pev->velocity;
 	}
 }
@@ -559,7 +559,7 @@ void COsprey::CrashTouch(CBaseEntity* pOther)
 void COsprey::DyingThink()
 {
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	pev->avelocity = pev->avelocity * 1.02;
 
@@ -635,7 +635,7 @@ void COsprey::DyingThink()
 
 		// don't stop it we touch a entity
 		pev->flags &= ~FL_ONGROUND;
-		pev->nextthink = gpGlobals->time + 0.2;
+		SetNextThink(0.2);
 		return;
 	}
 	else
