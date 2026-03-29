@@ -13,6 +13,11 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
 - New files: `dlls/alias.h`, `dlls/alias.cpp`, `dlls/locus.h`, `dlls/locus.cpp`
 - New entities: `multi_watcher`, `trigger_command`, `trigger_changecvar`, `trigger_inout`, `trigger_bounce`, `trigger_onsight`, `trigger_startpatrol`, `trigger_motion`, `motion_manager`, `render_fx_fader`
 
+**Phase 2.5 (Entity USE_TYPE Compliance)** — ✅ **COMPLETE**
+- Added `ShouldToggle` to toggle entities that previously ignored `USE_TYPE`: doors, trains, sprite trains, rotating brushes, pendulums, conveyors, toggle triggers, player freeze.
+- Updated `CMultiSource` to respect `USE_ON`/`USE_OFF`.
+- Simplified `CSpeaker::ToggleUse` to use `ShouldToggle`.
+
 **Phase 3–5** — 🔲 Pending
 
 ## Guiding Principles
@@ -39,7 +44,10 @@ Phase 2: Base Entity Enhancements (depends on Phase 1)
   ├── 2C: Alias System
   └── 2D: Locus System
           │
-Phase 3: Entity-Specific Enhancements (depends on Phase 1 + 2)
+Phase 2.5: Entity USE_TYPE Compliance (depends on Phase 2B)
+  └── ShouldToggle for all toggle entities (doors, trains, rotating, pendulum, triggers, etc.)
+          │
+Phase 3: Entity-Specific Enhancements (depends on Phase 1 + 2 + 2.5)
   ├── 3A: Monster/NPC Enhancements
   ├── 3B: Door Enhancements
   ├── 3C: Button Enhancements
@@ -270,6 +278,45 @@ Adds `GetState()` virtual method returning `STATE_ON`, `STATE_OFF`, `STATE_TURN_
 - `trigger_motion`: applies position/angle/velocity to entities
 - `motion_manager`: continuous motion control entity
 - NODRAW optimization for hiding entities
+
+---
+
+## Phase 2.5: Entity USE_TYPE Compliance ✅ COMPLETE
+
+**Priority**: HIGH — Ensures all toggle entities properly respond to `USE_ON` / `USE_OFF` instead of blindly toggling.
+**Estimated Scope**: ~20 modified lines, 6 modified files
+**Status**: Implemented
+
+This phase adds `ShouldToggle()` calls to existing toggle entities that previously ignored the `useType` parameter. This ensures entities correctly respond to directed USE types (`USE_ON`, `USE_OFF`) in addition to `USE_TOGGLE`, and by extension properly support the Phase 2 types (`USE_KILL`, `USE_SAME`, `USE_NOT`) through the infrastructure.
+
+#### Files Modified
+
+| File | Changes |
+|------|---------|
+| `dlls/doors.cpp` | Added `ShouldToggle` to `CBaseDoor::Use()` — doors respect `USE_ON` / `USE_OFF` |
+| `dlls/plats.cpp` | Added `ShouldToggle` to `CFuncTrain::Use()` and `CSpriteTrain::Use()` — trains respect `USE_ON` / `USE_OFF` |
+| `dlls/bmodels.cpp` | Added `ShouldToggle` to `CFuncRotating::RotatingUse()`, `CPendulum::PendulumUse()`, `CFuncConveyor::Use()` |
+| `dlls/triggers.cpp` | Added `ShouldToggle` to `CBaseTrigger::ToggleUse()` and `CTriggerPlayerFreeze::Use()` |
+| `dlls/buttons.cpp` | Updated `CMultiSource::Use()` to respect `USE_ON` / `USE_OFF` instead of always XOR-toggling |
+| `dlls/sound.cpp` | Simplified `CSpeaker::ToggleUse()` to use `ShouldToggle` instead of manual USE_TYPE checks |
+
+#### Entities Already Using ShouldToggle (no changes needed)
+
+These entities were already correctly implemented:
+- `CLight::Use()` (lights.cpp), `CBubbling::Use()` (effects.cpp), `CLaser::Use()` (effects.cpp)
+- `CSprite::Use()` (effects.cpp), `CLightning::ToggleUse/StrikeUse` (effects.cpp)
+- `CFuncWall::Use()` (bmodels.cpp), `CFuncWallToggle::Use()` (bmodels.cpp)
+- `CButtonTarget::Use()` (buttons.cpp), `CFuncTrackAuto::Use()` (plats.cpp)
+- `CGunTarget::Use()` (plats.cpp), `CFuncTrackTrain::Use()` (plats.cpp)
+- `CTriggerCamera::Use()` (triggers.cpp), `CAmbientGeneric::ToggleUse()` (sound.cpp)
+- `CBaseTurret::TurretUse()` (turret.cpp), `CFuncTank::Use()` (func_tank.cpp)
+- `COp4Mortar::Use()` (op4mortar.cpp), `CNuclearBomb::Use()` (nuclearbomb.cpp)
+
+#### Verification
+
+- [x] Project compiles on Linux (g++)
+- [x] Existing entity toggle behavior is preserved when using `USE_TOGGLE`
+- [x] `USE_ON` / `USE_OFF` now have correct semantics for all toggle entities
 
 ---
 

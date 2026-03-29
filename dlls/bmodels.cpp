@@ -191,6 +191,10 @@ void CFuncConveyor::UpdateSpeed(float speed)
 
 void CFuncConveyor::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
+	if (!ShouldToggle(useType, pev->speed > 0))
+		return;
+
 	pev->speed = -pev->speed;
 	UpdateSpeed(pev->speed);
 }
@@ -666,6 +670,10 @@ void CFuncRotating::Rotate()
 //=========================================================
 void CFuncRotating::RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
+	if (!ShouldToggle(useType, pev->avelocity != g_vecZero))
+		return;
+
 	// is this a brush that should accelerate and decelerate when turned on/off (fan)?
 	if (FBitSet(pev->spawnflags, SF_BRUSH_ACCDCC))
 	{
@@ -833,6 +841,10 @@ void CPendulum::Spawn()
 
 void CPendulum::PendulumUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
+	if (!ShouldToggle(useType, 0 != pev->speed))
+		return;
+
 	if (0 != pev->speed) // Pendulum is moving, stop it and auto-return if necessary
 	{
 		if (FBitSet(pev->spawnflags, SF_PENDULUM_AUTO_RETURN))

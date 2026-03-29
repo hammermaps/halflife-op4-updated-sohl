@@ -2,6 +2,19 @@
 
 ## Spirit of Half-Life Integration
 
+### Phase 2.5 — Entity USE_TYPE Compliance
+
+* Added `ShouldToggle` to `CBaseDoor::Use()` — doors now respect `USE_ON` / `USE_OFF` instead of always toggling
+* Added `ShouldToggle` to `CFuncTrain::Use()` — trains respect `USE_ON` (start) / `USE_OFF` (stop)
+* Added `ShouldToggle` to `CSpriteTrain::Use()` — sprite trains respect `USE_ON` / `USE_OFF`
+* Added `ShouldToggle` to `CFuncRotating::RotatingUse()` — rotating brushes respect `USE_ON` / `USE_OFF`
+* Added `ShouldToggle` to `CPendulum::PendulumUse()` — pendulums respect `USE_ON` / `USE_OFF`
+* Added `ShouldToggle` to `CFuncConveyor::Use()` — conveyors respect `USE_ON` / `USE_OFF`
+* Added `ShouldToggle` to `CBaseTrigger::ToggleUse()` — toggle triggers respect `USE_ON` / `USE_OFF`
+* Added `ShouldToggle` to `CTriggerPlayerFreeze::Use()` — player freeze respects `USE_ON` / `USE_OFF`
+* Updated `CMultiSource::Use()` to respect `USE_ON` / `USE_OFF` instead of always XOR-toggling
+* Simplified `CSpeaker::ToggleUse()` to use `ShouldToggle` instead of manual USE_TYPE checks
+
 ### Phase 2 — Base Entity Enhancements
 
 * Added new USE types: `USE_KILL`, `USE_SAME`, `USE_NOT` to the `USE_TYPE` enum

@@ -126,6 +126,7 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 |-------|-------------|--------|
 | **Phase 1** | Core Infrastructure (MoveWith, Think/NextThink, State) | ✅ Complete |
 | **Phase 2** | Base Entity Enhancements (USE types, Alias, Locus, Triggers) | ✅ Complete |
+| **Phase 2.5** | Entity USE_TYPE Compliance (ShouldToggle for toggle entities) | ✅ Complete |
 | **Phase 3** | Entity-Specific Enhancements (Monsters, Doors, Buttons, etc.) | 🔲 Pending |
 | **Phase 4** | Visual & Client-Side Features (Fog, Sky, HUD, Particles) | 🔲 Pending |
 | **Phase 5** | New Entity Definitions & Polish | 🔲 Pending |
@@ -138,6 +139,7 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 - `m_hActivator` is in `CBaseDelay` (moved from `CBaseToggle` for wider access)
 - MoveWith members: `m_pMoveWith`, `m_pChildMoveWith`, `m_pSiblingMoveWith` — entity parenting linked list
 - Locus virtuals: `CalcPosition()`, `CalcVelocity()`, `CalcRatio()` — for dynamic entity position/velocity resolution
+- Toggle entities **must** use `ShouldToggle(useType, currentState)` in their `Use()` handler to properly respect `USE_ON`, `USE_OFF`, `USE_TOGGLE`, and the extended types
 
 ## Scope of Changes
 

@@ -695,6 +695,10 @@ void CFuncTrain::Blocked(CBaseEntity* pOther)
 
 void CFuncTrain::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
+	if (!ShouldToggle(useType, (pev->spawnflags & SF_TRAIN_WAIT_RETRIGGER) == 0))
+		return;
+
 	if ((pev->spawnflags & SF_TRAIN_WAIT_RETRIGGER) != 0)
 	{
 		// Move toward my target
@@ -1045,6 +1049,10 @@ void CSpriteTrain::Blocked(CBaseEntity* pOther)
 
 void CSpriteTrain::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
+	if (!ShouldToggle(useType, (pev->spawnflags & SF_TRAIN_WAIT_RETRIGGER) == 0))
+		return;
+
 	if ((pev->spawnflags & SF_TRAIN_WAIT_RETRIGGER) != 0)
 	{
 		// Move toward my target
