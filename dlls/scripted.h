@@ -115,4 +115,10 @@ public:
 	int m_iPriority;         // LRC - script priority
 };
 
-// LRC - CCineAI removed, obsolete. aiscripted_sequence now links to CCineMonster.
+class CCineAI : public CCineMonster
+{
+	bool StartSequence(CBaseMonster* pTarget, int iszSeq, bool completeOnEmpty) override;
+	void PossessEntity() override;
+	bool FCanOverrideState() override;
+	void FixScriptMonsterSchedule(CBaseMonster* pMonster) override;
+};
