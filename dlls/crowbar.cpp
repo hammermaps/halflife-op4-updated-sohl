@@ -132,7 +132,7 @@ void CCrowbar::PrimaryAttack()
 	if (!Swing(true) && !UTIL_UseOldWeapons())
 	{
 		SetThink(&CCrowbar::SwingAgain);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 	}
 }
 
@@ -305,7 +305,7 @@ bool CCrowbar::Swing(bool fFirst)
 		m_pPlayer->m_iWeaponVolume = flVol * CROWBAR_WALLHIT_VOLUME;
 #endif
 		SetThink(&CCrowbar::Smack);
-		pev->nextthink = gpGlobals->time + 0.2;
+		SetNextThink(0.2);
 	}
 	return fDidHit;
 }
