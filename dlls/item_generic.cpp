@@ -76,7 +76,7 @@ void CGenericItem::Spawn()
 	if (0 != m_iSequence)
 	{
 		SetThink(&CGenericItem::StartItem);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 	}
 
 	if ((pev->spawnflags & SF_ITEMGENERIC_DROP_TO_FLOOR) != 0)
@@ -98,7 +98,7 @@ void CGenericItem::StartItem()
 	ResetSequenceInfo();
 
 	SetThink(&CGenericItem::AnimateThink);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	pev->frame = 0;
 }
 
@@ -113,12 +113,12 @@ void CGenericItem::AnimateThink()
 		ResetSequenceInfo();
 	}
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	m_lastTime = gpGlobals->time;
 }
 
 void CGenericItem::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
 	SetThink(&CGenericItem::SUB_Remove);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
