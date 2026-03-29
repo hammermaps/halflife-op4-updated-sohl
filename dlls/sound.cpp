@@ -538,7 +538,7 @@ void CAmbientGeneric::InitModulationParms()
 //
 // ToggleUse - turns an ambient sound on or off.  If the
 // ambient is a looping sound, mark sound as active (m_iState) // LRC
-// if it's playing, innactive if not.  If the sound is not
+// if it's playing, inactive if not.  If the sound is not
 // a looping sound, never mark it as active.
 //
 void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
