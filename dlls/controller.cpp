@@ -1166,7 +1166,7 @@ void CControllerHeadBall::Spawn()
 
 	m_vecIdeal = Vector(0, 0, 0);
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	m_hOwner = Instance(pev->owner);
 	pev->dmgtime = gpGlobals->time;
@@ -1183,7 +1183,7 @@ void CControllerHeadBall::Precache()
 
 void CControllerHeadBall::HuntThink()
 {
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	pev->renderamt -= 5;
 
@@ -1249,7 +1249,7 @@ void CControllerHeadBall::HuntThink()
 		m_flNextAttack = gpGlobals->time + 3.0;
 
 		SetThink(&CControllerHeadBall::DieThink);
-		pev->nextthink = gpGlobals->time + 0.3;
+		SetNextThink(0.3);
 	}
 
 	// Crawl( );
@@ -1360,7 +1360,7 @@ void CControllerZapBall::Spawn()
 
 	m_hOwner = Instance(pev->owner);
 	pev->dmgtime = gpGlobals->time; // keep track of when ball spawned
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
 
 
@@ -1374,7 +1374,7 @@ void CControllerZapBall::Precache()
 
 void CControllerZapBall::AnimateThink()
 {
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	pev->frame = ((int)pev->frame + 1) % 11;
 

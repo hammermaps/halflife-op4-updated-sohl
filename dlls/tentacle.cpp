@@ -282,7 +282,7 @@ void CTentacle::Spawn()
 	SetTouch(&CTentacle::HitTouch);
 	SetUse(&CTentacle::CommandUse);
 
-	pev->nextthink = gpGlobals->time + 0.2;
+	SetNextThink(0.2);
 
 	ResetSequenceInfo();
 	m_iDir = 1;
@@ -461,7 +461,7 @@ void CTentacle::Test()
 	pev->sequence = TENTACLE_ANIM_Floor_Strike;
 	pev->framerate = 0;
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
 
 
@@ -472,7 +472,7 @@ void CTentacle::Test()
 void CTentacle::Cycle()
 {
 	// ALERT( at_console, "%s %.2f %d %d\n", STRING( pev->targetname ), pev->origin.z, m_MonsterState, m_IdealMonsterState );
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	// ALERT( at_console, "%s %d %d %d %f %f\n", STRING( pev->targetname ), pev->sequence, m_iGoalAnim, m_iDir, pev->framerate, pev->health );
 
@@ -761,7 +761,7 @@ void CTentacle::CommandUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TY
 
 void CTentacle::DieThink()
 {
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	DispatchAnimEvents();
 	StudioFrameAdvance();
@@ -977,7 +977,7 @@ void CTentacle::Start()
 		g_fSquirmSound = true;
 	}
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 }
 
 
