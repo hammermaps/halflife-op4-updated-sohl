@@ -133,7 +133,9 @@ public:
 	float m_flAttenuation; // attenuation value
 	dynpitchvol_t m_dpv;
 
-	bool m_fActive;	 // only true when the entity is playing a looping sound
+	STATE m_iState;	 // LRC - only STATE_ON when the entity is playing a looping sound
+	STATE GetState() override { return m_iState; } // LRC
+
 	bool m_fLooping; // true when the sound played will loop
 };
 
@@ -141,7 +143,7 @@ LINK_ENTITY_TO_CLASS(ambient_generic, CAmbientGeneric);
 TYPEDESCRIPTION CAmbientGeneric::m_SaveData[] =
 	{
 		DEFINE_FIELD(CAmbientGeneric, m_flAttenuation, FIELD_FLOAT),
-		DEFINE_FIELD(CAmbientGeneric, m_fActive, FIELD_BOOLEAN),
+		DEFINE_FIELD(CAmbientGeneric, m_iState, FIELD_INTEGER),
 		DEFINE_FIELD(CAmbientGeneric, m_fLooping, FIELD_BOOLEAN),
 
 		// HACKHACK - This is not really in the spirit of the save/restore design, but save this
@@ -211,7 +213,7 @@ void CAmbientGeneric::Spawn()
 
 	SetUse(&CAmbientGeneric::ToggleUse);
 
-	m_fActive = false;
+	m_iState = STATE_OFF; // LRC
 
 	if (FBitSet(pev->spawnflags, AMBIENT_SOUND_NOT_LOOPING))
 		m_fLooping = false;
@@ -237,9 +239,9 @@ void CAmbientGeneric::Precache()
 	{
 		// start the sound ASAP
 		if (m_fLooping)
-			m_fActive = true;
+			m_iState = STATE_ON; // LRC
 	}
-	if (m_fActive)
+	if (m_iState != STATE_OFF) // LRC
 	{
 		UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
 			(m_dpv.vol * 0.01), m_flAttenuation, SND_SPAWNING, m_dpv.pitch);
@@ -535,8 +537,8 @@ void CAmbientGeneric::InitModulationParms()
 
 //
 // ToggleUse - turns an ambient sound on or off.  If the
-// ambient is a looping sound, mark sound as active (m_fActive)
-// if it's playing, innactive if not.  If the sound is not
+// ambient is a looping sound, mark sound as active (m_iState) // LRC
+// if it's playing, inactive if not.  If the sound is not
 // a looping sound, never mark it as active.
 //
 void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
@@ -544,14 +546,12 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 	char* szSoundFile = (char*)STRING(pev->message);
 	float fraction;
 
-	if (useType != USE_TOGGLE)
-	{
-		if ((m_fActive && useType == USE_ON) || (!m_fActive && useType == USE_OFF))
-			return;
-	}
+	if (!ShouldToggle(useType)) // LRC
+		return;
+
 	// Directly change pitch if arg passed. Only works if sound is already playing.
 
-	if (useType == USE_SET && m_fActive) // Momentary buttons will pass down a float in here
+	if (useType == USE_SET && m_iState != STATE_OFF) // LRC - Momentary buttons will pass down a float in here
 	{
 
 		fraction = value;
@@ -571,9 +571,9 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 
 	// Toggle
 
-	// m_fActive is true only if a looping sound is playing.
+	// m_iState is STATE_ON only if a looping sound is playing. // LRC
 
-	if (m_fActive)
+	if (m_iState != STATE_OFF) // LRC
 	{ // turn sound off
 
 		if (0 != m_dpv.cspinup)
@@ -602,7 +602,7 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 		}
 		else
 		{
-			m_fActive = false;
+			m_iState = STATE_OFF; // LRC
 
 			// HACKHACK - this makes the code in Precache() work properly after a save/restore
 			pev->spawnflags |= AMBIENT_SOUND_START_SILENT;
@@ -631,7 +631,7 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 		// and then restarted.
 
 		if (m_fLooping)
-			m_fActive = true;
+			m_iState = STATE_ON; // LRC
 		else
 			// shut sound off now - may be interrupting a long non-looping sound
 			UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
