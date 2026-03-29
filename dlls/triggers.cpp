@@ -28,6 +28,8 @@
 #include "trains.h" // trigger_camera has train functionality
 #include "gamerules.h"
 #include "skill.h"
+#include "movewith.h" // LRC
+#include "locus.h"	   // LRC
 #include "ctf/ctfplay_gamerules.h"
 #include "ctf/CTFGoalFlag.h"
 #include "UserMessages.h"
@@ -261,6 +263,7 @@ void CTriggerRelay::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 
 #define SF_MULTIMAN_CLONE 0x80000000
 #define SF_MULTIMAN_THREAD 0x00000001
+#define SF_MULTIMAN_SAMETRIG 0x00000002  // LRC - fire all targets with the same USE_TYPE
 
 class CMultiManager : public CBaseToggle
 {
@@ -291,6 +294,14 @@ public:
 	int m_iTargetName[MAX_MULTI_TARGETS];	  // list if indexes into global string array
 	float m_flTargetDelay[MAX_MULTI_TARGETS]; // delay (in seconds) from time of manager fire to target fire
 	STATE m_iState;							  // LRC
+
+	// LRC - new multi_manager fields
+	float m_flMgrWait;		 // wait time before firing
+	float m_flMaxWait;		 // maximum random wait time
+	int m_iMode;			 // 0=timed, 1=pick random, 2=each random
+	int m_iszThreadName;	 // thread name for cloned managers
+	int m_iszLocusThread;	 // locus thread name
+	USE_TYPE m_triggerType;  // trigger type override
 private:
 	inline bool IsClone() { return (pev->spawnflags & SF_MULTIMAN_CLONE) != 0; }
 	inline bool ShouldClone()
@@ -313,6 +324,13 @@ TYPEDESCRIPTION CMultiManager::m_SaveData[] =
 		DEFINE_FIELD(CMultiManager, m_startTime, FIELD_TIME),
 		DEFINE_ARRAY(CMultiManager, m_iTargetName, FIELD_STRING, MAX_MULTI_TARGETS),
 		DEFINE_ARRAY(CMultiManager, m_flTargetDelay, FIELD_FLOAT, MAX_MULTI_TARGETS),
+		// LRC - new fields
+		DEFINE_FIELD(CMultiManager, m_flMgrWait, FIELD_FLOAT),
+		DEFINE_FIELD(CMultiManager, m_flMaxWait, FIELD_FLOAT),
+		DEFINE_FIELD(CMultiManager, m_iMode, FIELD_INTEGER),
+		DEFINE_FIELD(CMultiManager, m_iszThreadName, FIELD_STRING),
+		DEFINE_FIELD(CMultiManager, m_iszLocusThread, FIELD_STRING),
+		DEFINE_FIELD(CMultiManager, m_triggerType, FIELD_INTEGER),
 };
 
 IMPLEMENT_SAVERESTORE(CMultiManager, CBaseToggle);
@@ -326,7 +344,45 @@ bool CMultiManager::KeyValue(KeyValueData* pkvd)
 
 	if (FStrEq(pkvd->szKeyName, "wait"))
 	{
-		m_flWait = atof(pkvd->szValue);
+		m_flMgrWait = atof(pkvd->szValue);
+		return true;
+	}
+	// LRC - support for master, threadname, mode, triggerstate
+	else if (FStrEq(pkvd->szKeyName, "master"))
+	{
+		m_sMaster = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszThreadName"))
+	{
+		m_iszThreadName = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszLocusThread"))
+	{
+		m_iszLocusThread = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "mode"))
+	{
+		m_iMode = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "triggerstate"))
+	{
+		int type = atoi(pkvd->szValue);
+		switch (type)
+		{
+		case 0: m_triggerType = USE_OFF; break;
+		case 1: m_triggerType = USE_ON; break;
+		case 2: m_triggerType = USE_TOGGLE; break;
+		default: m_triggerType = USE_TOGGLE; break;
+		}
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "maxwait"))
+	{
+		m_flMaxWait = atof(pkvd->szValue);
 		return true;
 	}
 	else // add this field to the target list
@@ -430,6 +486,13 @@ CMultiManager* CMultiManager::Clone()
 	memcpy(pMulti->m_iTargetName, m_iTargetName, sizeof(m_iTargetName));
 	memcpy(pMulti->m_flTargetDelay, m_flTargetDelay, sizeof(m_flTargetDelay));
 
+	// LRC - copy new fields to clone
+	pMulti->m_iszThreadName = m_iszThreadName;
+	pMulti->m_triggerType = m_triggerType;
+	pMulti->m_iMode = m_iMode;
+	pMulti->m_flMgrWait = m_flMgrWait;
+	pMulti->m_flMaxWait = m_flMaxWait;
+
 	return pMulti;
 }
 
@@ -437,6 +500,10 @@ CMultiManager* CMultiManager::Clone()
 // The USE function builds the time table and starts the entity thinking.
 void CMultiManager::ManagerUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	// LRC - master support
+	if (!FStringNull(m_sMaster) && !UTIL_IsMasterTriggered(m_sMaster, pActivator))
+		return;
+
 	// In multiplayer games, clone the MM and execute in the clone (like a thread)
 	// to allow multiple players to trigger the same multimanager
 	if (ShouldClone())
@@ -449,6 +516,17 @@ void CMultiManager::ManagerUse(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 	m_hActivator = pActivator;
 	m_index = 0;
 	m_startTime = gpGlobals->time;
+
+	// LRC - apply wait time if set
+	if (m_flMgrWait != 0)
+	{
+		float fWait;
+		if (m_flMaxWait != 0)
+			fWait = RANDOM_FLOAT(m_flMgrWait, m_flMaxWait);
+		else
+			fWait = m_flMgrWait;
+		m_startTime += fWait;
+	}
 
 	m_iState = STATE_ON;  // LRC - we're firing targets
 
@@ -2871,4 +2949,705 @@ bool CTriggerCTFGeneric::KeyValue(KeyValueData* pkvd)
 	}
 
 	return false;
+}
+
+// ========================
+// LRC - New Trigger Entities
+// ========================
+
+//=========================================================
+// multi_watcher
+// Watches multiple entity states and triggers based on conditions
+//=========================================================
+#define SF_MULTIWATCHER_START_ON 0x0001
+#define SF_MULTIWATCHER_NOT 0x0004
+
+class CMultiWatcher : public CBaseToggle
+{
+public:
+	void Spawn() override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	void EXPORT WatcherThink();
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	STATE GetState() override { return m_iState; }
+
+	int m_cTargets;
+	int m_iszTargetName[MAX_MULTI_TARGETS];
+	int m_iLogic;	  // 0=AND, 1=OR
+	STATE m_iState;
+};
+
+LINK_ENTITY_TO_CLASS(multi_watcher, CMultiWatcher);
+
+TYPEDESCRIPTION CMultiWatcher::m_SaveData[] =
+	{
+		DEFINE_FIELD(CMultiWatcher, m_cTargets, FIELD_INTEGER),
+		DEFINE_ARRAY(CMultiWatcher, m_iszTargetName, FIELD_STRING, MAX_MULTI_TARGETS),
+		DEFINE_FIELD(CMultiWatcher, m_iLogic, FIELD_INTEGER),
+		DEFINE_FIELD(CMultiWatcher, m_iState, FIELD_INTEGER),
+};
+
+IMPLEMENT_SAVERESTORE(CMultiWatcher, CBaseToggle);
+
+void CMultiWatcher::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	m_iState = STATE_OFF;
+
+	if (pev->spawnflags & SF_MULTIWATCHER_START_ON)
+	{
+		SetThink(&CMultiWatcher::WatcherThink);
+		SetNextThink(0.5);
+	}
+
+	SetUse(NULL);
+}
+
+bool CMultiWatcher::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "logic"))
+	{
+		m_iLogic = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (m_cTargets < MAX_MULTI_TARGETS)
+	{
+		char tmp[128];
+		UTIL_StripToken(pkvd->szKeyName, tmp, sizeof(tmp));
+		m_iszTargetName[m_cTargets] = ALLOC_STRING(tmp);
+		m_cTargets++;
+		return true;
+	}
+
+	return CBaseToggle::KeyValue(pkvd);
+}
+
+void CMultiWatcher::WatcherThink()
+{
+	STATE oldState = m_iState;
+	int cActive = 0;
+
+	for (int i = 0; i < m_cTargets; i++)
+	{
+		CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(m_iszTargetName[i]));
+		if (pTarget && pTarget->GetState() == STATE_ON)
+			cActive++;
+	}
+
+	bool bConditionMet;
+	if (m_iLogic == 1) // OR
+		bConditionMet = (cActive > 0);
+	else // AND
+		bConditionMet = (cActive >= m_cTargets);
+
+	if (pev->spawnflags & SF_MULTIWATCHER_NOT)
+		bConditionMet = !bConditionMet;
+
+	m_iState = bConditionMet ? STATE_ON : STATE_OFF;
+
+	if (m_iState != oldState)
+	{
+		if (!FStringNull(pev->target))
+		{
+			USE_TYPE useType = (m_iState == STATE_ON) ? USE_ON : USE_OFF;
+			FireTargets(STRING(pev->target), this, this, useType, 0);
+		}
+	}
+
+	SetNextThink(0.5);
+}
+
+//=========================================================
+// trigger_command
+// Executes server console commands when triggered
+//=========================================================
+class CTriggerCommand : public CBaseEntity
+{
+public:
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_command, CTriggerCommand);
+
+void CTriggerCommand::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (!FStringNull(pev->netname))
+	{
+		char szCommand[256];
+		snprintf(szCommand, sizeof(szCommand), "%s\n", STRING(pev->netname));
+		SERVER_COMMAND(szCommand);
+	}
+}
+
+//=========================================================
+// trigger_changecvar
+// Changes server cvars when triggered
+//=========================================================
+class CTriggerChangeCvar : public CBaseEntity
+{
+public:
+	bool KeyValue(KeyValueData* pkvd) override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+	string_t m_iszCvarName;
+	string_t m_iszNewValue;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_changecvar, CTriggerChangeCvar);
+
+bool CTriggerChangeCvar::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "cvarname"))
+	{
+		m_iszCvarName = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "cvarvalue"))
+	{
+		m_iszNewValue = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+
+	return CBaseEntity::KeyValue(pkvd);
+}
+
+void CTriggerChangeCvar::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (!FStringNull(m_iszCvarName) && !FStringNull(m_iszNewValue))
+	{
+		CVAR_SET_STRING(STRING(m_iszCvarName), STRING(m_iszNewValue));
+	}
+}
+
+//=========================================================
+// trigger_inout
+// Fires only when entering/leaving the trigger volume
+//=========================================================
+#define SF_TRIGGERINOUT_EVERYTHING 0x0001
+
+class CTriggerInOut : public CBaseTrigger
+{
+public:
+	void Spawn() override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	void EXPORT InOutTouch(CBaseEntity* pOther);
+	void EXPORT InOutThink();
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	string_t m_iszAltTarget;  // target to fire on exit
+	string_t m_iszBothTarget; // target to fire on both
+	EHANDLE m_hInsideEntities[16];
+	int m_cInsideEntities;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_inout, CTriggerInOut);
+
+TYPEDESCRIPTION CTriggerInOut::m_SaveData[] =
+	{
+		DEFINE_FIELD(CTriggerInOut, m_iszAltTarget, FIELD_STRING),
+		DEFINE_FIELD(CTriggerInOut, m_iszBothTarget, FIELD_STRING),
+		DEFINE_FIELD(CTriggerInOut, m_cInsideEntities, FIELD_INTEGER),
+};
+
+IMPLEMENT_SAVERESTORE(CTriggerInOut, CBaseTrigger);
+
+void CTriggerInOut::Spawn()
+{
+	InitTrigger();
+	SetTouch(&CTriggerInOut::InOutTouch);
+	SetThink(&CTriggerInOut::InOutThink);
+	SetNextThink(0.5);
+	m_cInsideEntities = 0;
+}
+
+bool CTriggerInOut::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "m_iszAltTarget"))
+	{
+		m_iszAltTarget = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszBothTarget"))
+	{
+		m_iszBothTarget = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+
+	return CBaseTrigger::KeyValue(pkvd);
+}
+
+void CTriggerInOut::InOutTouch(CBaseEntity* pOther)
+{
+	if (!(pev->spawnflags & SF_TRIGGERINOUT_EVERYTHING))
+	{
+		if (!pOther->IsPlayer())
+			return;
+	}
+
+	// Check if already inside
+	for (int i = 0; i < m_cInsideEntities; i++)
+	{
+		if (m_hInsideEntities[i] == pOther)
+			return; // Already tracked
+	}
+
+	// Entity is entering
+	if (m_cInsideEntities < 16)
+	{
+		m_hInsideEntities[m_cInsideEntities] = pOther;
+		m_cInsideEntities++;
+
+		// Fire enter target
+		if (!FStringNull(pev->target))
+			FireTargets(STRING(pev->target), pOther, this, USE_TOGGLE, 0);
+		if (!FStringNull(m_iszBothTarget))
+			FireTargets(STRING(m_iszBothTarget), pOther, this, USE_ON, 0);
+	}
+}
+
+void CTriggerInOut::InOutThink()
+{
+	// Check each tracked entity to see if it has left
+	for (int i = m_cInsideEntities - 1; i >= 0; i--)
+	{
+		CBaseEntity* pEntity = m_hInsideEntities[i];
+
+		bool bStillInside = false;
+		if (pEntity)
+		{
+			// Simple bounding box containment check
+			if (pEntity->pev->absmin.x <= pev->absmax.x &&
+				pEntity->pev->absmax.x >= pev->absmin.x &&
+				pEntity->pev->absmin.y <= pev->absmax.y &&
+				pEntity->pev->absmax.y >= pev->absmin.y &&
+				pEntity->pev->absmin.z <= pev->absmax.z &&
+				pEntity->pev->absmax.z >= pev->absmin.z)
+			{
+				bStillInside = true;
+			}
+		}
+
+		if (!bStillInside)
+		{
+			// Entity has left
+			if (!FStringNull(m_iszAltTarget))
+				FireTargets(STRING(m_iszAltTarget), pEntity, this, USE_TOGGLE, 0);
+			if (!FStringNull(m_iszBothTarget))
+				FireTargets(STRING(m_iszBothTarget), pEntity, this, USE_OFF, 0);
+
+			// Remove from tracked list by shifting remaining entries
+			for (int j = i; j < m_cInsideEntities - 1; j++)
+				m_hInsideEntities[j] = m_hInsideEntities[j + 1];
+			m_cInsideEntities--;
+		}
+	}
+
+	SetNextThink(0.5);
+}
+
+//=========================================================
+// trigger_bounce
+// Bounces touching entities
+//=========================================================
+class CTriggerBounce : public CBaseTrigger
+{
+public:
+	void Spawn() override;
+	void EXPORT BounceTouch(CBaseEntity* pOther);
+};
+
+LINK_ENTITY_TO_CLASS(trigger_bounce, CTriggerBounce);
+
+void CTriggerBounce::Spawn()
+{
+	InitTrigger();
+	SetTouch(&CTriggerBounce::BounceTouch);
+}
+
+void CTriggerBounce::BounceTouch(CBaseEntity* pOther)
+{
+	if (pev->spawnflags != 0 && !pOther->IsPlayer())
+		return;
+
+	float flBounceScale = (pev->speed != 0) ? pev->speed : 1.0f;
+
+	// Reflect the velocity
+	Vector vecBounce = pOther->pev->velocity;
+	vecBounce = vecBounce + (2 * DotProduct(-vecBounce, pev->movedir)) * pev->movedir;
+	vecBounce = vecBounce * flBounceScale;
+
+	pOther->pev->velocity = vecBounce;
+}
+
+//=========================================================
+// trigger_onsight
+// Fires when entities can see each other
+//=========================================================
+class CTriggerOnSight : public CBaseDelay
+{
+public:
+	void Spawn() override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	void EXPORT OnSightThink();
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	STATE GetState() override { return m_fFired ? STATE_ON : STATE_OFF; }
+
+	string_t m_iszLookEntity;
+	string_t m_iszSeenEntity;
+	bool m_fFired;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_onsight, CTriggerOnSight);
+
+TYPEDESCRIPTION CTriggerOnSight::m_SaveData[] =
+	{
+		DEFINE_FIELD(CTriggerOnSight, m_iszLookEntity, FIELD_STRING),
+		DEFINE_FIELD(CTriggerOnSight, m_iszSeenEntity, FIELD_STRING),
+		DEFINE_FIELD(CTriggerOnSight, m_fFired, FIELD_BOOLEAN),
+};
+
+IMPLEMENT_SAVERESTORE(CTriggerOnSight, CBaseDelay);
+
+void CTriggerOnSight::Spawn()
+{
+	m_fFired = false;
+}
+
+bool CTriggerOnSight::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "lookentity"))
+	{
+		m_iszLookEntity = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "seenentity"))
+	{
+		m_iszSeenEntity = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+
+	return CBaseDelay::KeyValue(pkvd);
+}
+
+void CTriggerOnSight::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	SetThink(&CTriggerOnSight::OnSightThink);
+	SetNextThink(0.1);
+	m_fFired = false;
+}
+
+void CTriggerOnSight::OnSightThink()
+{
+	CBaseEntity* pLooker = nullptr;
+	CBaseEntity* pSeen = nullptr;
+
+	if (!FStringNull(m_iszLookEntity))
+		pLooker = UTIL_FindEntityByTargetname(nullptr, STRING(m_iszLookEntity));
+	if (!FStringNull(m_iszSeenEntity))
+		pSeen = UTIL_FindEntityByTargetname(nullptr, STRING(m_iszSeenEntity));
+
+	if (!pLooker || !pSeen)
+	{
+		SetNextThink(1.0);
+		return;
+	}
+
+	// Check line of sight
+	TraceResult tr;
+	UTIL_TraceLine(pLooker->pev->origin + pLooker->pev->view_ofs,
+		pSeen->pev->origin, ignore_monsters, pLooker->edict(), &tr);
+
+	if (tr.flFraction >= 1.0f || tr.pHit == pSeen->edict())
+	{
+		if (!m_fFired)
+		{
+			m_fFired = true;
+			SUB_UseTargets(pLooker, USE_TOGGLE, 0);
+		}
+	}
+	else
+	{
+		m_fFired = false;
+	}
+
+	SetNextThink(0.1);
+}
+
+//=========================================================
+// trigger_startpatrol
+// Starts monster patrol routes
+//=========================================================
+class CTriggerStartPatrol : public CBaseEntity
+{
+public:
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_startpatrol, CTriggerStartPatrol);
+
+void CTriggerStartPatrol::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (FStringNull(pev->target))
+		return;
+
+	CBaseEntity* pMonster = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+	if (!pMonster)
+		return;
+
+	CBaseMonster* pMonsterPtr = pMonster->MyMonsterPointer();
+	if (!pMonsterPtr)
+		return;
+
+	// Find the first path corner
+	if (!FStringNull(pev->message))
+	{
+		CBaseEntity* pPath = UTIL_FindEntityByTargetname(nullptr, STRING(pev->message));
+		if (pPath)
+		{
+			pMonsterPtr->m_pGoalEnt = pPath;
+			pMonsterPtr->m_movementGoal = MOVEGOAL_PATHCORNER;
+		}
+	}
+}
+
+//=========================================================
+// trigger_motion
+// Applies position/angle/velocity transformations to entities
+//=========================================================
+class CTriggerMotion : public CPointEntity
+{
+public:
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	bool KeyValue(KeyValueData* pkvd) override;
+
+	string_t m_iszPosition;
+	string_t m_iszAngles;
+	string_t m_iszVelocity;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_motion, CTriggerMotion);
+
+bool CTriggerMotion::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "m_iszPosition"))
+	{
+		m_iszPosition = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszAngles"))
+	{
+		m_iszAngles = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszVelocity"))
+	{
+		m_iszVelocity = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+
+	return CPointEntity::KeyValue(pkvd);
+}
+
+void CTriggerMotion::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (FStringNull(pev->target))
+		return;
+
+	CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+	if (!pTarget)
+		return;
+
+	if (!FStringNull(m_iszPosition))
+	{
+		Vector vecPos = CalcLocus_Position(this, pActivator, STRING(m_iszPosition));
+		UTIL_SetOrigin(pTarget->pev, vecPos);
+	}
+
+	if (!FStringNull(m_iszAngles))
+	{
+		Vector vecAng = CalcLocus_Position(this, pActivator, STRING(m_iszAngles));
+		pTarget->pev->angles = vecAng;
+	}
+
+	if (!FStringNull(m_iszVelocity))
+	{
+		Vector vecVel = CalcLocus_Velocity(this, pActivator, STRING(m_iszVelocity));
+		pTarget->pev->velocity = vecVel;
+	}
+}
+
+//=========================================================
+// motion_manager
+// Continuous motion control entity
+//=========================================================
+class CMotionManager : public CPointEntity
+{
+public:
+	void Spawn() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	void EXPORT MotionThink();
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	string_t m_iszPosition;
+	string_t m_iszVelocity;
+	EHANDLE m_hTarget;
+	bool m_bActive;
+};
+
+LINK_ENTITY_TO_CLASS(motion_manager, CMotionManager);
+
+TYPEDESCRIPTION CMotionManager::m_SaveData[] =
+	{
+		DEFINE_FIELD(CMotionManager, m_iszPosition, FIELD_STRING),
+		DEFINE_FIELD(CMotionManager, m_iszVelocity, FIELD_STRING),
+		DEFINE_FIELD(CMotionManager, m_hTarget, FIELD_EHANDLE),
+		DEFINE_FIELD(CMotionManager, m_bActive, FIELD_BOOLEAN),
+};
+
+IMPLEMENT_SAVERESTORE(CMotionManager, CPointEntity);
+
+void CMotionManager::Spawn()
+{
+	m_bActive = false;
+}
+
+bool CMotionManager::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "m_iszPosition"))
+	{
+		m_iszPosition = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszVelocity"))
+	{
+		m_iszVelocity = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+
+	return CPointEntity::KeyValue(pkvd);
+}
+
+void CMotionManager::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (useType == USE_OFF || (useType == USE_TOGGLE && m_bActive))
+	{
+		m_bActive = false;
+		SetThink(NULL);
+		DontThink();
+		return;
+	}
+
+	m_bActive = true;
+
+	if (!FStringNull(pev->target))
+		m_hTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+
+	SetThink(&CMotionManager::MotionThink);
+	SetNextThink(0);
+}
+
+void CMotionManager::MotionThink()
+{
+	if (!m_bActive || !m_hTarget)
+	{
+		m_bActive = false;
+		return;
+	}
+
+	CBaseEntity* pTarget = m_hTarget;
+
+	if (!FStringNull(m_iszPosition))
+	{
+		Vector vecPos = CalcLocus_Position(this, pTarget, STRING(m_iszPosition));
+		UTIL_SetOrigin(pTarget->pev, vecPos);
+	}
+
+	if (!FStringNull(m_iszVelocity))
+	{
+		Vector vecVel = CalcLocus_Velocity(this, pTarget, STRING(m_iszVelocity));
+		pTarget->pev->velocity = vecVel;
+	}
+
+	SetNextThink(0);
+}
+
+//=========================================================
+// RenderFxFader
+// Subsidiary entity for env_render fade effects
+//=========================================================
+class CRenderFxFader : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	void EXPORT FadeThink();
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	float m_flStartTime;
+	float m_flDuration;
+	float m_flStartAmt;
+	float m_flTargetAmt;
+	EHANDLE m_hTarget;
+	int m_iszTarget;
+};
+
+LINK_ENTITY_TO_CLASS(render_fx_fader, CRenderFxFader);
+
+TYPEDESCRIPTION CRenderFxFader::m_SaveData[] =
+	{
+		DEFINE_FIELD(CRenderFxFader, m_flStartTime, FIELD_TIME),
+		DEFINE_FIELD(CRenderFxFader, m_flDuration, FIELD_FLOAT),
+		DEFINE_FIELD(CRenderFxFader, m_flStartAmt, FIELD_FLOAT),
+		DEFINE_FIELD(CRenderFxFader, m_flTargetAmt, FIELD_FLOAT),
+		DEFINE_FIELD(CRenderFxFader, m_hTarget, FIELD_EHANDLE),
+		DEFINE_FIELD(CRenderFxFader, m_iszTarget, FIELD_STRING),
+};
+
+IMPLEMENT_SAVERESTORE(CRenderFxFader, CBaseEntity);
+
+void CRenderFxFader::Spawn()
+{
+	m_flStartTime = gpGlobals->time;
+	SetThink(&CRenderFxFader::FadeThink);
+	SetNextThink(0);
+}
+
+void CRenderFxFader::FadeThink()
+{
+	if (!m_hTarget)
+	{
+		UTIL_Remove(this);
+		return;
+	}
+
+	float fElapsed = gpGlobals->time - m_flStartTime;
+	float fFraction = (m_flDuration > 0) ? fElapsed / m_flDuration : 1.0f;
+
+	if (fFraction >= 1.0f)
+	{
+		m_hTarget->pev->renderamt = m_flTargetAmt;
+		UTIL_Remove(this);
+		return;
+	}
+
+	m_hTarget->pev->renderamt = m_flStartAmt + (m_flTargetAmt - m_flStartAmt) * fFraction;
+	SetNextThink(0);
 }

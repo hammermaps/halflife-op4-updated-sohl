@@ -4,7 +4,16 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
 
 ## Current Status
 
-The `sohl.md` documents **795 LRC-commented lines** across **96 source files** organized into **25 feature categories**. Currently, almost none of these features are implemented. Of the 9 new files listed in sohl.md, only `dlls/weapons_shared.cpp` already exists in the repository. The remaining **8 new files** and all code modifications across ~90 existing files are pending.
+**Phase 1 (Core Infrastructure)** — ✅ **COMPLETE**
+- MoveWith system, Think/NextThink wrappers, and State system are fully implemented.
+- New files: `dlls/movewith.h`, `dlls/movewith.cpp`
+
+**Phase 2 (Base Entity Enhancements)** — ✅ **COMPLETE**
+- New USE types (USE_KILL, USE_SAME, USE_NOT), Alias system, Locus system, and Trigger enhancements.
+- New files: `dlls/alias.h`, `dlls/alias.cpp`, `dlls/locus.h`, `dlls/locus.cpp`
+- New entities: `multi_watcher`, `trigger_command`, `trigger_changecvar`, `trigger_inout`, `trigger_bounce`, `trigger_onsight`, `trigger_startpatrol`, `trigger_motion`, `motion_manager`, `render_fx_fader`
+
+**Phase 3–5** — 🔲 Pending
 
 ## Guiding Principles
 
@@ -97,9 +106,9 @@ The MoveWith system enables entity parenting: any entity can be attached to anot
 
 #### Verification
 
-- [ ] Project compiles on Linux (g++ and clang++)
-- [ ] Project compiles on Windows (MSBuild)
-- [ ] Existing entity behavior is unchanged when no `movewith` key is set
+- [x] Project compiles on Linux (g++ and clang++)
+- [x] Project compiles on Windows (MSBuild)
+- [x] Existing entity behavior is unchanged when no `movewith` key is set
 
 ---
 
@@ -121,8 +130,8 @@ Replaces vanilla `pev->nextthink` with a wrapper system that tracks think times 
 
 #### Verification
 
-- [ ] Project compiles on both platforms
-- [ ] Existing entity think timing is preserved
+- [x] Project compiles on both platforms
+- [x] Existing entity think timing is preserved
 
 ---
 
@@ -150,17 +159,18 @@ Adds `GetState()` virtual method returning `STATE_ON`, `STATE_OFF`, `STATE_TURN_
 
 #### Verification
 
-- [ ] Project compiles on both platforms
-- [ ] `GetState()` returns correct values for toggle entities
+- [x] Project compiles on both platforms
+- [x] `GetState()` returns correct values for toggle entities
 
 ---
 
-## Phase 2: Base Entity Enhancements
+## Phase 2: Base Entity Enhancements ✅ COMPLETE
 
-### Phase 2A: New USE Types
+### Phase 2A: New USE Types ✅
 
 **Priority**: HIGH — Required by trigger enhancements.
 **Estimated Scope**: ~15 LRC lines
+**Status**: Implemented
 
 #### Files to Modify
 
@@ -171,10 +181,11 @@ Adds `GetState()` virtual method returning `STATE_ON`, `STATE_OFF`, `STATE_TURN_
 
 ---
 
-### Phase 2B: Alias System
+### Phase 2B: Alias System ✅
 
 **Priority**: MEDIUM — Used by advanced trigger targeting.
 **Estimated Scope**: ~15 LRC lines, 2 new files
+**Status**: Implemented
 
 #### New Files to Create
 
@@ -197,10 +208,11 @@ Adds `GetState()` virtual method returning `STATE_ON`, `STATE_OFF`, `STATE_TURN_
 
 ---
 
-### Phase 2C: Locus System
+### Phase 2C: Locus System ✅
 
 **Priority**: MEDIUM — Used by advanced trigger targeting and effects.
 **Estimated Scope**: ~10 LRC lines, 2 new files
+**Status**: Implemented
 
 #### New Files to Create
 
@@ -223,10 +235,11 @@ Adds `GetState()` virtual method returning `STATE_ON`, `STATE_OFF`, `STATE_TURN_
 
 ---
 
-### Phase 2D: Trigger System Enhancements
+### Phase 2D: Trigger System Enhancements ✅
 
 **Priority**: HIGH — Many new entities depend on the enhanced trigger infrastructure.
 **Estimated Scope**: ~120 LRC lines
+**Status**: Implemented
 
 #### Files to Modify
 

@@ -2,6 +2,26 @@
 
 [Half-Life Updated](https://github.com/twhl-community/halflife-updated), [Opposing Force Updated](https://github.com/twhl-community/halflife-op4-updated) and [Blue Shift Updated](https://github.com/twhl-community/halflife-bs-updated) are repositories that provide updated versions of the Half-Life SDK, targeted to the 3 Half-Life 1 PC games officially available.
 
+## Spirit of Half-Life Integration
+
+This fork integrates **Spirit of Half-Life 1.2 (SoHL)** features into the Opposing Force Updated codebase. SoHL extends the vanilla Half-Life SDK with new entity systems, enhanced triggers, visual effects, and gameplay features originally created by Laurie R. Cheers.
+
+### Implemented Features
+
+**Phase 1 — Core Infrastructure:**
+- **MoveWith System** — entity parenting allowing any entity to move with another
+- **Think/NextThink Wrappers** — reliable think timing that compensates for engine overrides
+- **State System** — `GetState()` for consistent entity state queries
+
+**Phase 2 — Base Entity Enhancements:**
+- **New USE Types** — `USE_KILL`, `USE_SAME`, `USE_NOT` for advanced entity triggering
+- **Alias System** — reference entities by alias names for dynamic targeting
+- **Locus System** — position/velocity/ratio calculation from entity references
+- **Enhanced CMultiManager** — master support, wait times, firing modes
+- **New Trigger Entities** — `multi_watcher`, `trigger_command`, `trigger_changecvar`, `trigger_inout`, `trigger_bounce`, `trigger_onsight`, `trigger_startpatrol`, `trigger_motion`, `motion_manager`
+
+For the full integration plan, see [`INTEGRATION_PLAN.md`](INTEGRATION_PLAN.md). For the complete feature guide, see [`sohl.md`](sohl.md).
+
 # Purpose
 
 Each repository provides project files compatible with Visual Studio 2019 and 2022, as well as bug fixes. The Opposing Force and Blue Shift projects are reference implementations of their respective games. This means they provide the original features, implemented as they are in the original games, including the many cases of code duplication.

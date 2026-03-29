@@ -109,8 +109,35 @@ Only two checks are enabled:
 | `dlls/game.h` | Game-wide CVARs and settings |
 | `dlls/skill.h` | Skill/difficulty level definitions |
 | `dlls/util.h` | Server-side utility functions and macros |
+| `dlls/movewith.h` | MoveWith entity parenting system (SoHL) |
+| `dlls/movewith.cpp` | MoveWith core logic (SoHL) |
+| `dlls/alias.h` | Alias entity system (SoHL) |
+| `dlls/alias.cpp` | Alias entity implementations (SoHL) |
+| `dlls/locus.h` | Locus position/velocity/ratio system (SoHL) |
+| `dlls/locus.cpp` | Locus system implementations (SoHL) |
 | `cl_dll/hud.h` | Client HUD class definition |
 | `pm_shared/pm_shared.h` | Shared player movement code |
+
+## SoHL Integration Status
+
+Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_PLAN.md`](INTEGRATION_PLAN.md) for full details and [`sohl.md`](sohl.md) for the comprehensive feature guide.
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| **Phase 1** | Core Infrastructure (MoveWith, Think/NextThink, State) | ✅ Complete |
+| **Phase 2** | Base Entity Enhancements (USE types, Alias, Locus, Triggers) | ✅ Complete |
+| **Phase 3** | Entity-Specific Enhancements (Monsters, Doors, Buttons, etc.) | 🔲 Pending |
+| **Phase 4** | Visual & Client-Side Features (Fog, Sky, HUD, Particles) | 🔲 Pending |
+| **Phase 5** | New Entity Definitions & Polish | 🔲 Pending |
+
+### SoHL Conventions
+
+- New USE types: `USE_KILL` (4), `USE_SAME` (5), `USE_NOT` (6) — extend the USE_TYPE enum
+- Entity states: `STATE_OFF`, `STATE_TURN_ON`, `STATE_ON`, `STATE_TURN_OFF` — used by `GetState()` virtual
+- Think wrappers: `SetNextThink(delay)`, `AbsoluteNextThink(time)`, `DontThink()` — never set `pev->nextthink` directly
+- `m_hActivator` is in `CBaseDelay` (moved from `CBaseToggle` for wider access)
+- MoveWith members: `m_pMoveWith`, `m_pChildMoveWith`, `m_pSiblingMoveWith` — entity parenting linked list
+- Locus virtuals: `CalcPosition()`, `CalcVelocity()`, `CalcRatio()` — for dynamic entity position/velocity resolution
 
 ## Scope of Changes
 
