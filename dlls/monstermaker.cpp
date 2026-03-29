@@ -58,7 +58,9 @@ public:
 
 	float m_flGround; // z coord of the ground under me, used to make sure no monsters are under the maker when it drops a new child
 
-	bool m_fActive;
+	STATE m_iState; // LRC
+	STATE GetState() override { return m_iState; } // LRC
+
 	bool m_fFadeChildren; // should we make the children fadeout?
 };
 
@@ -71,7 +73,7 @@ TYPEDESCRIPTION CMonsterMaker::m_SaveData[] =
 		DEFINE_FIELD(CMonsterMaker, m_cLiveChildren, FIELD_INTEGER),
 		DEFINE_FIELD(CMonsterMaker, m_flGround, FIELD_FLOAT),
 		DEFINE_FIELD(CMonsterMaker, m_iMaxLiveChildren, FIELD_INTEGER),
-		DEFINE_FIELD(CMonsterMaker, m_fActive, FIELD_BOOLEAN),
+		DEFINE_FIELD(CMonsterMaker, m_iState, FIELD_INTEGER),
 		DEFINE_FIELD(CMonsterMaker, m_fFadeChildren, FIELD_BOOLEAN),
 };
 
@@ -120,19 +122,19 @@ void CMonsterMaker::Spawn()
 
 		if (FBitSet(pev->spawnflags, SF_MONSTERMAKER_START_ON))
 		{ // start making monsters as soon as monstermaker spawns
-			m_fActive = true;
+			m_iState = STATE_ON; // LRC
 			SetThink(&CMonsterMaker::MakerThink);
 		}
 		else
 		{ // wait to be activated.
-			m_fActive = false;
+			m_iState = STATE_OFF; // LRC
 			SetThink(&CMonsterMaker::SUB_DoNothing);
 		}
 	}
 	else
 	{ // no targetname, just start.
 		SetNextThink(m_flDelay);
-		m_fActive = true;
+		m_iState = STATE_ON; // LRC
 		SetThink(&CMonsterMaker::MakerThink);
 	}
 
@@ -248,17 +250,17 @@ void CMonsterMaker::CyclicUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE
 //=========================================================
 void CMonsterMaker::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	if (!ShouldToggle(useType, m_fActive))
+	if (!ShouldToggle(useType)) // LRC
 		return;
 
-	if (m_fActive)
+	if (m_iState != STATE_OFF) // LRC
 	{
-		m_fActive = false;
+		m_iState = STATE_OFF; // LRC
 		SetThink(NULL);
 	}
 	else
 	{
-		m_fActive = true;
+		m_iState = STATE_ON; // LRC
 		SetThink(&CMonsterMaker::MakerThink);
 	}
 
