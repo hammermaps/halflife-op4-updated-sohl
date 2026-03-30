@@ -61,6 +61,9 @@ bool CHud::MsgFunc_ResetHUD(const char* pszName, int iSize, void* pbuf)
 	// reset fog
 	m_bFogOn = false;
 
+	// reset sky
+	m_iSkyMode = SKY_OFF;
+
 	return true;
 }
 
@@ -185,5 +188,18 @@ bool CHud::MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf)
 	m_fEndDist = (float)READ_SHORT();
 	m_fFogDensity = (float)READ_SHORT() / 1000.0f;
 	m_bFogOn = (m_fEndDist > 0);
+	return true;
+}
+
+bool CHud::MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+	m_iSkyMode = READ_BYTE();
+	if (m_iSkyMode == SKY_ON)
+	{
+		m_vecSkyPos.x = READ_COORD();
+		m_vecSkyPos.y = READ_COORD();
+		m_vecSkyPos.z = READ_COORD();
+	}
 	return true;
 }

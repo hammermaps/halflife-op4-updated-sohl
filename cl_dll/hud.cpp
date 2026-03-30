@@ -107,6 +107,11 @@ int __MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf)
 	return static_cast<int>(gHUD.MsgFunc_SetFog(pszName, iSize, pbuf));
 }
 
+int __MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_SetSky(pszName, iSize, pbuf));
+}
+
 int __MsgFunc_OldWeapon(const char* pszName, int iSize, void* pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
@@ -347,6 +352,7 @@ void CHud::Init()
 	HOOK_MESSAGE(Concuss);
 	HOOK_MESSAGE(HudColor);
 	HOOK_MESSAGE(SetFog);
+	HOOK_MESSAGE(SetSky);
 	HOOK_MESSAGE(OldWeapon);
 	HOOK_MESSAGE(Weapons);
 
@@ -395,6 +401,9 @@ void CHud::Init()
 	m_fStartDist = 0;
 	m_fEndDist = 0;
 	m_fFogDensity = 0;
+
+	m_iSkyMode = SKY_OFF;
+	m_vecSkyPos = Vector(0, 0, 0);
 
 	setNightVisionState(false);
 

@@ -2399,3 +2399,69 @@ void CEnvFog::SendFog()
 	}
 	MESSAGE_END();
 }
+
+// ==================
+// CEnvSky - 3D skybox
+// ==================
+
+class CEnvSky : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	void SendSky();
+
+	int m_fActive;
+};
+
+LINK_ENTITY_TO_CLASS(env_sky, CEnvSky);
+
+TYPEDESCRIPTION CEnvSky::m_SaveData[] =
+	{
+		DEFINE_FIELD(CEnvSky, m_fActive, FIELD_INTEGER),
+	};
+
+IMPLEMENT_SAVERESTORE(CEnvSky, CBaseEntity);
+
+void CEnvSky::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	pev->movetype = MOVETYPE_NONE;
+	pev->effects = EF_NODRAW;
+
+	if (pev->spawnflags & 1)
+	{
+		m_fActive = true;
+		SendSky();
+	}
+}
+
+void CEnvSky::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (useType == USE_TOGGLE)
+		m_fActive = !m_fActive;
+	else if (useType == USE_ON)
+		m_fActive = true;
+	else if (useType == USE_OFF)
+		m_fActive = false;
+
+	SendSky();
+}
+
+void CEnvSky::SendSky()
+{
+	MESSAGE_BEGIN(MSG_ALL, gmsgSetSky);
+	WRITE_BYTE(m_fActive ? 1 : 0);
+	if (m_fActive)
+	{
+		WRITE_COORD(pev->origin.x);
+		WRITE_COORD(pev->origin.y);
+		WRITE_COORD(pev->origin.z);
+	}
+	MESSAGE_END();
+}

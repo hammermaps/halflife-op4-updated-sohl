@@ -730,10 +730,17 @@ public:
 	bool MsgFunc_Concuss(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf);
 
 	int m_iFogColor_R, m_iFogColor_G, m_iFogColor_B;
 	float m_fStartDist, m_fEndDist, m_fFogDensity;
 	bool m_bFogOn;
+
+	// Sky system
+#define SKY_OFF 0
+#define SKY_ON  1
+	Vector m_vecSkyPos;
+	int m_iSkyMode;
 
 	// Screen information
 	SCREENINFO m_scrinfo;

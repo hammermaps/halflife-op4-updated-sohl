@@ -83,4 +83,5 @@ void LinkUserMessages()
 	gmsgOldWeapon = g_engfuncs.pfnRegUserMsg("OldWeapon", 1);
 	gmsgCustomIcon = g_engfuncs.pfnRegUserMsg("CustomIcon", -1);
 	gmsgSetFog = g_engfuncs.pfnRegUserMsg("SetFog", -1);
+	gmsgSetSky = g_engfuncs.pfnRegUserMsg("SetSky", -1);
 }
