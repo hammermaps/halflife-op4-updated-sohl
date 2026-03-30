@@ -46,14 +46,20 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
   - `RespawnThink()`: automatically respawn breakable after `m_flRespawnTime` seconds
   - `m_iszWhenHit` fires locus target when breakable takes damage
   - `SF_PUSH_NOPULL` (256): pushable entity cannot be pulled
-- **Phase 3E (Platform/Train Enhancements)** — 🔧 **PARTIALLY COMPLETE**
+- **Phase 3E (Platform/Train Enhancements)** — ✅ **COMPLETE**
   - `SF_TRACKTRAIN_NOYAW`/`SF_TRACKTRAIN_AVELOCITY`/`SF_TRACKTRAIN_AVEL_GEARS` flags defined
-  - `m_vecMasterAvel`/`m_vecBaseAvel` members declared and save/restored
+  - `m_vecMasterAvel`/`m_vecBaseAvel`/`m_soundPlaying` members declared and save/restored
   - `DesiredAction()` override implemented (calls `Next()`)
-  - `UTIL_SetVelocity`/`UTIL_SetAvelocity` used in `Next()` and `Use()`
+  - `UTIL_SetVelocity`/`UTIL_SetAvelocity` used in `Next()`, `Use()`, and `DeadEnd()`
   - `SF_TRACKTRAIN_NOYAW` respected: skip yaw adjustment when flag is set
+  - `SF_TRACKTRAIN_AVELOCITY` respected: skip auto-avelocity in `Next()` and `DeadEnd()` when manually set
+  - `m_vecBaseAvel` saved in `Use()` USE_SET branch for gear scaling
+  - `Find()` uses `UTIL_SetAngles`/`UTIL_AssignOrigin` for MoveWith propagation
+  - `Precache()` preserves custom `pev->noise` and precaches it
+  - `OverrideReset()` restarts movement sound after game load
   - Non-crushing trains: `pev->dmg == -1` skips damage in `Blocked()`
   - `movewith.h` included
+  - Shadow `m_activated` removed from `CFuncTrain`/`CSpriteTrain` (inherited from `CBaseEntity`)
 - **Phase 3F (Func_Tank Enhancements)** — 🔧 **PARTIALLY COMPLETE**
   - New flags: `SF_TANK_LASERSPOT`, `SF_TANK_MATCHTARGET`, `SF_TANK_SEQFIRE`
   - New members: `m_iszFireMaster`, `m_iCrosshair` with save/restore and KeyValue handlers
