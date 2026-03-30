@@ -27,6 +27,8 @@
 #include "particleman.h"
 extern IParticleMan* g_pParticleMan;
 
+#include "particlemgr.h"
+
 extern int giTeamplay;
 
 extern BEAM* pBeam;
@@ -90,6 +92,9 @@ void CHud::MsgFunc_InitHUD(const char* pszName, int iSize, void* pbuf)
 	//TODO: needs to be called on every map change, not just when starting a new game
 	if (g_pParticleMan)
 		g_pParticleMan->ResetParticles();
+
+	if (g_pParticleSystems)
+		g_pParticleSystems->ClearSystems();
 
 	//Probably not a good place to put this.
 	pBeam = pBeam2 = NULL;
@@ -261,4 +266,38 @@ void CHud::MsgFunc_KeyedDLight(const char* pszName, int iSize, void* pbuf)
 		dl->die = 0;
 		dl->radius = 0;
 	}
+}
+
+bool CHud::MsgFunc_Particle(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+	int iEntIndex = READ_SHORT();
+	int iActive = READ_BYTE();
+	float x = READ_COORD();
+	float y = READ_COORD();
+	float z = READ_COORD();
+	const char* szFilename = READ_STRING();
+
+	if (g_pParticleSystems)
+	{
+		if (iActive)
+		{
+			ParticleSystem* pExisting = g_pParticleSystems->FindSystem(iEntIndex);
+			if (!pExisting)
+			{
+				ParticleSystem* pNew = new ParticleSystem(iEntIndex, szFilename);
+				g_pParticleSystems->AddSystem(pNew);
+			}
+		}
+		else
+		{
+			// Remove the system - mark as dead, will be cleaned up in UpdateSystems
+			ParticleSystem* pExisting = g_pParticleSystems->FindSystem(iEntIndex);
+			if (pExisting)
+			{
+				// In a full implementation, we would mark it inactive
+			}
+		}
+	}
+	return true;
 }

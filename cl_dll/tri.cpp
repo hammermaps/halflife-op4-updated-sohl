@@ -22,6 +22,8 @@
 #include "tri.h"
 extern IParticleMan* g_pParticleMan;
 
+#include "particlemgr.h"
+
 // LRC - CShinySurface: reflective surface rendering
 class CShinySurface
 {
@@ -90,6 +92,11 @@ void DLLEXPORT HUD_DrawTransparentTriangles()
 {
 	//	RecClDrawTransparentTriangles();
 
+	if (g_pParticleSystems)
+	{
+		float frametime = gHUD.m_flTimeDelta;
+		g_pParticleSystems->UpdateSystems(frametime);
+	}
 
 	if (g_pParticleMan)
 		g_pParticleMan->Update();

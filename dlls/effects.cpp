@@ -2465,3 +2465,74 @@ void CEnvSky::SendSky()
 	}
 	MESSAGE_END();
 }
+
+// =========================================================
+// env_particle - SoHL particle system entity
+// =========================================================
+class CEnvParticle : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	void Precache() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	void SendParticle(int iActive);
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	int m_fActive;
+};
+
+LINK_ENTITY_TO_CLASS(env_particle, CEnvParticle);
+
+TYPEDESCRIPTION CEnvParticle::m_SaveData[] =
+	{
+		DEFINE_FIELD(CEnvParticle, m_fActive, FIELD_INTEGER),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvParticle, CBaseEntity);
+
+void CEnvParticle::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	pev->movetype = MOVETYPE_NONE;
+	pev->effects = EF_NODRAW;
+
+	Precache();
+
+	if (pev->spawnflags & 1)
+	{
+		m_fActive = true;
+		SendParticle(1);
+	}
+}
+
+void CEnvParticle::Precache()
+{
+	// Aurora particle files are client-side assets, no server precache needed
+}
+
+void CEnvParticle::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (useType == USE_TOGGLE)
+		m_fActive = !m_fActive;
+	else if (useType == USE_ON)
+		m_fActive = true;
+	else if (useType == USE_OFF)
+		m_fActive = false;
+
+	SendParticle(m_fActive ? 1 : 0);
+}
+
+void CEnvParticle::SendParticle(int iActive)
+{
+	MESSAGE_BEGIN(MSG_ALL, gmsgParticle);
+	WRITE_SHORT(ENTINDEX(ENT(pev)));
+	WRITE_BYTE(iActive);
+	WRITE_COORD(pev->origin.x);
+	WRITE_COORD(pev->origin.y);
+	WRITE_COORD(pev->origin.z);
+	WRITE_STRING(STRING(pev->message));
+	MESSAGE_END();
+}

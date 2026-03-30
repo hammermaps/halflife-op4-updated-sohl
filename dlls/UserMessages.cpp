@@ -86,4 +86,5 @@ void LinkUserMessages()
 	gmsgSetSky = g_engfuncs.pfnRegUserMsg("SetSky", -1);
 	gmsgAddShine = g_engfuncs.pfnRegUserMsg("AddShine", -1);
 	gmsgKeyedDLight = g_engfuncs.pfnRegUserMsg("KeyedDLight", -1);
+	gmsgParticle = g_engfuncs.pfnRegUserMsg("Particle", -1);
 }

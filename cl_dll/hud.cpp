@@ -25,6 +25,7 @@
 #include "parsemsg.h"
 #include "vgui_int.h"
 #include "vgui_TeamFortressViewport.h"
+#include "particlemgr.h"
 
 #include "demo.h"
 #include "demo_api.h"
@@ -123,6 +124,11 @@ int __MsgFunc_KeyedDLight(const char* pszName, int iSize, void* pbuf)
 {
 	gHUD.MsgFunc_KeyedDLight(pszName, iSize, pbuf);
 	return 1;
+}
+
+int __MsgFunc_Particle(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_Particle(pszName, iSize, pbuf));
 }
 
 int __MsgFunc_OldWeapon(const char* pszName, int iSize, void* pbuf)
@@ -368,6 +374,7 @@ void CHud::Init()
 	HOOK_MESSAGE(SetSky);
 	HOOK_MESSAGE(AddShine);
 	HOOK_MESSAGE(KeyedDLight);
+	HOOK_MESSAGE(Particle);
 	HOOK_MESSAGE(OldWeapon);
 	HOOK_MESSAGE(Weapons);
 
@@ -419,6 +426,9 @@ void CHud::Init()
 
 	m_iSkyMode = SKY_OFF;
 	m_vecSkyPos = Vector(0, 0, 0);
+
+	if (!g_pParticleSystems)
+		g_pParticleSystems = new ParticleSystemManager();
 
 	m_iHUDColor = RGB_YELLOWISH;
 	m_pShinySurface = NULL;

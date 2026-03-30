@@ -747,6 +747,7 @@ public:
 	bool MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf);
 	void MsgFunc_AddShine(const char* pszName, int iSize, void* pbuf);
 	void MsgFunc_KeyedDLight(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_Particle(const char* pszName, int iSize, void* pbuf);
 
 	int m_iFogColor_R, m_iFogColor_G, m_iFogColor_B;
 	float m_fStartDist, m_fEndDist, m_fFogDensity;
