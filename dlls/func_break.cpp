@@ -124,6 +124,16 @@ bool CBreakable::KeyValue(KeyValueData* pkvd)
 	}
 	else if (FStrEq(pkvd->szKeyName, "lip"))
 		return true;
+	else if (FStrEq(pkvd->szKeyName, "respawn")) // LRC - time until respawn
+	{
+		m_flRespawnTime = atof(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "whenhit")) // LRC - locus trigger when hit
+	{
+		m_iszWhenHit = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
 
 	return CBaseDelay::KeyValue(pkvd);
 }
@@ -146,6 +156,10 @@ TYPEDESCRIPTION CBreakable::m_SaveData[] =
 		DEFINE_FIELD(CBreakable, m_iszSpawnObject, FIELD_STRING),
 
 		// Explosion magnitude is stored in pev->impulse
+
+		DEFINE_FIELD(CBreakable, m_flRespawnTime, FIELD_FLOAT),   // LRC
+		DEFINE_FIELD(CBreakable, m_flRespawnHealth, FIELD_FLOAT), // LRC
+		DEFINE_FIELD(CBreakable, m_iszWhenHit, FIELD_STRING),     // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CBreakable, CBaseEntity);
@@ -583,6 +597,10 @@ bool CBreakable::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, flo
 		return false;
 	}
 
+	// LRC - fire whenhit locus trigger
+	if (!FStringNull(m_iszWhenHit))
+		FireTargets(STRING(m_iszWhenHit), CBaseEntity::Instance(pevAttacker), this, USE_TOGGLE, 0);
+
 	// Make a shard noise each time func breakable is hit.
 	// Don't play shard noise if cbreakable actually died.
 
@@ -772,8 +790,17 @@ void CBreakable::Die()
 	// Fire targets on break
 	SUB_UseTargets(NULL, USE_TOGGLE, 0);
 
-	SetThink(&CBreakable::SUB_Remove);
-	SetNextThink(0.1);
+	// LRC - respawn if configured
+	if (m_flRespawnTime > 0)
+	{
+		SetThink(&CBreakable::RespawnThink);
+		SetNextThink(m_flRespawnTime);
+	}
+	else
+	{
+		SetThink(&CBreakable::SUB_Remove);
+		SetNextThink(0.1);
+	}
 	if (!FStringNull(m_iszSpawnObject))
 		CBaseEntity::Create((char*)STRING(m_iszSpawnObject), VecBModelOrigin(pev), pev->angles, edict());
 
@@ -782,6 +809,18 @@ void CBreakable::Die()
 	{
 		ExplosionCreate(Center(), pev->angles, edict(), ExplosionMagnitude(), true);
 	}
+}
+
+void CBreakable::RespawnThink()
+{
+	pev->solid = SOLID_BSP;
+	pev->movetype = MOVETYPE_PUSH;
+	pev->takedamage = DAMAGE_YES;
+	pev->health = (m_flRespawnHealth > 0) ? m_flRespawnHealth : pev->max_health;
+	pev->effects &= ~EF_NODRAW;
+	pev->renderamt = 255;
+	DontThink();
+	SetTouch(&CBreakable::BreakTouch);
 }
 
 
@@ -951,6 +990,10 @@ void CPushable::Move(CBaseEntity* pOther, bool push)
 {
 	entvars_t* pevToucher = pOther->pev;
 	bool playerTouch = false;
+
+	// LRC - non-pullable pushable: don't allow pull (Use with push=false)
+	if (!push && (pev->spawnflags & SF_PUSH_NOPULL) != 0)
+		return;
 
 	// Is entity standing on this pushable ?
 	if (FBitSet(pevToucher->flags, FL_ONGROUND) && pevToucher->groundentity && VARS(pevToucher->groundentity) == pev)

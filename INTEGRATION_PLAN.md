@@ -27,8 +27,49 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
   - Combat: custom gib model support via `HasCustomGibs()`, `studio.h` include
   - Scripted: `PreciseAttack()` implementation, `TaskComplete()` for immediate play start
   - Monster-specific: hornet allegiance (agrunt), `monster_bullsquid` link, `SF_MONSTER_NO_WPN_DROP` (hgrunt), `m_iPlayerReact` override (islave), osprey loop breaker + unit fallback, postdisaster sitting scientist
-- Phases 3B–3J — headers declared, implementation pending
-  - Header declarations added for: `SF_DOOR_FORCETOUCHABLE`, `SF_BEAM_TRIPPED`, `GetTripEntity()`, `SF_TRACKTRAIN_NOYAW`/`AVELOCITY`/`AVEL_GEARS`, `m_vecMasterAvel`/`m_vecBaseAvel`, `DesiredAction()`, turn/avel type constants, `IsAction()`/`PreciseAttack()`/`InitIdleThink()`, script repeat/priority members, breakable respawn/whenhit fields
+- **Phase 3B (Door Enhancements)** — ✅ **COMPLETE**
+  - `SF_DOOR_FORCETOUCHABLE`: doors can now be touched even when named or use-only
+  - Synched target firing: `USE_ON` fires when door starts to open, `USE_OFF` when door starts to close
+  - `pev->message` as open target, `pev->netname` as close target
+- **Phase 3C (Button Enhancements)** — ✅ **COMPLETE**
+  - `SF_BUTTON_ONLYDIRECT` (16): button can't be used through walls (flag defined)
+  - `game_state` entity: simple state-tracking entity for watchers
+  - Touch-only buttons can now also be triggered via Use()
+  - `CMomentaryRotButton::Use` checks `IsLockedByMaster()`
+- **Phase 3D (Breakable Enhancements)** — ✅ **COMPLETE**
+  - Save/restore for `m_flRespawnTime`, `m_flRespawnHealth`, `m_iszWhenHit`
+  - KeyValue handlers for `respawn` (time) and `whenhit` (locus trigger)
+  - `RespawnThink()`: automatically respawn breakable after `m_flRespawnTime` seconds
+  - `m_iszWhenHit` fires locus target when breakable takes damage
+  - `SF_PUSH_NOPULL` (256): pushable entity cannot be pulled
+- **Phase 3E (Platform/Train Enhancements)** — 🔧 **PARTIALLY COMPLETE**
+  - `SF_TRACKTRAIN_NOYAW`/`SF_TRACKTRAIN_AVELOCITY`/`SF_TRACKTRAIN_AVEL_GEARS` flags defined
+  - `m_vecMasterAvel`/`m_vecBaseAvel` members declared and save/restored
+  - `DesiredAction()` override implemented (calls `Next()`)
+  - `UTIL_SetVelocity`/`UTIL_SetAvelocity` used in `Next()` and `Use()`
+  - `SF_TRACKTRAIN_NOYAW` respected: skip yaw adjustment when flag is set
+  - Non-crushing trains: `pev->dmg == -1` skips damage in `Blocked()`
+  - `movewith.h` included
+- **Phase 3F (Func_Tank Enhancements)** — 🔧 **PARTIALLY COMPLETE**
+  - New flags: `SF_TANK_LASERSPOT`, `SF_TANK_MATCHTARGET`, `SF_TANK_SEQFIRE`
+  - New members: `m_iszFireMaster`, `m_iCrosshair` with save/restore and KeyValue handlers
+- **Phase 3G (Light Enhancements)** — ✅ **COMPLETE**
+  - `GetStyle()`/`SetStyle(int)`/`SetCorrectStyle()` methods added to `CLight`
+  - `m_iszCurrentStyle` member with save/restore
+  - `CLightDynamic` (`env_dlight`): dynamic entity light creator
+  - `CTriggerLightstyle` (`trigger_lightstyle`): temporarily changes a light's pattern
+- **Phase 3H (Sound Enhancements)** — 🔧 **PARTIALLY COMPLETE**
+  - `m_pPlayFrom` and `m_iChannel` members added to `CAmbientGeneric` with save/restore
+  - Defaults: `m_pPlayFrom = edict()`, `m_iChannel = CHAN_STATIC`
+  - `trigger_sound` stub entity registered
+- **Phase 3I (Scripted Sequence Enhancements)** — ✅ **COMPLETE**
+  - `scripted_action` and `aiscripted_sequence` both linked to `CCineMonster`
+  - Full save/restore for: `m_iState`, `m_iszAttack`, `m_iszMoveTarget`, `m_iRepeats`, `m_iRepeatsLeft`, `m_fRepeatFrame`, `m_iPriority`
+  - KeyValue handlers for `attack`, `movetarget`, `repeats`, `priority`
+  - `InitIdleThink()` implemented: resets state and restarts idle sequence
+- **Phase 3J (Effects Enhancements)** — 🔧 **PARTIALLY COMPLETE**
+  - `bmodels.cpp`: `WaitForStart()` function for `CFuncRotating`; `m_fCurSpeed` member with save/restore
+  - `effects.cpp`: `CLaser::GetTripEntity()` implemented for tripbeam support
 
 **Phase 4–5** — 🔲 Pending
 

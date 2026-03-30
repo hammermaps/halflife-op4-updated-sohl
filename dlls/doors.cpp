@@ -41,10 +41,11 @@ public:
 
 	int ObjectCaps() override
 	{
+		if ((pev->spawnflags & SF_DOOR_FORCETOUCHABLE) != 0)
+			return (CBaseToggle::ObjectCaps() & ~FCAP_ACROSS_TRANSITION) | FCAP_IMPULSE_USE;
 		if ((pev->spawnflags & SF_ITEM_USE_ONLY) != 0)
 			return (CBaseToggle::ObjectCaps() & ~FCAP_ACROSS_TRANSITION) | FCAP_IMPULSE_USE;
-		else
-			return (CBaseToggle::ObjectCaps() & ~FCAP_ACROSS_TRANSITION);
+		return (CBaseToggle::ObjectCaps() & ~FCAP_ACROSS_TRANSITION);
 	};
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
@@ -315,7 +316,7 @@ void CBaseDoor::Spawn()
 	m_toggle_state = TS_AT_BOTTOM;
 
 	// if the door is flagged for USE button activation only, use NULL touch function
-	if (FBitSet(pev->spawnflags, SF_DOOR_USE_ONLY))
+	if (FBitSet(pev->spawnflags, SF_DOOR_USE_ONLY) && !FBitSet(pev->spawnflags, SF_DOOR_FORCETOUCHABLE))
 	{
 		SetTouch(NULL);
 	}
@@ -620,6 +621,10 @@ void CBaseDoor::DoorGoUp()
 
 	m_toggle_state = TS_GOING_UP;
 
+	// LRC - synched: fire target with USE_ON as soon as we start to open
+	if (!FStringNull(pev->target))
+		FireTargets(STRING(pev->target), m_hActivator, this, USE_ON, 0);
+
 	SetMoveDone(&CBaseDoor::DoorHitTop);
 	if (FClassnameIs(pev, "func_door_rotating")) // !!! BUGBUG Triggered doors don't work with this yet
 	{
@@ -668,7 +673,7 @@ void CBaseDoor::DoorHitTop()
 	if (FBitSet(pev->spawnflags, SF_DOOR_NO_AUTO_RETURN))
 	{
 		// Re-instate touch method, movement is complete
-		if (!FBitSet(pev->spawnflags, SF_DOOR_USE_ONLY))
+		if (!FBitSet(pev->spawnflags, SF_DOOR_USE_ONLY) || FBitSet(pev->spawnflags, SF_DOOR_FORCETOUCHABLE))
 			SetTouch(&CBaseDoor::DoorTouch);
 	}
 	else
@@ -683,11 +688,14 @@ void CBaseDoor::DoorHitTop()
 		}
 	}
 
-	// Fire the close target (if startopen is set, then "top" is closed) - netname is the close target
+	// LRC: 'message' is the open target — fire when door reaches open position
+	// For normal doors (not start_open), reaching top = now open
+	if (!FStringNull(pev->message) && (pev->spawnflags & SF_DOOR_START_OPEN) == 0)
+		FireTargets(STRING(pev->message), m_hActivator, this, USE_TOGGLE, 0);
+	// LRC - 'netname' is the close target — fire when door reaches closed position
+	// When start_open, reaching top means door is now closed
 	if (!FStringNull(pev->netname) && (pev->spawnflags & SF_DOOR_START_OPEN) != 0)
 		FireTargets(STRING(pev->netname), m_hActivator, this, USE_TOGGLE, 0);
-
-	SUB_UseTargets(m_hActivator, USE_TOGGLE, 0); // this isn't finished
 }
 
 
@@ -706,6 +714,10 @@ void CBaseDoor::DoorGoDown()
 	ASSERT(m_toggle_state == TS_AT_TOP);
 #endif // DOOR_ASSERT
 	m_toggle_state = TS_GOING_DOWN;
+
+	// LRC - synched: fire target with USE_OFF as soon as we start to close
+	if (!FStringNull(pev->target))
+		FireTargets(STRING(pev->target), m_hActivator, this, USE_OFF, 0);
 
 	SetMoveDone(&CBaseDoor::DoorHitBottom);
 	if (FClassnameIs(pev, "func_door_rotating")) //rotating door
@@ -729,16 +741,19 @@ void CBaseDoor::DoorHitBottom()
 	m_toggle_state = TS_AT_BOTTOM;
 
 	// Re-instate touch method, cycle is complete
-	if (FBitSet(pev->spawnflags, SF_DOOR_USE_ONLY))
+	if (FBitSet(pev->spawnflags, SF_DOOR_USE_ONLY) && !FBitSet(pev->spawnflags, SF_DOOR_FORCETOUCHABLE))
 	{ // use only door
 		SetTouch(NULL);
 	}
 	else // touchable door
 		SetTouch(&CBaseDoor::DoorTouch);
 
-	SUB_UseTargets(m_hActivator, USE_TOGGLE, 0); // this isn't finished
-
-	// Fire the close target (if startopen is set, then "top" is closed) - netname is the close target
+	// LRC: 'message' is the open target — fire when door reaches open position
+	// When start_open, reaching bottom = now open
+	if (!FStringNull(pev->message) && (pev->spawnflags & SF_DOOR_START_OPEN) != 0)
+		FireTargets(STRING(pev->message), m_hActivator, this, USE_TOGGLE, 0);
+	// LRC - 'netname' is the close target — fire when door reaches closed position
+	// For normal doors (not start_open), reaching bottom = now closed
 	if (!FStringNull(pev->netname) && (pev->spawnflags & SF_DOOR_START_OPEN) == 0)
 		FireTargets(STRING(pev->netname), m_hActivator, this, USE_TOGGLE, 0);
 }

@@ -137,6 +137,9 @@ public:
 	STATE GetState() override { return m_iState; } // LRC
 
 	bool m_fLooping; // true when the sound played will loop
+
+	edict_t* m_pPlayFrom; // LRC - entity to play sound from
+	int m_iChannel;       // LRC - channel to play on
 };
 
 LINK_ENTITY_TO_CLASS(ambient_generic, CAmbientGeneric);
@@ -145,6 +148,8 @@ TYPEDESCRIPTION CAmbientGeneric::m_SaveData[] =
 		DEFINE_FIELD(CAmbientGeneric, m_flAttenuation, FIELD_FLOAT),
 		DEFINE_FIELD(CAmbientGeneric, m_iState, FIELD_INTEGER),
 		DEFINE_FIELD(CAmbientGeneric, m_fLooping, FIELD_BOOLEAN),
+		DEFINE_FIELD(CAmbientGeneric, m_iChannel, FIELD_INTEGER),  // LRC
+		DEFINE_FIELD(CAmbientGeneric, m_pPlayFrom, FIELD_EDICT),   // LRC
 
 		// HACKHACK - This is not really in the spirit of the save/restore design, but save this
 		// out as a binary data block.  If the dynpitchvol_t is changed, old saved games will NOT
@@ -189,6 +194,9 @@ void CAmbientGeneric::Spawn()
 	{ // if the designer didn't set a sound attenuation, default to one.
 		m_flAttenuation = ATTN_STATIC;
 	}
+
+	m_pPlayFrom = edict(); // LRC - default: play from this entity
+	m_iChannel = CHAN_STATIC; // LRC
 
 	char* szSoundFile = (char*)STRING(pev->message);
 
@@ -2000,3 +2008,35 @@ bool CSpeaker::KeyValue(KeyValueData* pkvd)
 
 	return CBaseEntity::KeyValue(pkvd);
 }
+
+// LRC - trigger_sound: a trigger that changes the sound environment
+class CTriggerSound : public CPointEntity
+{
+public:
+bool KeyValue(KeyValueData* pkvd) override
+{
+if (FStrEq(pkvd->szKeyName, "room_type"))
+{
+m_iRoomType = atoi(pkvd->szValue);
+return true;
+}
+return CPointEntity::KeyValue(pkvd);
+}
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override
+{
+	// LRC - stub: sound environment changes are handled via room_type
+	SUB_UseTargets(pActivator, useType, value);
+}
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+private:
+int m_iRoomType = 0;
+};
+LINK_ENTITY_TO_CLASS(trigger_sound, CTriggerSound);
+TYPEDESCRIPTION CTriggerSound::m_SaveData[] = {
+DEFINE_FIELD(CTriggerSound, m_iRoomType, FIELD_INTEGER),
+};
+IMPLEMENT_SAVERESTORE(CTriggerSound, CPointEntity);

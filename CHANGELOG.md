@@ -2,6 +2,78 @@
 
 ## Spirit of Half-Life Integration
 
+### Phase 3B–3J — Entity-Specific Enhancements (Partial)
+
+#### Phase 3B — Door Enhancements (`dlls/doors.cpp`, `dlls/doors.h`)
+* Added `SF_DOOR_FORCETOUCHABLE` (1024) implementation: door can be touched even when named or use-only
+* Doors with `SF_DOOR_FORCETOUCHABLE` return `FCAP_IMPULSE_USE` via `ObjectCaps()`, and their touch function is set in `Spawn()`
+* Synched target firing: `pev->target` is fired with `USE_ON` as soon as door starts to open
+* Synched target firing: `pev->target` is fired with `USE_OFF` as soon as door starts to close
+* `pev->message` field used as "open target" (fired with `USE_TOGGLE` when door fully opens/closes)
+* `pev->netname` remains the "close target" for SF_DOOR_START_OPEN doors
+
+#### Phase 3C — Button Enhancements (`dlls/buttons.cpp`)
+* Added `SF_BUTTON_ONLYDIRECT` (16): button can't be used through walls (flag defined for mapper use)
+* Added `game_state` entity: a simple `CPointEntity` subclass that maintains `STATE_ON`/`STATE_OFF` state, responding to `USE_ON`/`USE_OFF`/`USE_TOGGLE`
+* Fixed touch-only buttons (`SF_BUTTON_TOUCH_ONLY`): buttons now also accept triggered `Use()` calls
+* Added `IsLockedByMaster()` check to `CMomentaryRotButton::Use()` to respect master entity
+
+#### Phase 3D — Breakable Enhancements (`dlls/func_break.cpp`, `dlls/func_break.h`)
+* Added `m_flRespawnTime` (float): number of seconds after break before respawn (KeyValue: `respawn`)
+* Added `m_flRespawnHealth` (float): health to restore on respawn; 0 = use `pev->max_health` (KeyValue: implicit in respawn)
+* Added `m_iszWhenHit` (string_t): target to fire (locus) every time the breakable takes damage (KeyValue: `whenhit`)
+* Added `DEFINE_FIELD` entries for all three new fields in save/restore
+* Added `RespawnThink()` function: schedules automatic respawn after `m_flRespawnTime` seconds when breakable is destroyed
+* Added `SF_PUSH_NOPULL` (256) in `func_break.h`: `CPushable` entities with this flag cannot be pulled backwards
+
+#### Phase 3E — Platform/Train Enhancements (`dlls/plats.cpp`, `dlls/trains.h`)
+* Added `#include "movewith.h"` to `plats.cpp` for `UTIL_SetVelocity`/`UTIL_SetAvelocity`
+* Added `DEFINE_FIELD` entries for `m_vecMasterAvel` and `m_vecBaseAvel` in `CFuncTrackTrain::m_SaveData`
+* `CFuncTrackTrain::Next()`: velocity now set via `UTIL_SetVelocity()` instead of direct `pev->velocity =`
+* `CFuncTrackTrain::Next()`: avelocity now set via `UTIL_SetAvelocity()` instead of direct `pev->avelocity =`
+* `SF_TRACKTRAIN_NOYAW` flag: when set, `Next()` skips all yaw/pitch/bank angular velocity adjustment
+* `CFuncTrackTrain::Use()`: stop sets `UTIL_SetVelocity(g_vecZero)` and `UTIL_SetAvelocity(g_vecZero)`
+* `CFuncTrackTrain::Blocked()`: added `pev->dmg == -1` check — non-crushing trains don't damage blockers
+
+#### Phase 3F — Func_Tank Enhancements (`dlls/func_tank.cpp`)
+* Added `SF_TANK_LASERSPOT` (0x0040): enable laser spot targeting
+* Added `SF_TANK_MATCHTARGET` (0x0080): match target position instead of matching angles
+* Added `SF_TANK_SEQFIRE` (0x10000): TankSequence is currently firing
+* Added `m_iszFireMaster` (string_t): FireMaster entity that prevents firing when it's inactive (KeyValue: `firemaster`)
+* Added `m_iCrosshair` (int): crosshair style to show while controlling the tank (KeyValue: `crosshair`)
+* Added `DEFINE_FIELD` entries for both new members
+
+#### Phase 3G — Light Enhancements (`dlls/lights.cpp`)
+* Added `m_iszCurrentStyle` member to `CLight`: tracks the currently active light pattern (save/restore)
+* Added `CLight::GetStyle()`: returns the current pattern string token
+* Added `CLight::SetStyle(int iszPattern)`: changes the active light style via `LIGHT_STYLE()`
+* Added `CLight::SetCorrectStyle()`: restores the correct style based on current state (on=pattern, off=`"a"`)
+* Made `CLight::m_iStyle` public to allow `CTriggerLightstyle` access
+* Added `CLightDynamic` class (`env_dlight`): dynamic entity-attached light with ON/OFF state and save/restore
+* Added `CTriggerLightstyle` class (`trigger_lightstyle`): fires at `CLight` targets to change their pattern; KeyValue: `style` for the new pattern string
+
+#### Phase 3H — Sound Enhancements (`dlls/sound.cpp`)
+* Added `m_pPlayFrom` (edict_t*) to `CAmbientGeneric`: entity to play sound from (defaults to self)
+* Added `m_iChannel` (int) to `CAmbientGeneric`: audio channel to use (defaults to `CHAN_STATIC`)
+* Added `DEFINE_FIELD` entries for both new members in save/restore
+* Added `trigger_sound` stub entity (`CTriggerSound`): registers sound environment entity with `m_iRoomType` member
+
+#### Phase 3I — Scripted Sequence Enhancements (`dlls/scripted.cpp`, `dlls/scripted.h`)
+* Added `LINK_ENTITY_TO_CLASS(scripted_action, CCineMonster)`: `scripted_action` entities now use `CCineMonster`
+* Changed `aiscripted_sequence` to link to `CCineMonster` instead of `CCineAI`: unified scripted sequence handling
+* Added `DEFINE_FIELD` entries for all new members: `m_iState`, `m_iszAttack`, `m_iszMoveTarget`, `m_iRepeats`, `m_iRepeatsLeft`, `m_fRepeatFrame`, `m_iPriority`
+* Added KeyValue handlers: `attack` (stores in `m_iszAttack`), `movetarget` (`m_iszMoveTarget`), `repeats` (`m_iRepeats`/`m_iRepeatsLeft`), `priority` (`m_iPriority`)
+* Implemented `CCineMonster::InitIdleThink()`: resets state to `STATE_OFF` and re-arms idle sequence
+
+#### Phase 3J — Effects Enhancements (`dlls/bmodels.cpp`, `dlls/effects.cpp`)
+* `CFuncRotating`: added `WaitForStart()` function — waits one frame before starting rotation to allow other entities to spawn
+* `CFuncRotating`: added `m_fCurSpeed` member with `DEFINE_FIELD` for tracking current speed during spin-up/down
+* `CLaser`: implemented `GetTripEntity(TraceResult*)` — returns the non-BSP entity hit by a tripbeam trace
+
+
+
+## Spirit of Half-Life Integration
+
 ### Phase 3A — Monster/NPC Enhancements (In Progress)
 
 * Added `m_iClass` and `m_iPlayerReact` member variables to `CBaseMonster` for monster allegiance and player reaction overrides
