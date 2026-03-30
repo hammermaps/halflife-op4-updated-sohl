@@ -2,6 +2,49 @@
 
 ## Spirit of Half-Life Integration
 
+### Phase 3H — Sound Enhancements (`dlls/sound.cpp`)
+* Added `StartPlayFrom()` think function to `CAmbientGeneric`: defers initial sound playback by one frame so the `m_pPlayFrom` entity is fully initialised before sound is emitted
+* Updated `Precache()` to use `SetThink(&StartPlayFrom)` / `SetNextThink(0)` instead of directly calling `UTIL_EmitAmbientSound`, enabling play-from-entity support on startup
+* Updated `RampThink()` pitch-ramp and volume-ramp stop calls to use `STOP_SOUND(m_pPlayFrom, m_iChannel, szSoundFile)` instead of `UTIL_EmitAmbientSound(..., SND_STOP, ...)`
+* Updated `RampThink()` final pitch/vol update to use `EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, ...)` instead of `UTIL_EmitAmbientSound`
+* Updated `ToggleUse()` USE_SET pitch-change call to use `EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, ..., SND_CHANGE_PITCH, ...)`
+* Updated `ToggleUse()` turn-off to use `STOP_SOUND(m_pPlayFrom, m_iChannel, ...)` instead of `UTIL_EmitAmbientSound(..., SND_STOP, ...)`
+* Updated `ToggleUse()` turn-on (non-looping interrupt stop) to use `STOP_SOUND(m_pPlayFrom, m_iChannel, ...)`
+* Updated `ToggleUse()` turn-on play call to use `EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, ...)` instead of `UTIL_EmitAmbientSound`
+* All sound calls now emit from `m_pPlayFrom` entity (defaulting to `edict()` — the ambient_generic itself); when set to another entity, sounds track that entity's position
+
+### Phase 3J — Effects Enhancements (`dlls/bmodels.cpp`, `dlls/effects.cpp`)
+
+#### `dlls/bmodels.cpp` — CFuncRotating Enhancements
+* Added `#include "movewith.h"` for `UTIL_SetAvelocity` / `UTIL_SetAngles` support
+* Added `m_iState` to `CFuncRotating::m_SaveData` — state now survives save/restore
+* Fixed `m_flFanFriction` guard: changed `== 0` to `<= 0` to also protect against negative values
+* Rewrote `RampPitchVol()` to use `m_fCurSpeed / pev->speed` ratio for accurate pitch/vol ramping
+* Rewrote `SpinUp()` to track `m_fCurSpeed` (increments by `pev->speed * m_flFanFriction` per tick) and use `UTIL_SetAvelocity(this, pev->movedir * m_fCurSpeed)` for MoveWith propagation
+* Rewrote `SpinDown()` to decrement `m_fCurSpeed` and use `UTIL_SetAvelocity` / `UTIL_SetAvelocity(g_vecZero)` for MoveWith propagation; added `m_fCurSpeed != 0` guard to avoid false stop
+* Updated `RotatingUse()` to check `m_fCurSpeed != 0` for state, and set `m_fCurSpeed` + `UTIL_SetAvelocity` when starting immediately
+* Updated `HurtTouch()` to use `m_fCurSpeed / 10` for damage calculation instead of `pev->avelocity.Length() / 10`
+* Updated `Spawn()`: `SF_BRUSH_ROTATE_INSTANT` now uses `WaitForStart` (deferred SpinUp) instead of `SUB_CallUseToggle`; unnamed func_rotating entities also auto-start via `WaitForStart`
+* Updated `Precache()` restart-after-restore guarded with `if (!m_pMoveWith)` to avoid double-start when parented
+
+#### `dlls/bmodels.cpp` — CPendulum MoveWith Propagation
+* `PendulumUse()`: replaced `pev->avelocity = m_maxSpeed * pev->movedir` with `UTIL_SetAvelocity(this, m_maxSpeed * pev->movedir)`
+* `PendulumUse()`: replaced `pev->avelocity = g_vecZero` (dead stop) with `UTIL_SetAvelocity(this, g_vecZero)`
+* `Stop()`: replaced `pev->angles = m_start` with `UTIL_SetAngles(this, m_start)`, `pev->avelocity = g_vecZero` with `UTIL_SetAvelocity(this, g_vecZero)`
+* `Swing()`: replaced `pev->avelocity = pev->speed * pev->movedir` with `UTIL_SetAvelocity(this, pev->speed * pev->movedir)`
+* `Swing()` damping stop: replaced `pev->angles = m_center` with `UTIL_SetAngles(this, m_center)` and `pev->avelocity = g_vecZero` with `UTIL_SetAvelocity(this, g_vecZero)`
+
+#### `dlls/effects.cpp` — General Effects Enhancements
+* Added `#include "player.h"`, `#include "locus.h"`, `#include "movewith.h"` for SoHL system integration
+* Converted `info_target` from a simple class alias to a proper `CInfoTarget` entity class: precaches `sprites/null.spr` and sets it as default model for editor visibility in FGD tools
+* Added `SF_GIBSHOOTER_DEBUG` (4) spawnflag to `CGibShooter`: when set, logs each gib's velocity to the console
+* Rewrote `CGibShooter::Use()`: when `m_flDelay == 0`, fires all gibs simultaneously in a loop instead of scheduling timed think; otherwise, starts `ShootThink` as before
+* Updated `CGibShooter::Spawn()`: removed the `m_flDelay = 0.1` default override — zero delay now means "fire all at once"
+* Updated `CGibShooter::ShootThink()`: only calls `SetNextThink(m_flDelay)` when `m_flDelay != 0`; added `SF_GIBSHOOTER_DEBUG` console logging
+* Added non-restriking beam support to `CLightning::StrikeThink()`: when `m_restrike == -1`, fires once without scheduling a re-strike
+* Updated `CLightning::ToggleUse()` to fire `SUB_UseTargets(this, USE_OFF, 0)` when turning off and `SUB_UseTargets(this, USE_ON, 0)` when turning on
+* Added `SF_FADE_PERMANENT` (0x0008) spawnflag to `env_fade`: when set, applies `FFADE_STAYOUT` to hold the screen fade indefinitely until a new ScreenFade message is received
+
 ### Phase 5 — New Entity Definitions & Polish
 
 #### Phase 5A — New Entity Definitions (`dlls/cbase.h`, `common/const.h`, `dlls/cdll_dll.h`)
