@@ -58,6 +58,12 @@ bool CPathCorner::KeyValue(KeyValueData* pkvd)
 		m_flWait = atof(pkvd->szValue);
 		return true;
 	}
+	else if (FStrEq(pkvd->szKeyName, "turnspeed")) // LRC
+	{
+		// Store turnspeed in pev->armorvalue for use by trains
+		pev->armorvalue = atof(pkvd->szValue);
+		return true;
+	}
 
 	return CPointEntity::KeyValue(pkvd);
 }
@@ -138,6 +144,12 @@ bool CPathTrack::KeyValue(KeyValueData* pkvd)
 	if (FStrEq(pkvd->szKeyName, "altpath"))
 	{
 		m_altName = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "turnspeed")) // LRC
+	{
+		// Store turnspeed in pev->armorvalue for use by trains
+		pev->armorvalue = atof(pkvd->szValue);
 		return true;
 	}
 

@@ -40,6 +40,8 @@
 
 CGlobalState gGlobalState;
 
+bool g_startSuit = false; // LRC - let map designers start the player with suit
+
 extern void W_Precache();
 
 //
@@ -576,6 +578,7 @@ void CWorld::Precache()
 
 	// sounds used from C physics code
 	PRECACHE_SOUND("common/null.wav"); // clears sound channels
+	PRECACHE_MODEL("sprites/null.spr"); // LRC
 
 	PRECACHE_SOUND("items/suitchargeok1.wav"); //!!! temporary sound for respawning weapons.
 	PRECACHE_SOUND("items/gunpickup2.wav");	   // player picks up a gun.
@@ -716,6 +719,9 @@ void CWorld::Precache()
 	{
 		CVAR_SET_FLOAT("mp_defaultcoop", 0);
 	}
+
+	// LRC - let map designers start the player with his suit already on
+	g_startSuit = (pev->spawnflags & SF_WORLD_STARTSUIT) != 0;
 }
 
 
@@ -793,6 +799,14 @@ bool CWorld::KeyValue(KeyValueData* pkvd)
 		if (0 != atoi(pkvd->szValue))
 		{
 			pev->spawnflags |= SF_WORLD_CTF;
+		}
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "startsuit")) // LRC
+	{
+		if (0 != atoi(pkvd->szValue))
+		{
+			pev->spawnflags |= SF_WORLD_STARTSUIT;
 		}
 		return true;
 	}

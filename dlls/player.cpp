@@ -289,7 +289,9 @@ void CBasePlayer::DeathSound()
 	}
 
 	// play one of the suit death alarms
-	EMIT_GROUPNAME_SUIT(ENT(pev), "HEV_DEAD");
+	// LRC - if no suit, then no flatline sound (unless it's a deathmatch)
+	if (HasSuit() || g_pGameRules->IsMultiplayer())
+		EMIT_GROUPNAME_SUIT(ENT(pev), "HEV_DEAD");
 }
 
 // override takehealth
@@ -1557,36 +1559,64 @@ void CBasePlayer::PlayerUse()
 
 	UTIL_MakeVectors(pev->v_angle); // so we know which way we are facing
 
-	while ((pObject = UTIL_FindEntityInSphere(pObject, pev->origin, PLAYER_SEARCH_RADIUS)) != NULL)
+	// LRC - try to get an exact entity to use via traceline first
 	{
-		//Special behavior for ropes: check if the player is close enough to the rope segment origin
-		if (FClassnameIs(pObject->pev, "rope_segment"))
+		TraceResult tr;
+		UTIL_TraceLine(pev->origin + pev->view_ofs, pev->origin + pev->view_ofs + gpGlobals->v_forward * PLAYER_SEARCH_RADIUS, dont_ignore_monsters, ENT(pev), &tr);
+		if (tr.pHit)
 		{
-			if ((pev->origin - pObject->pev->origin).Length() > PLAYER_SEARCH_RADIUS)
+			pObject = CBaseEntity::Instance(tr.pHit);
+			if (pObject && (pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE)) != 0)
 			{
-				continue;
-			}
-		}
-
-		if ((pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE)) != 0)
-		{
-			// !!!PERFORMANCE- should this check be done on a per case basis AFTER we've determined that
-			// this object is actually usable? This dot is being done for every object within PLAYER_SEARCH_RADIUS
-			// when player hits the use key. How many objects can be in that area, anyway? (sjb)
-			vecLOS = (VecBModelOrigin(pObject->pev) - (pev->origin + pev->view_ofs));
-
-			// This essentially moves the origin of the target to the corner nearest the player to test to see
-			// if it's "hull" is in the view cone
-			vecLOS = UTIL_ClampVectorToBox(vecLOS, pObject->pev->size * 0.5);
-
-			flDot = DotProduct(vecLOS, gpGlobals->v_forward);
-			if (flDot > flMaxDot)
-			{ // only if the item is in front of the user
 				pClosest = pObject;
-				flMaxDot = flDot;
-				//				ALERT( at_console, "%s : %f\n", STRING( pObject->pev->classname ), flDot );
 			}
-			//			ALERT( at_console, "%s : %f\n", STRING( pObject->pev->classname ), flDot );
+			pObject = NULL;
+		}
+	}
+
+	if (!pClosest) // LRC - couldn't find a direct solid object to use, try the normal method
+	{
+		while ((pObject = UTIL_FindEntityInSphere(pObject, pev->origin, PLAYER_SEARCH_RADIUS)) != NULL)
+		{
+			//Special behavior for ropes: check if the player is close enough to the rope segment origin
+			if (FClassnameIs(pObject->pev, "rope_segment"))
+			{
+				if ((pev->origin - pObject->pev->origin).Length() > PLAYER_SEARCH_RADIUS)
+				{
+					continue;
+				}
+			}
+
+			if ((pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE)) != 0)
+			{
+				// LRC - we can't see 'direct use' entities in this section
+				if ((pObject->ObjectCaps() & FCAP_ONLYDIRECT_USE) != 0)
+					continue;
+
+				// !!!PERFORMANCE- should this check be done on a per case basis AFTER we've determined that
+				// this object is actually usable? This dot is being done for every object within PLAYER_SEARCH_RADIUS
+				// when player hits the use key. How many objects can be in that area, anyway? (sjb)
+				vecLOS = (VecBModelOrigin(pObject->pev) - (pev->origin + pev->view_ofs));
+
+				// This essentially moves the origin of the target to the corner nearest the player to test to see
+				// if it's "hull" is in the view cone
+				vecLOS = UTIL_ClampVectorToBox(vecLOS, pObject->pev->size * 0.5);
+
+				flDot = DotProduct(vecLOS, gpGlobals->v_forward);
+				if (flDot > flMaxDot)
+				{ // only if the item is in front of the user
+					pClosest = pObject;
+					flMaxDot = flDot;
+				}
+
+				// LRC - if the player is standing inside this entity, it's also ok to use it.
+				if (pev->origin.x >= pObject->pev->absmin.x && pev->origin.x <= pObject->pev->absmax.x &&
+					pev->origin.y >= pObject->pev->absmin.y && pev->origin.y <= pObject->pev->absmax.y &&
+					pev->origin.z >= pObject->pev->absmin.z && pev->origin.z <= pObject->pev->absmax.z)
+				{
+					pClosest = pObject;
+				}
+			}
 		}
 	}
 	pObject = pClosest;
@@ -3795,6 +3825,27 @@ void CBasePlayer::ImpulseCommands()
 	case 205:
 	{
 		DropPlayerCTFPowerup(this);
+		break;
+	}
+
+	case 90: // LRC - send USE_TOGGLE
+	{
+		if (impulsetarget.string[0] != '\0')
+			FireTargets(impulsetarget.string, this, this, USE_TOGGLE, 0);
+		break;
+	}
+
+	case 91: // LRC - send USE_ON
+	{
+		if (impulsetarget.string[0] != '\0')
+			FireTargets(impulsetarget.string, this, this, USE_ON, 0);
+		break;
+	}
+
+	case 92: // LRC - send USE_OFF
+	{
+		if (impulsetarget.string[0] != '\0')
+			FireTargets(impulsetarget.string, this, this, USE_OFF, 0);
 		break;
 	}
 

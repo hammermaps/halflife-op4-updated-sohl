@@ -63,8 +63,16 @@ void CLaserSpot::Suspend(float flSuspendTime)
 {
 	pev->effects |= EF_NODRAW;
 
-	SetThink(&CLaserSpot::Revive);
-	SetNextThink(flSuspendTime);
+	// LRC: -1 means suspend indefinitely
+	if (flSuspendTime < 0)
+	{
+		SetThink(NULL);
+	}
+	else
+	{
+		SetThink(&CLaserSpot::Revive);
+		SetNextThink(flSuspendTime);
+	}
 }
 
 //=========================================================

@@ -51,6 +51,10 @@ extern cvar_t coopplay;
 extern cvar_t coopweprespawn;
 extern cvar_t spamdelay;
 
+// LRC - SoHL cvars
+extern cvar_t impulsetarget;
+extern cvar_t mw_debug;
+
 // Engine Cvars
 inline cvar_t* g_psv_gravity;
 inline cvar_t* g_psv_aim;

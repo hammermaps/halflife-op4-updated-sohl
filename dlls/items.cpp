@@ -173,19 +173,31 @@ class CItemSuit : public CItem
 	void Spawn() override
 	{
 		Precache();
-		SET_MODEL(ENT(pev), "models/w_suit.mdl");
+		if (!FStringNull(pev->model)) // LRC - custom model support
+			SET_MODEL(ENT(pev), STRING(pev->model));
+		else
+			SET_MODEL(ENT(pev), "models/w_suit.mdl");
 		CItem::Spawn();
 	}
 	void Precache() override
 	{
-		PRECACHE_MODEL("models/w_suit.mdl");
+		if (!FStringNull(pev->model)) // LRC
+			PRECACHE_MODEL((char*)STRING(pev->model));
+		else
+			PRECACHE_MODEL("models/w_suit.mdl");
+		if (!FStringNull(pev->noise)) // LRC - custom sound support
+			PRECACHE_SOUND((char*)STRING(pev->noise));
 	}
 	bool MyTouch(CBasePlayer* pPlayer) override
 	{
 		if (pPlayer->HasSuit())
 			return false;
 
-		if ((pev->spawnflags & SF_SUIT_SHORTLOGON) != 0)
+		if (!FStringNull(pev->noise)) // LRC - custom pickup sound
+		{
+			EMIT_SOUND(pPlayer->edict(), CHAN_ITEM, STRING(pev->noise), 1, ATTN_NORM);
+		}
+		else if ((pev->spawnflags & SF_SUIT_SHORTLOGON) != 0)
 			EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_A0"); // short version of suit logon,
 		else
 			EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_AAx"); // long version of suit logon

@@ -124,6 +124,19 @@ float CHalfLifeRules::FlPlayerFallDamage(CBasePlayer* pPlayer)
 //=========================================================
 void CHalfLifeRules::PlayerSpawn(CBasePlayer* pPlayer)
 {
+	// LRC - support the new "start with HEV" flag
+	extern bool g_startSuit;
+	if (g_startSuit && !pPlayer->HasSuit())
+	{
+		pPlayer->SetHasSuit(true);
+	}
+
+	// LRC - allow game_player_equip entities in single player
+	CBaseEntity* pWeaponEntity = NULL;
+	while (pWeaponEntity = UTIL_FindEntityByClassname(pWeaponEntity, "game_player_equip"))
+	{
+		pWeaponEntity->Touch(pPlayer);
+	}
 }
 
 //=========================================================

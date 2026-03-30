@@ -38,7 +38,8 @@ typedef enum
 	at_aiconsole, // same as at_console, but only shown if developer level is 2!
 	at_warning,
 	at_error,
-	at_logged // Server print to console ( only in multiplayer games ).
+	at_logged, // Server print to console ( only in multiplayer games ).
+	at_debug   // LRC - identifies ALERT statements that don't need removing before release
 } ALERT_TYPE;
 
 // 4-22-98  JOHN: added for use in pfnClientPrintf

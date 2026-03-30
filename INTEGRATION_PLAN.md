@@ -109,7 +109,7 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
   - Client: Particle systems updated in `HUD_DrawTransparentTriangles`
   - Build: `particlemgr.cpp` added to Linux Makefile and VS2019 project
 
-**Phase 5** — 🔲 Pending
+**Phase 5** — ✅ Complete
 
 ## Guiding Principles
 
