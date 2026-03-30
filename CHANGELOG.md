@@ -9,7 +9,8 @@
 * Added `SF_MONSTER_NO_YELLOW_BLOBS` (128) and `SF_MONSTER_NO_WPN_DROP` (1024) spawnflags
 * Added custom `SpawnRandomGibs` overload accepting a custom gib model string
 * Added `#include "studio.h"` to combat.cpp for custom gib model counting
-* Added custom model support (`pev->model` override) to all monster files: agrunt, apache, barnacle, barney, bigmomma, bloater, bullsquid, controller, gargantua, genericmonster, gman, hassassin, headcrab (both variants), hgrunt, houndeye, ichthyosaur, islave, leech, nihilanth, osprey, rat, roach, scientist (both variants), turret (all variants), zombie
+* Added custom model support (`pev->model` override) to all Half-Life monster files: agrunt, apache, barnacle, barney, bigmomma, bloater, bullsquid, controller, gargantua, genericmonster, gman, hassassin, headcrab (both variants), hgrunt, houndeye, ichthyosaur, islave, leech, nihilanth, osprey, rat, roach, scientist (both variants), turret (all variants), zombie
+* Added custom model support (`pev->model` override) to all Opposing Force monster files: voltigore, baby_voltigore, pitdrone, gonome, shocktrooper, geneworm, pitworm, otis, drillsergeant, recruit, cleansuit_scientist (both variants), blkop_osprey, blkop_apache, hgrunt_medic, hgrunt_torch, male_assassin, hfgrunt, shockroach, loader, skeleton
 * Added null model safety check in `monster_generic` — prevents crash when model is not set
 * Added `m_iClass`/`m_iPlayerReact` KeyValue handlers to `CBaseMonster::KeyValue()`
 * Added `info_monster_goal` point entity for monsters to shoot at
@@ -26,6 +27,8 @@
 * Added postdisaster sitting scientist support (skip forced `SF_MONSTER_PREDISASTER`)
 * Added conditional health default for barney (`if (pev->health == 0)`)
 * Added `m_iClass` classification override in `CRat::Classify()`
+* Added `m_iClass` allegiance override to all Opposing Force monster `Classify()` functions: voltigore, baby_voltigore, pitdrone, gonome, shocktrooper, geneworm, pitworm, otis, drillsergeant, recruit, cleansuit_scientist, blkop_osprey, blkop_apache, hgrunt_medic, hgrunt_torch, male_assassin, hfgrunt, shockroach, loader, skeleton
+* Added `SF_MONSTER_NO_WPN_DROP` support in `CHFGrunt::GibMonster()` and `HandleAnimEvent()` weapon drop handler
 * Added Phase 3B–3J header declarations: `SF_DOOR_FORCETOUCHABLE`, `SF_BEAM_TRIPPED`, `GetTripEntity()`, tracktrain flags, turn/avel types, `DesiredAction()`, `IsAction()`/`InitIdleThink()`, script repeat/priority, breakable respawn/whenhit
 
 ### Phase 2.5 — Entity USE_TYPE Compliance
