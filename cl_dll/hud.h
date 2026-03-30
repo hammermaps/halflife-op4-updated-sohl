@@ -729,6 +729,11 @@ public:
 	bool MsgFunc_SetFOV(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Concuss(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf);
+
+	int m_iFogColor_R, m_iFogColor_G, m_iFogColor_B;
+	float m_fStartDist, m_fEndDist, m_fFogDensity;
+	bool m_bFogOn;
 
 	// Screen information
 	SCREENINFO m_scrinfo;

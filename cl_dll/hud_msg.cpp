@@ -58,6 +58,9 @@ bool CHud::MsgFunc_ResetHUD(const char* pszName, int iSize, void* pbuf)
 	// reset concussion effect
 	m_iConcussionEffect = 0;
 
+	// reset fog
+	m_bFogOn = false;
+
 	return true;
 }
 
@@ -169,5 +172,18 @@ bool CHud::MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf)
 
 	m_iWeaponBits = (lowerBits & 0XFFFFFFFF) | ((upperBits & 0XFFFFFFFF) << 32ULL);
 
+	return true;
+}
+
+bool CHud::MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+	m_iFogColor_R = READ_BYTE();
+	m_iFogColor_G = READ_BYTE();
+	m_iFogColor_B = READ_BYTE();
+	m_fStartDist = (float)READ_SHORT();
+	m_fEndDist = (float)READ_SHORT();
+	m_fFogDensity = (float)READ_SHORT() / 1000.0f;
+	m_bFogOn = (m_fEndDist > 0);
 	return true;
 }

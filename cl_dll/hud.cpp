@@ -102,6 +102,11 @@ int __MsgFunc_HudColor(const char* pszName, int iSize, void* pbuf)
 	return 1;
 }
 
+int __MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_SetFog(pszName, iSize, pbuf));
+}
+
 int __MsgFunc_OldWeapon(const char* pszName, int iSize, void* pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
@@ -341,6 +346,7 @@ void CHud::Init()
 	HOOK_MESSAGE(SetFOV);
 	HOOK_MESSAGE(Concuss);
 	HOOK_MESSAGE(HudColor);
+	HOOK_MESSAGE(SetFog);
 	HOOK_MESSAGE(OldWeapon);
 	HOOK_MESSAGE(Weapons);
 
@@ -383,6 +389,13 @@ void CHud::Init()
 
 	m_iLogo = 0;
 	m_iFOV = 0;
+
+	m_bFogOn = false;
+	m_iFogColor_R = m_iFogColor_G = m_iFogColor_B = 0;
+	m_fStartDist = 0;
+	m_fEndDist = 0;
+	m_fFogDensity = 0;
+
 	setNightVisionState(false);
 
 	CVAR_CREATE("zoom_sensitivity_ratio", "1.2", FCVAR_ARCHIVE);
