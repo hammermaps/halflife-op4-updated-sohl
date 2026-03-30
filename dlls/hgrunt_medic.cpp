@@ -364,6 +364,12 @@ void COFMedicAlly::SpeakSentence()
 //=========================================================
 void COFMedicAlly::GibMonster()
 {
+	if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+	{
+		COFSquadTalkMonster::GibMonster();
+		return;
+	}
+
 	Vector vecGunPos;
 	Vector vecGunAngles;
 
@@ -993,6 +999,9 @@ void COFMedicAlly::HandleAnimEvent(MonsterEvent_t* pEvent)
 	{
 	case MEDIC_AE_DROP_GUN:
 	{
+		if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+			break;
+
 		Vector vecGunPos;
 		Vector vecGunAngles;
 

@@ -662,6 +662,13 @@ void COtis::TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, T
 
 void COtis::Killed(entvars_t* pevAttacker, int iGib)
 {
+	if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+	{
+		SetUse(NULL);
+		CTalkMonster::Killed(pevAttacker, iGib);
+		return;
+	}
+
 	if (GetBodygroup(OtisBodyGroup::Weapons) == OtisWeapon::DesertEagle)
 	{ // drop the gun!
 		Vector vecGunPos;

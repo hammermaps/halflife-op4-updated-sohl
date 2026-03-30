@@ -331,6 +331,19 @@ void COFTorchAlly::GibMonster()
 			pMedic->HealMe(nullptr);
 	}
 
+	if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+	{
+		if (m_fTorchActive)
+		{
+			m_fTorchActive = false;
+			UTIL_Remove(m_pTorchBeam);
+			m_pTorchBeam = nullptr;
+		}
+
+		COFSquadTalkMonster::GibMonster();
+		return;
+	}
+
 	Vector vecGunPos;
 	Vector vecGunAngles;
 
@@ -948,6 +961,9 @@ void COFTorchAlly::HandleAnimEvent(MonsterEvent_t* pEvent)
 	{
 	case TORCH_AE_DROP_GUN:
 	{
+		if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+			break;
+
 		//If we don't have a gun equipped
 		if (GetBodygroup(TorchAllyBodygroup::Weapons) == TorchAllyWeapon::DesertEagle)
 		{

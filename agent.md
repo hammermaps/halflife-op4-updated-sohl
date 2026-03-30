@@ -129,7 +129,7 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 1** | Core Infrastructure (MoveWith, Think/NextThink, State) | ✅ Complete |
 | **Phase 2** | Base Entity Enhancements (USE types, Alias, Locus, Triggers) | ✅ Complete |
 | **Phase 2.5** | Entity USE_TYPE Compliance (ShouldToggle for toggle entities) | ✅ Complete |
-| **Phase 3A** | Monster/NPC Enhancements | 🔧 Partial |
+| **Phase 3A** | Monster/NPC Enhancements (HL1 + OpFor: custom model, m_iClass, SF_MONSTER_NO_WPN_DROP) | 🔧 Partial |
 | **Phase 3B** | Door Enhancements (`SF_DOOR_FORCETOUCHABLE`, synched fire, `message` target) | ✅ Complete |
 | **Phase 3C** | Button Enhancements (`game_state` entity, `SF_BUTTON_ONLYDIRECT`, master lock) | ✅ Complete |
 | **Phase 3D** | Breakable Enhancements (respawn, `whenhit`, `SF_PUSH_NOPULL`) | ✅ Complete |
@@ -157,6 +157,20 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 - MoveWith members: `m_pMoveWith`, `m_pChildMoveWith`, `m_pSiblingMoveWith` — entity parenting linked list
 - Locus virtuals: `CalcPosition()`, `CalcVelocity()`, `CalcRatio()` — for dynamic entity position/velocity resolution
 - Toggle entities **must** use `ShouldToggle(useType, currentState)` in their `Use()` handler to properly respect `USE_ON`, `USE_OFF`, `USE_TOGGLE`, and the extended types
+- All monster entities **must** check `m_iClass` in `Classify()` before returning a hardcoded class
+- All monster entities **must** support custom models via `pev->model` with `FStringNull` check in `Spawn()`/`Precache()`
+- Armed monsters **must** check `SF_MONSTER_NO_WPN_DROP` before dropping weapons on death (in both `GibMonster()` and `HandleAnimEvent()`)
+
+### OpFor Entity SoHL Status
+
+All Opposing Force entities have been audited for SoHL compliance:
+
+| Category | Entities | SoHL Status |
+|----------|----------|-------------|
+| **Monsters** | voltigore, baby_voltigore, pitdrone, gonome, shocktrooper, geneworm, pitworm, otis, drillsergeant, recruit, cleansuit_scientist, blkop_osprey, blkop_apache, hgrunt_medic, hgrunt_torch, male_assassin, hfgrunt, shockroach, loader, skeleton | ✅ Custom model, m_iClass, SF_MONSTER_NO_WPN_DROP |
+| **Weapons** | CDisplacer, CEagle, CKnife, CM249, CPenguin, CPipewrench, CSporeLauncher, CSpore, CShockBeam, CShockRifle, CBarnacleGrapple, CSniperRifle | ✅ SetNextThink wrappers |
+| **Rope** | CRope, CRopeSegment, CRopeSample, CElectrifiedWire | ✅ SetNextThink wrappers |
+| **CTF** | CTFGoalFlag, CTFGoalBase, CTFGoal, CItemCTF, and item entities | ✅ SetNextThink wrappers |
 
 ## Scope of Changes
 
