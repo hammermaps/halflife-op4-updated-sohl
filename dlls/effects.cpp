@@ -2560,16 +2560,9 @@ void CEnvParticle::Spawn()
 
 	Precache();
 
-	// SoHL 1.5 - Only auto-activate if unnamed, otherwise respect spawnflags
-	if (FStringNull(pev->targetname))
-	{
-		if (pev->spawnflags & 1)
-		{
-			m_fActive = true;
-			SendParticle(1);
-		}
-	}
-	else if (pev->spawnflags & 1)
+	// SoHL 1.5 - Auto-activate if start-on flag is set
+	// Named entities can also auto-activate via spawnflags
+	if (pev->spawnflags & 1)
 	{
 		m_fActive = true;
 		SendParticle(1);

@@ -59,6 +59,8 @@ public:
 
 	// Bmodels don't go across transitions
 	int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+
+	bool m_bHasRotation; // SoHL 1.5 - Track if rotation was set via message key
 };
 
 LINK_ENTITY_TO_CLASS(func_wall, CFuncWall);
@@ -69,6 +71,7 @@ bool CFuncWall::KeyValue(KeyValueData* pkvd)
 	if (FStrEq(pkvd->szKeyName, "message"))
 	{
 		UTIL_StringToVector((float*)pev->angles, pkvd->szValue);
+		m_bHasRotation = true;
 		return true;
 	}
 
@@ -77,6 +80,10 @@ bool CFuncWall::KeyValue(KeyValueData* pkvd)
 
 void CFuncWall::Spawn()
 {
+	// SoHL 1.5 - Only zero angles if no rotation was set via message key
+	if (!m_bHasRotation)
+		pev->angles = g_vecZero;
+
 	pev->movetype = MOVETYPE_PUSH; // so it doesn't get pushed by anything
 	pev->solid = SOLID_BSP;
 	SET_MODEL(ENT(pev), STRING(pev->model));
