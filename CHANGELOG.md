@@ -154,7 +154,7 @@
 
 ## Spirit of Half-Life Integration
 
-### Phase 3A — Monster/NPC Enhancements (In Progress)
+### Phase 3A — Monster/NPC Enhancements
 
 * Added `m_iClass` and `m_iPlayerReact` member variables to `CBaseMonster` for monster allegiance and player reaction overrides
 * Added `HasCustomGibs()` virtual method to `CBaseMonster` for custom gib model support
@@ -189,6 +189,11 @@
 * Fixed `COFPitWorm::Precache()` to use `pev->model` override pattern instead of hardcoded `g_engfuncs.pfnPrecacheModel` call
 * Fixed `COFPitWorm::Spawn()` to support custom model via `pev->model` with `FStringNull` check
 * Added Phase 3B–3J header declarations: `SF_DOOR_FORCETOUCHABLE`, `SF_BEAM_TRIPPED`, `GetTripEntity()`, tracktrain flags, turn/avel types, `DesiredAction()`, `IsAction()`/`InitIdleThink()`, script repeat/priority, breakable respawn/whenhit
+* Added `m_iClass` allegiance override to all remaining HL1 monster `Classify()` functions: agrunt, apache, barnacle, barney, bigmomma, bloater, bullsquid, controller, gargantua, genericmonster, gman, hassassin, headcrab, houndeye, ichthyosaur, islave, leech, nihilanth, osprey, roach, scientist (CScientist + CSittingScientist), hgrunt, turret, zombie
+* Added `m_iBaseBody` member variable, save/restore entry, and `Spawn()` initialisation to `CBarney` for multi-body model support
+* Added `m_iPlayerReact` guard in `CBarney::TakeDamage()` — barney will not be provoked by the player when the reaction has been overridden by a level designer
+* Updated `CBarney::DeclineFollowing()` to use `m_iszDecline` custom sentence when set, falling back to the hardcoded `"BA_POK"` sentence
+* Added SpeakAs voice group replacement to `CTalkMonster::Precache()` — when `m_iszSpeakAs` is set the group prefix in all `m_szGrp[]` entries is replaced with the designer-specified prefix, enabling one monster to speak with another monster's voice set
 
 ### Phase 2.5 — Entity USE_TYPE Compliance
 

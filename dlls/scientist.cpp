@@ -593,7 +593,7 @@ void CScientist::RunTask(Task_t* pTask)
 //=========================================================
 int CScientist::Classify()
 {
-	return CLASS_HUMAN_PASSIVE;
+	return m_iClass ? m_iClass : CLASS_HUMAN_PASSIVE; // LRC
 }
 
 
@@ -1337,7 +1337,7 @@ void CSittingScientist::Precache()
 //=========================================================
 int CSittingScientist::Classify()
 {
-	return CLASS_HUMAN_PASSIVE;
+	return m_iClass ? m_iClass : CLASS_HUMAN_PASSIVE; // LRC
 }
 
 

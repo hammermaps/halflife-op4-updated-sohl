@@ -19,16 +19,16 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
 - Simplified `CSpeaker::ToggleUse` to use `ShouldToggle`.
 
 **Phase 3 (Entity-Specific Enhancements)** — 🔧 **IN PROGRESS**
-- Phase 3A (Monster/NPC Enhancements) — partially implemented:
+- **Phase 3A (Monster/NPC Enhancements)** — ✅ **COMPLETE**
   - Header declarations: `m_iClass`, `m_iPlayerReact`, `HasCustomGibs()`, `SF_MONSTER_NO_YELLOW_BLOBS`, `SF_MONSTER_NO_WPN_DROP`, custom gib `SpawnRandomGibs` overload
   - Custom model support for all HL1 monster files (agrunt, apache, barnacle, barney, bigmomma, bloater, bullsquid, controller, gargantua, genericmonster, gman, hassassin, headcrab, hgrunt, houndeye, ichthyosaur, islave, leech, nihilanth, osprey, rat, roach, scientist, turret, zombie)
   - Custom model support for all OpFor monster files (voltigore, baby_voltigore, pitdrone, gonome, shocktrooper, geneworm, pitworm, otis, drillsergeant, recruit, cleansuit_scientist, blkop_osprey, blkop_apache, hgrunt_medic, hgrunt_torch, male_assassin, hfgrunt, shockroach, loader, skeleton)
-  - `m_iClass` allegiance override in `Classify()` for all HL1 and OpFor monsters
+  - `m_iClass` allegiance override in `Classify()` for all HL1 monsters (agrunt, apache, barnacle, barney, bigmomma, bloater, bullsquid, controller, gargantua, genericmonster, gman, hassassin, headcrab, houndeye, ichthyosaur, islave, leech, nihilanth, osprey, roach, scientist/CSittingScientist, hgrunt, turret, zombie) and all OpFor monsters
   - Core monster logic: `m_iClass`/`m_iPlayerReact` KeyValue handlers, stuck warning with `SF_MONSTER_NO_YELLOW_BLOBS`, `info_monster_goal` entity
-  - Talk monster: `m_iszDecline`/`m_iszSpeakAs` save/restore + KeyValue, `DeclineFollowing()`
+  - Talk monster: `m_iszDecline`/`m_iszSpeakAs` save/restore + KeyValue, `DeclineFollowing()`; SpeakAs voice group replacement in `Precache()`
   - Combat: custom gib model support via `HasCustomGibs()`, `studio.h` include
   - Scripted: `PreciseAttack()` implementation, `TaskComplete()` for immediate play start
-  - Monster-specific: hornet allegiance (agrunt), `monster_bullsquid` link, `SF_MONSTER_NO_WPN_DROP` (hgrunt, hfgrunt, shocktrooper, hgrunt_medic, hgrunt_torch, male_assassin, otis), `m_iPlayerReact` override (islave), osprey loop breaker + unit fallback, postdisaster sitting scientist
+  - Monster-specific: hornet allegiance (agrunt), `monster_bullsquid` link, `SF_MONSTER_NO_WPN_DROP` (hgrunt, hfgrunt, shocktrooper, hgrunt_medic, hgrunt_torch, male_assassin, otis), `m_iPlayerReact` override (islave + barney), osprey loop breaker + unit fallback, postdisaster sitting scientist, `m_iBaseBody` tracking (barney)
   - OpFor weapon entities use SoHL think wrappers (`SetNextThink`/`DontThink`)
   - OpFor rope and CTF entities use SoHL think wrappers where applicable
 - **Phase 3B (Door Enhancements)** — ✅ **COMPLETE**

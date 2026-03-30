@@ -426,7 +426,7 @@ int CBullsquid::ISoundMask()
 //=========================================================
 int CBullsquid::Classify()
 {
-	return CLASS_ALIEN_PREDATOR;
+	return m_iClass ? m_iClass : CLASS_ALIEN_PREDATOR; // LRC
 }
 
 //=========================================================

@@ -57,7 +57,7 @@ LINK_ENTITY_TO_CLASS(monster_bloater, CBloater);
 //=========================================================
 int CBloater::Classify()
 {
-	return CLASS_ALIEN_MONSTER;
+	return m_iClass ? m_iClass : CLASS_ALIEN_MONSTER; // LRC
 }
 
 //=========================================================

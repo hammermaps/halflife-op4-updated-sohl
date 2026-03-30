@@ -1150,6 +1150,8 @@ bool CBaseTurret::MoveTurret()
 //
 int CBaseTurret::Classify()
 {
+	if (m_iClass)
+		return m_iClass; // LRC
 	if (m_iOn || m_iAutoStart)
 		return CLASS_MACHINE;
 	return CLASS_NONE;
