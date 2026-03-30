@@ -20,3 +20,4 @@
 #define SF_WORLD_FORCETEAM 0x0004 // Force teams
 #define SF_WORLD_CTF 0x0008		  // CTF gamemode
 #define SF_WORLD_COOP 0x0010	  // Co-op gamemode
+#define SF_WORLD_STARTSUIT 0x0020 // LRC - Start with HEV suit

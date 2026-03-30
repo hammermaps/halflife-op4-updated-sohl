@@ -556,6 +556,13 @@ void ClientCommand(edict_t* pEntity)
 		// player is dropping an item.
 		player->DropPlayerItem((char*)CMD_ARGV(1));
 	}
+	else if (FStrEq(pcmd, "fire")) // LRC - trigger entities manually
+	{
+		if (0 != g_psv_cheats->value && CMD_ARGC() > 1)
+		{
+			FireTargets(CMD_ARGV(1), player, player, USE_TOGGLE, 0);
+		}
+	}
 	else if (FStrEq(pcmd, "fov"))
 	{
 		if (0 != g_psv_cheats->value && CMD_ARGC() > 1)

@@ -413,6 +413,125 @@ Vector UTIL_VecToAngles(const Vector& vec)
 	return Vector(rgflVecOut);
 }
 
+// LRC - pass in a normalised axis vector and a number of degrees, and this returns the corresponding
+// temporary-axis-rotation as a set of euler angles.
+Vector UTIL_AxisRotationToAngles(const Vector& vecAxis, float flAngle)
+{
+	Vector vecTemp;
+	float flCos = cos(flAngle * (M_PI / 180.0));
+	float flSin = sin(flAngle * (M_PI / 180.0));
+
+	// build a rotation matrix from the axis and angle
+	// then convert to euler angles
+	// column 0
+	float m00 = flCos + vecAxis.x * vecAxis.x * (1 - flCos);
+	float m10 = vecAxis.y * vecAxis.x * (1 - flCos) + vecAxis.z * flSin;
+	float m20 = vecAxis.z * vecAxis.x * (1 - flCos) - vecAxis.y * flSin;
+	// column 1
+	float m01 = vecAxis.x * vecAxis.y * (1 - flCos) - vecAxis.z * flSin;
+	float m11 = flCos + vecAxis.y * vecAxis.y * (1 - flCos);
+	float m21 = vecAxis.z * vecAxis.y * (1 - flCos) + vecAxis.x * flSin;
+	// column 2
+	float m02 = vecAxis.x * vecAxis.z * (1 - flCos) + vecAxis.y * flSin;
+	float m12 = vecAxis.y * vecAxis.z * (1 - flCos) - vecAxis.x * flSin;
+	float m22 = flCos + vecAxis.z * vecAxis.z * (1 - flCos);
+
+	// Extract euler angles (pitch, yaw, roll) from rotation matrix
+	if (m20 > -1.0 && m20 < 1.0)
+	{
+		vecTemp.x = asin(-m20) * (180.0 / M_PI);
+		vecTemp.y = atan2(m10, m00) * (180.0 / M_PI);
+		vecTemp.z = atan2(m21, m22) * (180.0 / M_PI);
+	}
+	else
+	{
+		vecTemp.x = (m20 <= -1.0) ? 90.0 : -90.0;
+		vecTemp.y = atan2(-m01, m11) * (180.0 / M_PI);
+		vecTemp.z = 0;
+	}
+
+	return vecTemp;
+}
+
+// LRC - as above, but returns the position of point 1 0 0 under the given rotation
+Vector UTIL_AxisRotationToVec(const Vector& vecAxis, float flAngle)
+{
+	float flCos = cos(flAngle * (M_PI / 180.0));
+	float flSin = sin(flAngle * (M_PI / 180.0));
+
+	// Rodrigues' rotation formula for point (1,0,0)
+	return Vector(
+		flCos + vecAxis.x * vecAxis.x * (1 - flCos),
+		vecAxis.y * vecAxis.x * (1 - flCos) + vecAxis.z * flSin,
+		vecAxis.z * vecAxis.x * (1 - flCos) - vecAxis.y * flSin);
+}
+
+// LRC - randomized vectors of the form "0 0 0 .. 1 0 0"
+// Parses a string like "0 0 0" or "0 0 0 .. 1 1 1" (random range)
+void UTIL_StringToRandomVector(float* pVector, const char* pString)
+{
+	char* pstr;
+	char* pfront;
+	char szTemp[256];
+	int i;
+
+	strncpy(szTemp, pString, sizeof(szTemp) - 1);
+	szTemp[sizeof(szTemp) - 1] = '\0';
+
+	// check for ".." separator indicating a random range
+	char* pDotDot = strstr(szTemp, "..");
+	if (pDotDot)
+	{
+		// parse the min vector (before ..)
+		float vecMin[3] = {0, 0, 0};
+		float vecMax[3] = {0, 0, 0};
+
+		*pDotDot = '\0';
+		pstr = szTemp;
+		for (i = 0; i < 3; i++)
+		{
+			pfront = pstr;
+			vecMin[i] = (float)atof(pfront);
+			while (*pstr && *pstr != ' ')
+				pstr++;
+			if (*pstr)
+				pstr++;
+		}
+
+		pstr = pDotDot + 2;
+		while (*pstr == ' ')
+			pstr++;
+		for (i = 0; i < 3; i++)
+		{
+			pfront = pstr;
+			vecMax[i] = (float)atof(pfront);
+			while (*pstr && *pstr != ' ')
+				pstr++;
+			if (*pstr)
+				pstr++;
+		}
+
+		for (i = 0; i < 3; i++)
+		{
+			pVector[i] = RANDOM_FLOAT(vecMin[i], vecMax[i]);
+		}
+	}
+	else
+	{
+		// simple "x y z" parsing
+		pstr = szTemp;
+		for (i = 0; i < 3; i++)
+		{
+			pfront = pstr;
+			pVector[i] = (float)atof(pfront);
+			while (*pstr && *pstr != ' ')
+				pstr++;
+			if (*pstr)
+				pstr++;
+		}
+	}
+}
+
 //	float UTIL_MoveToOrigin( edict_t *pent, const Vector vecGoal, float flDist, int iMoveType )
 void UTIL_MoveToOrigin(edict_t* pent, const Vector& vecGoal, float flDist, int iMoveType)
 {

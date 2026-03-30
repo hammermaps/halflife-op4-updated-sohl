@@ -239,6 +239,10 @@ extern CBaseEntity* UTIL_PlayerByIndex(int playerIndex);
 #define UTIL_EntitiesInPVS(pent) (*g_engfuncs.pfnEntitiesInPVS)(pent)
 extern void UTIL_MakeVectors(const Vector& vecAngles);
 
+// LRC - rotation utility functions
+extern Vector UTIL_AxisRotationToAngles(const Vector& vec, float angle);
+extern Vector UTIL_AxisRotationToVec(const Vector& vec, float angle);
+
 // Pass in an array of pointers and an array size, it fills the array and returns the number inserted
 extern int UTIL_MonstersInSphere(CBaseEntity** pList, int listMax, const Vector& center, float radius);
 extern int UTIL_EntitiesInBox(CBaseEntity** pList, int listMax, const Vector& mins, const Vector& maxs, int flagMask);
@@ -317,6 +321,9 @@ extern float UTIL_SplineFraction(float value, float scale);
 extern float UTIL_WaterLevel(const Vector& position, float minz, float maxz);
 extern void UTIL_Bubbles(Vector mins, Vector maxs, int count);
 extern void UTIL_BubbleTrail(Vector from, Vector to, int count);
+
+// LRC - randomized vectors of the form "0 0 0 .. 1 0 0"
+extern void UTIL_StringToRandomVector(float* pVector, const char* pString);
 
 // allows precacheing of other entities
 extern void UTIL_PrecacheOther(const char* szClassname);

@@ -47,6 +47,10 @@ cvar_t mp_chattime = {"mp_chattime", "10", FCVAR_SERVER};
 
 cvar_t sv_allowbunnyhopping = {"sv_allowbunnyhopping", "0", FCVAR_SERVER};
 
+// LRC - SoHL cvars
+cvar_t impulsetarget = {"sohl_impulsetarget", "0", FCVAR_SERVER};
+cvar_t mw_debug = {"sohl_mw_debug", "0", FCVAR_SERVER};
+
 //Macros to make skill cvars easier to define
 #define DECLARE_SKILL_CVARS(name)                 \
 	cvar_t sk_##name##1 = {"sk_" #name "1", "0"}; \
@@ -656,6 +660,10 @@ void GameDLLInit()
 	CVAR_REGISTER(&mp_chattime);
 
 	CVAR_REGISTER(&sv_allowbunnyhopping);
+
+	// LRC - SoHL cvars
+	CVAR_REGISTER(&impulsetarget);
+	CVAR_REGISTER(&mw_debug);
 
 	// REGISTER CVARS FOR SKILL LEVEL STUFF
 	// Agrunt

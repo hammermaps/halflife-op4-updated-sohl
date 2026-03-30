@@ -190,7 +190,7 @@ bool CCrowbar::Swing(bool fFirst)
 		if (fFirst)
 		{
 			// miss
-			m_flNextPrimaryAttack = GetNextAttackDelay(0.5);
+			m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.25; // LRC: corrected half-life bug
 
 			// player "shoot" animation
 			m_pPlayer->SetAnimation(PLAYER_ATTACK1);

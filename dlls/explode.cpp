@@ -184,6 +184,8 @@ void CEnvExplosion::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 		}
 	}
 
+	pev->origin = vecSpot; // LRC - reset origin for fireball and damage
+
 	// draw fireball
 	if ((pev->spawnflags & SF_ENVEXPLOSION_NOFIREBALL) == 0)
 	{
