@@ -1,4 +1,14 @@
-Checks: '-*,readability-delete-null-pointer,readability-implicit-bool-conversion'
+Checks: >-
+    -*,
+    readability-delete-null-pointer,
+    readability-implicit-bool-conversion,
+    modernize-use-nullptr,
+    modernize-use-override,
+    modernize-deprecated-headers,
+    bugprone-sizeof-expression,
+    bugprone-suspicious-string-compare,
+    performance-unnecessary-copy-initialization,
+    performance-for-range-copy
 CheckOptions:
     - key: readability-implicit-bool-conversion.AllowPointerConditions
       value: '1'

@@ -136,7 +136,7 @@ inline EOFFSET OFFSET(entvars_t* pev)
 inline entvars_t* VARS(edict_t* pent)
 {
 	if (!pent)
-		return NULL;
+		return nullptr;
 
 	return &pent->v;
 }
@@ -154,8 +154,8 @@ inline bool FNullEnt(EOFFSET eoffset)
 {
 	return eoffset == 0;
 }
-inline bool FNullEnt(const edict_t* pent) { return pent == NULL || FNullEnt(OFFSET(pent)); }
-inline bool FNullEnt(entvars_t* pev) { return pev == NULL || FNullEnt(OFFSET(pev)); }
+inline bool FNullEnt(const edict_t* pent) { return pent == nullptr || FNullEnt(OFFSET(pent)); }
+inline bool FNullEnt(entvars_t* pev) { return pev == nullptr || FNullEnt(OFFSET(pev)); }
 
 // Testing strings for nullity
 #define iStringNull 0
@@ -167,16 +167,16 @@ inline bool FStringNull(int iString)
 #define cchMapNameMost 32
 
 // Dot products for view cone checking
-#define VIEW_FIELD_FULL (float)-1.0		   // +-180 degrees
-#define VIEW_FIELD_WIDE (float)-0.7		   // +-135 degrees 0.1 // +-85 degrees, used for full FOV checks
-#define VIEW_FIELD_NARROW (float)0.7	   // +-45 degrees, more narrow check used to set up ranged attacks
-#define VIEW_FIELD_ULTRA_NARROW (float)0.9 // +-25 degrees, more narrow check used to set up ranged attacks
+constexpr float VIEW_FIELD_FULL = -1.0f;		   // +-180 degrees
+constexpr float VIEW_FIELD_WIDE = -0.7f;		   // +-135 degrees 0.1 // +-85 degrees, used for full FOV checks
+constexpr float VIEW_FIELD_NARROW = 0.7f;		   // +-45 degrees, more narrow check used to set up ranged attacks
+constexpr float VIEW_FIELD_ULTRA_NARROW = 0.9f;    // +-25 degrees, more narrow check used to set up ranged attacks
 
 // All monsters need this data
-#define DONT_BLEED -1
-#define BLOOD_COLOR_RED (byte)247
-#define BLOOD_COLOR_YELLOW (byte)195
-#define BLOOD_COLOR_GREEN BLOOD_COLOR_YELLOW
+constexpr int DONT_BLEED = -1;
+constexpr byte BLOOD_COLOR_RED = 247;
+constexpr byte BLOOD_COLOR_YELLOW = 195;
+constexpr byte BLOOD_COLOR_GREEN = BLOOD_COLOR_YELLOW;
 
 typedef enum
 {
@@ -329,8 +329,8 @@ extern void UTIL_StringToRandomVector(float* pVector, const char* pString);
 extern void UTIL_PrecacheOther(const char* szClassname);
 
 // prints a message to each client
-extern void UTIL_ClientPrintAll(int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
-inline void UTIL_CenterPrintAll(const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL)
+extern void UTIL_ClientPrintAll(int msg_dest, const char* msg_name, const char* param1 = nullptr, const char* param2 = nullptr, const char* param3 = nullptr, const char* param4 = nullptr);
+inline void UTIL_CenterPrintAll(const char* msg_name, const char* param1 = nullptr, const char* param2 = nullptr, const char* param3 = nullptr, const char* param4 = nullptr)
 {
 	UTIL_ClientPrintAll(HUD_PRINTCENTER, msg_name, param1, param2, param3, param4);
 }
@@ -339,7 +339,7 @@ class CBasePlayerItem;
 class CBasePlayer;
 
 // prints messages through the HUD
-extern void ClientPrint(entvars_t* client, int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
+extern void ClientPrint(entvars_t* client, int msg_dest, const char* msg_name, const char* param1 = nullptr, const char* param2 = nullptr, const char* param3 = nullptr, const char* param4 = nullptr);
 
 // prints a message to the HUD say (chat)
 extern void UTIL_SayText(const char* pText, CBaseEntity* pEntity);
@@ -387,11 +387,11 @@ extern int BuildChangeList(LEVELLIST* pLevelList, int maxList);
 //
 #ifdef DEBUG
 void DBG_AssertFunction(bool fExpr, const char* szExpr, const char* szFile, int szLine, const char* szMessage);
-#define ASSERT(f) DBG_AssertFunction(f, #f, __FILE__, __LINE__, NULL)
+#define ASSERT(f) DBG_AssertFunction(f, #f, __FILE__, __LINE__, nullptr)
 #define ASSERTSZ(f, sz) DBG_AssertFunction(f, #f, __FILE__, __LINE__, sz)
 #else // !DEBUG
-#define ASSERT(f)
-#define ASSERTSZ(f, sz)
+#define ASSERT(f) ((void)0)
+#define ASSERTSZ(f, sz) ((void)0)
 #endif // !DEBUG
 
 //

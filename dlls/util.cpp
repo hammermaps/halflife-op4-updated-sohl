@@ -60,7 +60,7 @@ CBaseEntity* UTIL_FindEntityForward(CBaseEntity* pMe)
 		CBaseEntity* pHit = CBaseEntity::Instance(tr.pHit);
 		return pHit;
 	}
-	return NULL;
+	return nullptr;
 }
 
 static unsigned int glSeed = 0;
@@ -106,7 +106,7 @@ int UTIL_SharedRandomLong(unsigned int seed, int low, int high)
 {
 	unsigned int range;
 
-	U_Srand((int)seed + low + high);
+	U_Srand(static_cast<int>(seed) + low + high);
 
 	range = high - low + 1;
 	if (0 == (range - 1))
@@ -136,7 +136,11 @@ float UTIL_SharedRandomFloat(unsigned int seed, float low, float high)
 	//
 	unsigned int range;
 
-	U_Srand((int)seed + *(int*)&low + *(int*)&high);
+	// Use memcpy to safely convert float bits to int (avoids strict aliasing violation)
+	int lowBits, highBits;
+	std::memcpy(&lowBits, &low, sizeof(int));
+	std::memcpy(&highBits, &high, sizeof(int));
+	U_Srand(static_cast<int>(seed) + lowBits + highBits);
 
 	U_Random();
 	U_Random();
@@ -153,7 +157,7 @@ float UTIL_SharedRandomFloat(unsigned int seed, float low, float high)
 
 		tensixrand = U_Random() & 65535;
 
-		offset = (float)tensixrand / 65536.0;
+		offset = static_cast<float>(tensixrand) / 65536.0f;
 
 		return (low + offset * range);
 	}
@@ -365,10 +369,10 @@ void DBG_AssertFunction(
 	if (fExpr)
 		return;
 	char szOut[512];
-	if (szMessage != NULL)
-		sprintf(szOut, "ASSERT FAILED:\n %s \n(%s@%d)\n%s", szExpr, szFile, szLine, szMessage);
+	if (szMessage != nullptr)
+		snprintf(szOut, sizeof(szOut), "ASSERT FAILED:\n %s \n(%s@%d)\n%s", szExpr, szFile, szLine, szMessage);
 	else
-		sprintf(szOut, "ASSERT FAILED:\n %s \n(%s@%d)", szExpr, szFile, szLine);
+		snprintf(szOut, sizeof(szOut), "ASSERT FAILED:\n %s \n(%s@%d)", szExpr, szFile, szLine);
 	ALERT(at_console, szOut);
 }
 #endif // DEBUG

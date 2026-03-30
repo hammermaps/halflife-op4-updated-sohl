@@ -29,22 +29,22 @@ CBaseEntity
 				CBaseGroup
 */
 
-#define MAX_PATH_SIZE 10 // max number of nodes available for a path.
+constexpr int MAX_PATH_SIZE = 10; // max number of nodes available for a path.
 
 // These are caps bits to indicate what an object's capabilities (currently used for save/restore and level transitions)
-#define FCAP_CUSTOMSAVE 0x00000001
-#define FCAP_ACROSS_TRANSITION 0x00000002 // should transfer between transitions
-#define FCAP_MUST_SPAWN 0x00000004		  // Spawn after restore
-#define FCAP_DONT_SAVE 0x80000000		  // Don't save this
-#define FCAP_IMPULSE_USE 0x00000008		  // can be used by the player
-#define FCAP_CONTINUOUS_USE 0x00000010	  // can be used by the player
-#define FCAP_ONOFF_USE 0x00000020		  // can be used by the player
-#define FCAP_DIRECTIONAL_USE 0x00000040	  // Player sends +/- 1 when using (currently only tracktrains)
-#define FCAP_MASTER 0x00000080			  // Can be used to "master" other entities (like multisource)
-#define FCAP_ONLYDIRECT_USE 0x00000100	  // LRC - can't use this entity through a wall
+constexpr int FCAP_CUSTOMSAVE = 0x00000001;
+constexpr int FCAP_ACROSS_TRANSITION = 0x00000002; // should transfer between transitions
+constexpr int FCAP_MUST_SPAWN = 0x00000004;		   // Spawn after restore
+constexpr unsigned int FCAP_DONT_SAVE = 0x80000000; // Don't save this
+constexpr int FCAP_IMPULSE_USE = 0x00000008;	   // can be used by the player
+constexpr int FCAP_CONTINUOUS_USE = 0x00000010;	   // can be used by the player
+constexpr int FCAP_ONOFF_USE = 0x00000020;		   // can be used by the player
+constexpr int FCAP_DIRECTIONAL_USE = 0x00000040;   // Player sends +/- 1 when using (currently only tracktrains)
+constexpr int FCAP_MASTER = 0x00000080;			   // Can be used to "master" other entities (like multisource)
+constexpr int FCAP_ONLYDIRECT_USE = 0x00000100;	   // LRC - can't use this entity through a wall
 
 // UNDONE: This will ignore transition volumes (trigger_transition), but not the PVS!!!
-#define FCAP_FORCE_TRANSITION 0x00000080 // ALWAYS goes across transitions
+constexpr int FCAP_FORCE_TRANSITION = 0x00000080; // ALWAYS goes across transitions
 
 #include "Platform.h"
 #include "saverestore.h"
@@ -107,27 +107,27 @@ typedef void (CBaseEntity::*ENTITYFUNCPTR)(CBaseEntity* pOther);
 typedef void (CBaseEntity::*USEPTR)(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
 
 // For CLASSIFY
-#define CLASS_NONE 0
-#define CLASS_MACHINE 1
-#define CLASS_PLAYER 2
-#define CLASS_HUMAN_PASSIVE 3
-#define CLASS_HUMAN_MILITARY 4
-#define CLASS_ALIEN_MILITARY 5
-#define CLASS_ALIEN_PASSIVE 6
-#define CLASS_ALIEN_MONSTER 7
-#define CLASS_ALIEN_PREY 8
-#define CLASS_ALIEN_PREDATOR 9
-#define CLASS_INSECT 10
-#define CLASS_PLAYER_ALLY 11
-#define CLASS_PLAYER_BIOWEAPON 12		 // hornets and snarks.launched by players
-#define CLASS_ALIEN_BIOWEAPON 13		 // hornets and snarks.launched by the alien menace
-#define CLASS_HUMAN_MILITARY_FRIENDLY 14 // Opposing Force friendlies
-#define CLASS_ALIEN_RACE_X 15
-#define CLASS_FACTION_A 16	  // LRC - simple new classes, for use with Behaves As
-#define CLASS_FACTION_B 17	  // LRC
-#define CLASS_FACTION_C 18	  // LRC
-#define CLASS_CTFITEM 30
-#define CLASS_BARNACLE 99 // special because no one pays attention to it, and it eats a wide cross-section of creatures.
+constexpr int CLASS_NONE = 0;
+constexpr int CLASS_MACHINE = 1;
+constexpr int CLASS_PLAYER = 2;
+constexpr int CLASS_HUMAN_PASSIVE = 3;
+constexpr int CLASS_HUMAN_MILITARY = 4;
+constexpr int CLASS_ALIEN_MILITARY = 5;
+constexpr int CLASS_ALIEN_PASSIVE = 6;
+constexpr int CLASS_ALIEN_MONSTER = 7;
+constexpr int CLASS_ALIEN_PREY = 8;
+constexpr int CLASS_ALIEN_PREDATOR = 9;
+constexpr int CLASS_INSECT = 10;
+constexpr int CLASS_PLAYER_ALLY = 11;
+constexpr int CLASS_PLAYER_BIOWEAPON = 12;		   // hornets and snarks.launched by players
+constexpr int CLASS_ALIEN_BIOWEAPON = 13;		   // hornets and snarks.launched by the alien menace
+constexpr int CLASS_HUMAN_MILITARY_FRIENDLY = 14;  // Opposing Force friendlies
+constexpr int CLASS_ALIEN_RACE_X = 15;
+constexpr int CLASS_FACTION_A = 16;	   // LRC - simple new classes, for use with Behaves As
+constexpr int CLASS_FACTION_B = 17;	   // LRC
+constexpr int CLASS_FACTION_C = 18;	   // LRC
+constexpr int CLASS_CTFITEM = 30;
+constexpr int CLASS_BARNACLE = 99; // special because no one pays attention to it, and it eats a wide cross-section of creatures.
 
 class CBaseEntity;
 class CBaseToggle;
@@ -137,7 +137,7 @@ class CSquadMonster;
 class COFSquadTalkMonster;
 
 
-#define SF_NORESPAWN (1 << 30) // !!!set this bit on guns and stuff that should never respawn.
+constexpr int SF_NORESPAWN = (1 << 30); // !!!set this bit on guns and stuff that should never respawn.
 
 //
 // EHANDLE. Safe way to point to CBaseEntities who may die between frames
@@ -241,9 +241,9 @@ public:
 	virtual int BloodColor() { return DONT_BLEED; }
 	virtual void TraceBleed(float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType);
 	virtual bool IsTriggered(CBaseEntity* pActivator) { return true; }
-	virtual CBaseToggle* MyTogglePointer() { return NULL; }
-	virtual CBaseMonster* MyMonsterPointer() { return NULL; }
-	virtual CSquadMonster* MySquadMonsterPointer() { return NULL; }
+	virtual CBaseToggle* MyTogglePointer() { return nullptr; }
+	virtual CBaseMonster* MyMonsterPointer() { return nullptr; }
+	virtual CSquadMonster* MySquadMonsterPointer() { return nullptr; }
 	virtual COFSquadTalkMonster* MySquadTalkMonsterPointer() { return nullptr; }
 	virtual int GetToggleState() { return TS_AT_TOP; }
 	virtual STATE GetState() { return STATE_OFF; }  // LRC
@@ -342,10 +342,10 @@ public:
 	void DontThink();
 	void ResetThink();
 	void ThinkCorrection();
-	void FireBullets(unsigned int cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq = 4, int iDamage = 0, entvars_t* pevAttacker = NULL);
-	Vector FireBulletsPlayer(unsigned int cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq = 4, int iDamage = 0, entvars_t* pevAttacker = NULL, int shared_rand = 0);
+	void FireBullets(unsigned int cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq = 4, int iDamage = 0, entvars_t* pevAttacker = nullptr);
+	Vector FireBulletsPlayer(unsigned int cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq = 4, int iDamage = 0, entvars_t* pevAttacker = nullptr, int shared_rand = 0);
 
-	virtual CBaseEntity* Respawn() { return NULL; }
+	virtual CBaseEntity* Respawn() { return nullptr; }
 
 	void SUB_UseTargets(CBaseEntity* pActivator, USE_TYPE useType, float value);
 	// Do the bounding boxes of these two intersect?
@@ -363,7 +363,7 @@ public:
 	{
 		if (!pent)
 			pent = ENT(0);
-		CBaseEntity* pEnt = (CBaseEntity*)GET_PRIVATE(pent);
+		CBaseEntity* pEnt = static_cast<CBaseEntity*>(GET_PRIVATE(pent));
 		return static_cast<T*>(pEnt);
 	}
 
@@ -375,14 +375,14 @@ public:
 		CBaseEntity* pEntity = Instance(pevMonster);
 		if (pEntity)
 			return pEntity->MyMonsterPointer();
-		return NULL;
+		return nullptr;
 	}
 	CBaseMonster* GetMonsterPointer(edict_t* pentMonster)
 	{
 		CBaseEntity* pEntity = Instance(pentMonster);
 		if (pEntity)
 			return pEntity->MyMonsterPointer();
-		return NULL;
+		return nullptr;
 	}
 
 
@@ -429,7 +429,7 @@ public:
 
 
 	//
-	static CBaseEntity* Create(const char* szName, const Vector& vecOrigin, const Vector& vecAngles, edict_t* pentOwner = NULL);
+	static CBaseEntity* Create(const char* szName, const Vector& vecOrigin, const Vector& vecAngles, edict_t* pentOwner = nullptr);
 
 	virtual bool FBecomeProne() { return false; }
 	edict_t* edict() { return ENT(pev); }
@@ -465,7 +465,7 @@ public:
 	int m_fireState;
 };
 
-inline bool FNullEnt(CBaseEntity* ent) { return (ent == NULL) || FNullEnt(ent->edict()); }
+inline bool FNullEnt(CBaseEntity* ent) { return (ent == nullptr) || FNullEnt(ent->edict()); }
 
 
 // Ugly technique to override base member functions
@@ -521,8 +521,8 @@ void PlayLockSounds(entvars_t* pev, locksound_t* pls, bool flocked, bool fbutton
 // MultiSouce
 //
 
-#define MAX_MULTI_TARGETS 16 // maximum number of targets a single multi_manager entity may be assigned.
-#define MS_MAX_TARGETS 32
+constexpr int MAX_MULTI_TARGETS = 16; // maximum number of targets a single multi_manager entity may be assigned.
+constexpr int MS_MAX_TARGETS = 32;
 
 class CMultiSource : public CPointEntity
 {
@@ -608,7 +608,7 @@ public:
 //
 // generic Toggle entity.
 //
-#define SF_ITEM_USE_ONLY 256 //  ITEM_USE_ONLY = BUTTON_USE_ONLY = DOOR_USE_ONLY!!!
+constexpr int SF_ITEM_USE_ONLY = 256; //  ITEM_USE_ONLY = BUTTON_USE_ONLY = DOOR_USE_ONLY!!!
 
 class CBaseToggle : public CBaseAnimating
 {
@@ -678,37 +678,37 @@ protected:
 
 
 // people gib if their health is <= this at the time of death
-#define GIB_HEALTH_VALUE -30
+constexpr int GIB_HEALTH_VALUE = -30;
 
-#define ROUTE_SIZE 8	  // how many waypoints a monster can store at one time
-#define MAX_OLD_ENEMIES 4 // how many old enemies to remember
+constexpr int ROUTE_SIZE = 8;	    // how many waypoints a monster can store at one time
+constexpr int MAX_OLD_ENEMIES = 4;  // how many old enemies to remember
 
-#define bits_CAP_DUCK (1 << 0)		 // crouch
-#define bits_CAP_JUMP (1 << 1)		 // jump/leap
-#define bits_CAP_STRAFE (1 << 2)	 // strafe ( walk/run sideways)
-#define bits_CAP_SQUAD (1 << 3)		 // can form squads
-#define bits_CAP_SWIM (1 << 4)		 // proficiently navigate in water
-#define bits_CAP_CLIMB (1 << 5)		 // climb ladders/ropes
-#define bits_CAP_USE (1 << 6)		 // open doors/push buttons/pull levers
-#define bits_CAP_HEAR (1 << 7)		 // can hear forced sounds
-#define bits_CAP_AUTO_DOORS (1 << 8) // can trigger auto doors
-#define bits_CAP_OPEN_DOORS (1 << 9) // can open manual doors
-#define bits_CAP_TURN_HEAD (1 << 10) // can turn head, always bone controller 0
+constexpr int bits_CAP_DUCK = (1 << 0);		 // crouch
+constexpr int bits_CAP_JUMP = (1 << 1);		 // jump/leap
+constexpr int bits_CAP_STRAFE = (1 << 2);	     // strafe ( walk/run sideways)
+constexpr int bits_CAP_SQUAD = (1 << 3);	     // can form squads
+constexpr int bits_CAP_SWIM = (1 << 4);		 // proficiently navigate in water
+constexpr int bits_CAP_CLIMB = (1 << 5);	     // climb ladders/ropes
+constexpr int bits_CAP_USE = (1 << 6);		     // open doors/push buttons/pull levers
+constexpr int bits_CAP_HEAR = (1 << 7);		 // can hear forced sounds
+constexpr int bits_CAP_AUTO_DOORS = (1 << 8);   // can trigger auto doors
+constexpr int bits_CAP_OPEN_DOORS = (1 << 9);   // can open manual doors
+constexpr int bits_CAP_TURN_HEAD = (1 << 10);   // can turn head, always bone controller 0
 
-#define bits_CAP_RANGE_ATTACK1 (1 << 11) // can do a range attack 1
-#define bits_CAP_RANGE_ATTACK2 (1 << 12) // can do a range attack 2
-#define bits_CAP_MELEE_ATTACK1 (1 << 13) // can do a melee attack 1
-#define bits_CAP_MELEE_ATTACK2 (1 << 14) // can do a melee attack 2
+constexpr int bits_CAP_RANGE_ATTACK1 = (1 << 11); // can do a range attack 1
+constexpr int bits_CAP_RANGE_ATTACK2 = (1 << 12); // can do a range attack 2
+constexpr int bits_CAP_MELEE_ATTACK1 = (1 << 13); // can do a melee attack 1
+constexpr int bits_CAP_MELEE_ATTACK2 = (1 << 14); // can do a melee attack 2
 
-#define bits_CAP_FLY (1 << 15) // can fly, move all around
+constexpr int bits_CAP_FLY = (1 << 15); // can fly, move all around
 
-#define bits_CAP_DOORS_GROUP (bits_CAP_USE | bits_CAP_AUTO_DOORS | bits_CAP_OPEN_DOORS)
+constexpr int bits_CAP_DOORS_GROUP = (bits_CAP_USE | bits_CAP_AUTO_DOORS | bits_CAP_OPEN_DOORS);
 
 // when calling KILLED(), a value that governs gib behavior is expected to be
 // one of these three values
-#define GIB_NORMAL 0 // gib if entity was overkilled
-#define GIB_NEVER 1	 // never gib, no matter how much death damage is done ( freezing, etc )
-#define GIB_ALWAYS 2 // always gib ( Houndeye Shock, Barnacle Bite )
+constexpr int GIB_NORMAL = 0; // gib if entity was overkilled
+constexpr int GIB_NEVER = 1;  // never gib, no matter how much death damage is done ( freezing, etc )
+constexpr int GIB_ALWAYS = 2; // always gib ( Houndeye Shock, Barnacle Bite )
 
 class CBaseMonster;
 class CCineMonster;
@@ -778,7 +778,7 @@ public:
 // Weapons
 //
 
-#define BAD_WEAPON 0x00007FFF
+constexpr int BAD_WEAPON = 0x00007FFF;
 
 //
 // Converts a entvars_t * to a class pointer
@@ -787,16 +787,16 @@ public:
 template <class T>
 T* GetClassPtr(T* a)
 {
-	entvars_t* pev = (entvars_t*)a;
+	entvars_t* pev = reinterpret_cast<entvars_t*>(a);
 
 	// allocate entity if necessary
-	if (pev == NULL)
+	if (pev == nullptr)
 		pev = VARS(CREATE_ENTITY());
 
 	// get the private data
-	a = (T*)GET_PRIVATE(ENT(pev));
+	a = static_cast<T*>(GET_PRIVATE(ENT(pev)));
 
-	if (a == NULL)
+	if (a == nullptr)
 	{
 		// allocate private data
 		a = new T;
