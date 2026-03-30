@@ -72,7 +72,6 @@ public:
 
 	int m_iPose;
 	static const char* m_szPoses[];
-	static constexpr int NUM_POSES = 2;
 };
 
 const char* CDeadZombieSoldier::m_szPoses[] = {"dead_on_stomach", "dead_on_back"};
@@ -103,7 +102,7 @@ void CDeadZombieSoldier::Spawn()
 	pev->sequence = 0;
 	m_bloodColor = BLOOD_COLOR_RED;
 
-	if (m_iPose < 0 || m_iPose >= NUM_POSES)
+	if (m_iPose < 0 || m_iPose >= (int)ARRAYSIZE(m_szPoses))
 		m_iPose = 0;
 
 	pev->sequence = LookupSequence(m_szPoses[m_iPose]);
