@@ -613,6 +613,20 @@ public:
 	void GetAllPlayersInfo();
 };
 
+class CShinySurface
+{
+public:
+	CShinySurface(float fScale, float fxMin, float fyMin, float fzMin, float fxMax, float fyMax, float fzMax);
+	~CShinySurface();
+	void Draw(const Vector& vecOrigin);
+
+	CShinySurface* m_pNext;
+	float m_fScale;
+	float m_fxMin, m_fyMin, m_fzMin;
+	float m_fxMax, m_fyMax, m_fzMax;
+	int m_iEntIndex;
+};
+
 class CHud
 {
 private:
@@ -731,6 +745,8 @@ public:
 	bool MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf);
+	void MsgFunc_AddShine(const char* pszName, int iSize, void* pbuf);
+	void MsgFunc_KeyedDLight(const char* pszName, int iSize, void* pbuf);
 
 	int m_iFogColor_R, m_iFogColor_G, m_iFogColor_B;
 	float m_fStartDist, m_fEndDist, m_fFogDensity;
@@ -741,6 +757,12 @@ public:
 #define SKY_ON  1
 	Vector m_vecSkyPos;
 	int m_iSkyMode;
+
+	// HUD color
+	int m_iHUDColor;
+
+	// Shiny surfaces
+	CShinySurface* m_pShinySurface;
 
 	// Screen information
 	SCREENINFO m_scrinfo;

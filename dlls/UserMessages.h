@@ -73,5 +73,7 @@ inline int gmsgOldWeapon = 0;
 inline int gmsgCustomIcon = 0;
 inline int gmsgSetFog = 0;
 inline int gmsgSetSky = 0;
+inline int gmsgAddShine = 0;
+inline int gmsgKeyedDLight = 0;
 
 void LinkUserMessages();

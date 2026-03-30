@@ -24,6 +24,7 @@
 #include "util.h"
 #include "cbase.h"
 #include "doors.h"
+#include "UserMessages.h"
 
 #define SF_BRUSH_ACCDCC 16		 // brush should accelerate and decelerate when toggled
 #define SF_BRUSH_HURT 32		 // rotating brush that inflicts pain based on rotation speed
@@ -981,4 +982,37 @@ void CPendulum::RopeTouch(CBaseEntity* pOther)
 	pev->enemy = pOther->edict();
 	pevOther->velocity = g_vecZero;
 	pevOther->movetype = MOVETYPE_NONE;
+}
+
+// LRC - shiny surfaces
+class CShine : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	void Activate() override;
+};
+
+LINK_ENTITY_TO_CLASS(func_shine, CShine);
+
+void CShine::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	SET_MODEL(ENT(pev), STRING(pev->model));
+	pev->movetype = MOVETYPE_NONE;
+	pev->effects |= EF_NODRAW;
+}
+
+void CShine::Activate()
+{
+	CBaseEntity::Activate();
+	MESSAGE_BEGIN(MSG_ALL, gmsgAddShine);
+	WRITE_BYTE(pev->scale * 10);
+	WRITE_SHORT(ENTINDEX(ENT(pev)));
+	WRITE_COORD(pev->absmin.x);
+	WRITE_COORD(pev->absmin.y);
+	WRITE_COORD(pev->absmin.z);
+	WRITE_COORD(pev->absmax.x);
+	WRITE_COORD(pev->absmax.y);
+	WRITE_COORD(pev->absmax.z);
+	MESSAGE_END();
 }

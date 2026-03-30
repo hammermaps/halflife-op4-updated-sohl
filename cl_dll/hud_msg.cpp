@@ -93,6 +93,13 @@ void CHud::MsgFunc_InitHUD(const char* pszName, int iSize, void* pbuf)
 
 	//Probably not a good place to put this.
 	pBeam = pBeam2 = NULL;
+
+	// Clear shiny surfaces
+	if (m_pShinySurface)
+	{
+		delete m_pShinySurface;
+		m_pShinySurface = NULL;
+	}
 }
 
 
@@ -202,4 +209,56 @@ bool CHud::MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf)
 		m_vecSkyPos.z = READ_COORD();
 	}
 	return true;
+}
+
+void CHud::MsgFunc_AddShine(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+	float fScale = (float)READ_BYTE() / 10.0f;
+	int iEntIndex = READ_SHORT();
+	float fxMin = READ_COORD();
+	float fyMin = READ_COORD();
+	float fzMin = READ_COORD();
+	float fxMax = READ_COORD();
+	float fyMax = READ_COORD();
+	float fzMax = READ_COORD();
+
+	CShinySurface* pSurface = new CShinySurface(fScale, fxMin, fyMin, fzMin, fxMax, fyMax, fzMax);
+	pSurface->m_iEntIndex = iEntIndex;
+	pSurface->m_pNext = m_pShinySurface;
+	m_pShinySurface = pSurface;
+}
+
+void CHud::MsgFunc_KeyedDLight(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+	int iKey = READ_BYTE();
+	int iActive = READ_BYTE();
+	float x = READ_COORD();
+	float y = READ_COORD();
+	float z = READ_COORD();
+	int iRadius = READ_BYTE();
+	int r = READ_BYTE();
+	int g = READ_BYTE();
+	int b = READ_BYTE();
+
+	if (iActive)
+	{
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(iKey);
+		dl->origin[0] = x;
+		dl->origin[1] = y;
+		dl->origin[2] = z;
+		dl->radius = (float)iRadius;
+		dl->color.r = r;
+		dl->color.g = g;
+		dl->color.b = b;
+		dl->die = gEngfuncs.GetClientTime() + 99999.0f;
+		dl->decay = 0;
+	}
+	else
+	{
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(iKey);
+		dl->die = 0;
+		dl->radius = 0;
+	}
 }

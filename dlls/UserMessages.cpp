@@ -84,4 +84,6 @@ void LinkUserMessages()
 	gmsgCustomIcon = g_engfuncs.pfnRegUserMsg("CustomIcon", -1);
 	gmsgSetFog = g_engfuncs.pfnRegUserMsg("SetFog", -1);
 	gmsgSetSky = g_engfuncs.pfnRegUserMsg("SetSky", -1);
+	gmsgAddShine = g_engfuncs.pfnRegUserMsg("AddShine", -1);
+	gmsgKeyedDLight = g_engfuncs.pfnRegUserMsg("KeyedDLight", -1);
 }

@@ -99,6 +99,7 @@ int __MsgFunc_HudColor(const char* pszName, int iSize, void* pbuf)
 	giR = READ_BYTE();
 	giG = READ_BYTE();
 	giB = READ_BYTE();
+	gHUD.m_iHUDColor = (giR << 16) | (giG << 8) | giB;
 	return 1;
 }
 
@@ -110,6 +111,18 @@ int __MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf)
 int __MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf)
 {
 	return static_cast<int>(gHUD.MsgFunc_SetSky(pszName, iSize, pbuf));
+}
+
+int __MsgFunc_AddShine(const char* pszName, int iSize, void* pbuf)
+{
+	gHUD.MsgFunc_AddShine(pszName, iSize, pbuf);
+	return 1;
+}
+
+int __MsgFunc_KeyedDLight(const char* pszName, int iSize, void* pbuf)
+{
+	gHUD.MsgFunc_KeyedDLight(pszName, iSize, pbuf);
+	return 1;
 }
 
 int __MsgFunc_OldWeapon(const char* pszName, int iSize, void* pbuf)
@@ -353,6 +366,8 @@ void CHud::Init()
 	HOOK_MESSAGE(HudColor);
 	HOOK_MESSAGE(SetFog);
 	HOOK_MESSAGE(SetSky);
+	HOOK_MESSAGE(AddShine);
+	HOOK_MESSAGE(KeyedDLight);
 	HOOK_MESSAGE(OldWeapon);
 	HOOK_MESSAGE(Weapons);
 
@@ -404,6 +419,9 @@ void CHud::Init()
 
 	m_iSkyMode = SKY_OFF;
 	m_vecSkyPos = Vector(0, 0, 0);
+
+	m_iHUDColor = RGB_YELLOWISH;
+	m_pShinySurface = NULL;
 
 	setNightVisionState(false);
 
