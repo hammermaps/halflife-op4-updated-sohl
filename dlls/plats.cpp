@@ -656,7 +656,7 @@ public:
 
 	entvars_t* m_pevCurrentTarget;
 	int m_sounds;
-	bool m_activated;
+	// LRC - m_activated is now part of CBaseEntity
 };
 
 LINK_ENTITY_TO_CLASS(func_train, CFuncTrain);
@@ -664,7 +664,6 @@ TYPEDESCRIPTION CFuncTrain::m_SaveData[] =
 	{
 		DEFINE_FIELD(CFuncTrain, m_sounds, FIELD_INTEGER),
 		DEFINE_FIELD(CFuncTrain, m_pevCurrentTarget, FIELD_EVARS),
-		DEFINE_FIELD(CFuncTrain, m_activated, FIELD_BOOLEAN),
 };
 
 IMPLEMENT_SAVERESTORE(CFuncTrain, CBasePlatTrain);
@@ -970,7 +969,7 @@ public:
 
 	entvars_t* m_pevCurrentTarget;
 	int m_sounds;
-	bool m_activated;
+	// LRC - m_activated is now part of CBaseEntity
 
 	float m_maxFrame;
 	float m_lastTime;
@@ -986,7 +985,6 @@ TYPEDESCRIPTION CSpriteTrain::m_SaveData[] =
 	{
 		DEFINE_FIELD(CSpriteTrain, m_sounds, FIELD_INTEGER),
 		DEFINE_FIELD(CSpriteTrain, m_pevCurrentTarget, FIELD_EVARS),
-		DEFINE_FIELD(CSpriteTrain, m_activated, FIELD_BOOLEAN),
 		DEFINE_FIELD(CSpriteTrain, m_maxFrame, FIELD_FLOAT),
 		DEFINE_FIELD(CSpriteTrain, m_lastTime, FIELD_TIME),
 		DEFINE_FIELD(CSpriteTrain, m_waiting, FIELD_BOOLEAN),
@@ -1371,6 +1369,7 @@ TYPEDESCRIPTION CFuncTrackTrain::m_SaveData[] =
 		DEFINE_FIELD(CFuncTrackTrain, m_flVolume, FIELD_FLOAT),
 		DEFINE_FIELD(CFuncTrackTrain, m_flBank, FIELD_FLOAT),
 		DEFINE_FIELD(CFuncTrackTrain, m_oldSpeed, FIELD_FLOAT),
+		DEFINE_FIELD(CFuncTrackTrain, m_soundPlaying, FIELD_BOOLEAN), // LRC
 		DEFINE_FIELD(CFuncTrackTrain, m_vecMasterAvel, FIELD_VECTOR), // LRC
 		DEFINE_FIELD(CFuncTrackTrain, m_vecBaseAvel, FIELD_VECTOR),   // LRC
 };
@@ -1491,6 +1490,7 @@ void CFuncTrackTrain::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYP
 				delta = 0;
 		}
 		pev->speed = m_speed * delta;
+		m_vecBaseAvel = pev->avelocity; // LRC - save current avelocity for gear scaling
 		Next();
 		ALERT(at_aiconsole, "TRAIN(%s), speed to %.2f\n", STRING(pev->targetname), pev->speed);
 	}
@@ -1641,26 +1641,29 @@ void CFuncTrackTrain::Next()
 		angles = pev->angles;
 
 	float vy, vx;
-	if (!(pev->spawnflags & SF_TRACKTRAIN_NOYAW)) // LRC - don't auto-adjust yaw if NOYAW is set
+	if (!FBitSet(pev->spawnflags, SF_TRACKTRAIN_AVELOCITY)) // LRC - only auto-adjust if avelocity is not manually set
 	{
-		if ((pev->spawnflags & SF_TRACKTRAIN_NOPITCH) == 0)
-			vx = UTIL_AngleDistance(angles.x, pev->angles.x);
-		else
-			vx = 0;
-		vy = UTIL_AngleDistance(angles.y, pev->angles.y);
-
-		Vector newAvel(vx * 10, vy * 10, 0);
-
-		if (m_flBank != 0)
+		if (!(pev->spawnflags & SF_TRACKTRAIN_NOYAW)) // LRC - don't auto-adjust yaw if NOYAW is set
 		{
-			if (newAvel.y < -5)
-				newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(-m_flBank, pev->angles.z, m_flBank * 2), pev->angles.z);
-			else if (newAvel.y > 5)
-				newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(m_flBank, pev->angles.z, m_flBank * 2), pev->angles.z);
+			if ((pev->spawnflags & SF_TRACKTRAIN_NOPITCH) == 0)
+				vx = UTIL_AngleDistance(angles.x, pev->angles.x);
 			else
-				newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(0, pev->angles.z, m_flBank * 4), pev->angles.z) * 4;
+				vx = 0;
+			vy = UTIL_AngleDistance(angles.y, pev->angles.y);
+
+			Vector newAvel(vx * 10, vy * 10, 0);
+
+			if (m_flBank != 0)
+			{
+				if (newAvel.y < -5)
+					newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(-m_flBank, pev->angles.z, m_flBank * 2), pev->angles.z);
+				else if (newAvel.y > 5)
+					newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(m_flBank, pev->angles.z, m_flBank * 2), pev->angles.z);
+				else
+					newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(0, pev->angles.z, m_flBank * 4), pev->angles.z) * 4;
+			}
+			UTIL_SetAvelocity(this, newAvel); // LRC
 		}
-		UTIL_SetAvelocity(this, newAvel); // LRC
 	}
 
 	if (pnext)
@@ -1701,9 +1704,10 @@ void CFuncTrackTrain::Next()
 	else // end of path, stop
 	{
 		StopSound();
-		pev->velocity = (nextPos - pev->origin);
-		pev->avelocity = g_vecZero;
-		float distance = pev->velocity.Length();
+		Vector vecTemp = (nextPos - pev->origin); // LRC
+		if (!FBitSet(pev->spawnflags, SF_TRACKTRAIN_AVELOCITY)) // LRC
+			UTIL_SetAvelocity(this, g_vecZero); // LRC
+		float distance = vecTemp.Length(); // LRC
 		m_oldSpeed = pev->speed;
 
 
@@ -1716,12 +1720,13 @@ void CFuncTrackTrain::Next()
 		{
 			// no, how long to get there?
 			time = distance / m_oldSpeed;
-			pev->velocity = pev->velocity * (m_oldSpeed / distance);
+			UTIL_SetVelocity(this, vecTemp * (m_oldSpeed / distance)); // LRC
 			SetThink(&CFuncTrackTrain::DeadEnd);
 			NextThink(pev->ltime + time, false);
 		}
 		else
 		{
+			UTIL_SetVelocity(this, vecTemp); // LRC
 			DeadEnd();
 		}
 	}
@@ -1761,8 +1766,9 @@ void CFuncTrackTrain::DeadEnd()
 		}
 	}
 
-	pev->velocity = g_vecZero;
-	pev->avelocity = g_vecZero;
+	UTIL_SetVelocity(this, g_vecZero); // LRC
+	if (!FBitSet(pev->spawnflags, SF_TRACKTRAIN_AVELOCITY)) // LRC
+		UTIL_SetAvelocity(this, g_vecZero); // LRC
 	if (pTrack)
 	{
 		ALERT(at_aiconsole, "at %s\n", STRING(pTrack->pev->targetname));
@@ -1827,13 +1833,14 @@ void CFuncTrackTrain::Find()
 	m_ppath->LookAhead(&look, m_length, false);
 	look.z += m_height;
 
-	pev->angles = UTIL_VecToAngles(look - nextPos);
+	Vector vTemp = UTIL_VecToAngles(look - nextPos);
 	// The train actually points west
-	pev->angles.y += 180;
+	vTemp.y += 180;
 
 	if ((pev->spawnflags & SF_TRACKTRAIN_NOPITCH) != 0)
-		pev->angles.x = 0;
-	UTIL_SetOrigin(pev, nextPos);
+		vTemp.x = 0;
+	UTIL_SetAngles(this, vTemp);       // LRC - propagate to MoveWith children
+	UTIL_AssignOrigin(this, nextPos);  // LRC - propagate to MoveWith children
 	NextThink(pev->ltime + 0.1, false);
 	SetThink(&CFuncTrackTrain::Next);
 	pev->speed = m_startSpeed;
@@ -1892,6 +1899,12 @@ void CFuncTrackTrain::NearestPath()
 
 void CFuncTrackTrain::OverrideReset()
 {
+	// LRC - continue the movement sound after loading a game
+	if (m_soundPlaying && !FStringNull(pev->noise))
+	{
+		float flpitch = TRAIN_STARTPITCH + (fabs(pev->speed) * (TRAIN_MAXPITCH - TRAIN_STARTPITCH) / TRAIN_MAXSPEED);
+		EMIT_SOUND_DYN(ENT(pev), CHAN_STATIC, (char*)STRING(pev->noise), m_flVolume, ATTN_NORM, 0, (int)flpitch);
+	}
 	NextThink(pev->ltime + 0.1, false);
 	SetThink(&CFuncTrackTrain::NearestPath);
 }
@@ -1964,8 +1977,7 @@ void CFuncTrackTrain::Precache()
 	switch (m_sounds)
 	{
 	default:
-		// no sound
-		pev->noise = 0;
+		// LRC - no preset sound; keep any custom noise set by the mapper
 		break;
 	case 1:
 		PRECACHE_SOUND("plats/ttrain1.wav");
@@ -1992,6 +2004,10 @@ void CFuncTrackTrain::Precache()
 		pev->noise = MAKE_STRING("plats/ttrain7.wav");
 		break;
 	}
+
+	// LRC - precache any custom movement sound set by the mapper
+	if (!FStringNull(pev->noise))
+		PRECACHE_SOUND((char*)STRING(pev->noise));
 
 	PRECACHE_SOUND("plats/ttrain_brake1.wav");
 	PRECACHE_SOUND("plats/ttrain_start1.wav");

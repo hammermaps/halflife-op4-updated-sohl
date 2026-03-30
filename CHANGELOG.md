@@ -108,12 +108,20 @@
 
 #### Phase 3E — Platform/Train Enhancements (`dlls/plats.cpp`, `dlls/trains.h`)
 * Added `#include "movewith.h"` to `plats.cpp` for `UTIL_SetVelocity`/`UTIL_SetAvelocity`
-* Added `DEFINE_FIELD` entries for `m_vecMasterAvel` and `m_vecBaseAvel` in `CFuncTrackTrain::m_SaveData`
+* Added `DEFINE_FIELD` entries for `m_vecMasterAvel`, `m_vecBaseAvel`, and `m_soundPlaying` in `CFuncTrackTrain::m_SaveData`
 * `CFuncTrackTrain::Next()`: velocity now set via `UTIL_SetVelocity()` instead of direct `pev->velocity =`
 * `CFuncTrackTrain::Next()`: avelocity now set via `UTIL_SetAvelocity()` instead of direct `pev->avelocity =`
+* `CFuncTrackTrain::Next()`: wrapped auto-avelocity update in `SF_TRACKTRAIN_AVELOCITY` guard — skips angular velocity calculation when avelocity is manually set
+* `CFuncTrackTrain::Next()` (end-of-path): velocity computed in local `vecTemp`, uses `UTIL_SetVelocity`; avelocity zeroing guarded by `SF_TRACKTRAIN_AVELOCITY`
+* `CFuncTrackTrain::DeadEnd()`: velocity uses `UTIL_SetVelocity(g_vecZero)`; avelocity zeroing guarded by `SF_TRACKTRAIN_AVELOCITY`
 * `SF_TRACKTRAIN_NOYAW` flag: when set, `Next()` skips all yaw/pitch/bank angular velocity adjustment
-* `CFuncTrackTrain::Use()`: stop sets `UTIL_SetVelocity(g_vecZero)` and `UTIL_SetAvelocity(g_vecZero)`
+* `CFuncTrackTrain::Use()`: stop sets `UTIL_SetVelocity(g_vecZero)` and `UTIL_SetAvelocity(g_vecZero)`; USE_SET branch saves `m_vecBaseAvel = pev->avelocity` before calling `Next()`
+* `CFuncTrackTrain::Find()`: replaced direct `pev->angles =` / `UTIL_SetOrigin` with `UTIL_SetAngles` / `UTIL_AssignOrigin` to propagate changes to MoveWith children
+* `CFuncTrackTrain::Precache()`: removed `pev->noise = 0` from `case 0` so custom movement sounds are preserved; added `PRECACHE_SOUND(pev->noise)` after switch for any custom sound set by the mapper
+* `CFuncTrackTrain::OverrideReset()`: restarts movement sound after game load if `m_soundPlaying` was saved as `true`
 * `CFuncTrackTrain::Blocked()`: added `pev->dmg == -1` check — non-crushing trains don't damage blockers
+* `CFuncTrain`: removed shadow `m_activated` member and its `DEFINE_FIELD` entry — `m_activated` is now inherited from `CBaseEntity`
+* `CSpriteTrain`: removed shadow `m_activated` member and its `DEFINE_FIELD` entry — `m_activated` is now inherited from `CBaseEntity`
 
 #### Phase 3F — Func_Tank Enhancements (`dlls/func_tank.cpp`)
 * Added `SF_TANK_LASERSPOT` (0x0040): enable laser spot targeting
