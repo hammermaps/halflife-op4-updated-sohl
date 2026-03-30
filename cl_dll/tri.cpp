@@ -24,21 +24,7 @@ extern IParticleMan* g_pParticleMan;
 
 #include "particlemgr.h"
 
-// LRC - CShinySurface: reflective surface rendering
-class CShinySurface
-{
-public:
-	CShinySurface(float fScale, float fxMin, float fyMin, float fzMin, float fxMax, float fyMax, float fzMax);
-	~CShinySurface();
-	void Draw(const Vector& vecOrigin);
-
-	CShinySurface* m_pNext;
-	float m_fScale;
-	float m_fxMin, m_fyMin, m_fzMin;
-	float m_fxMax, m_fyMax, m_fzMax;
-	int m_iEntIndex;
-};
-
+// LRC - CShinySurface method implementations (class defined in hud.h)
 CShinySurface::CShinySurface(float fScale, float fxMin, float fyMin, float fzMin, float fxMax, float fyMax, float fzMax)
 {
 	m_fScale = fScale;
