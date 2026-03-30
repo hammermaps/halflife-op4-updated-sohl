@@ -126,7 +126,7 @@ private:
 	std::chrono::high_resolution_clock::time_point m_start;
 };
 
-#define PROFILE_SCOPE(name) CScopeProfiler _profiler_##__LINE__(name)
+#define PROFILE_SCOPE(name) CScopeProfiler _profiler_##__COUNTER__(name)
 
 #else // !DEBUG
 
