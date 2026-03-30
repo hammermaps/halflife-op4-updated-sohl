@@ -205,6 +205,9 @@ public:
 
 	bool m_activated;		  // signifies entity has been activated (moved here from func_train)
 
+	string_t killname;		  // Custom Kill-Name for death notices
+	string_t killmethod;	  // Custom Kill-Method for death notices
+
 	virtual ~CBaseEntity() {}
 
 	// initialization functions
@@ -236,7 +239,7 @@ public:
 
 	virtual void TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType);
 	virtual bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType);
-	virtual bool TakeHealth(float flHealth, int bitsDamageType);
+	virtual float TakeHealth(float flHealth, int bitsDamageType);
 	virtual void Killed(entvars_t* pevAttacker, int iGib);
 	virtual int BloodColor() { return DONT_BLEED; }
 	virtual void TraceBleed(float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType);

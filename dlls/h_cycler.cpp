@@ -206,7 +206,7 @@ bool CCycler::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float 
 		pev->framerate = 1.0;
 		StudioFrameAdvance(0.1);
 		pev->framerate = 0;
-		ALERT(at_console, "sequence: %d, frame %.0f\n", pev->sequence, pev->frame);
+		ALERT(at_aiconsole, "sequence: %d, frame %.0f\n", pev->sequence, pev->frame);
 	}
 
 	return false;
@@ -276,7 +276,7 @@ void CCyclerSprite::Think()
 void CCyclerSprite::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
 	m_animate = !m_animate;
-	ALERT(at_console, "Sprite: %s\n", STRING(pev->model));
+	ALERT(at_aiconsole, "Sprite: %s\n", STRING(pev->model));
 }
 
 

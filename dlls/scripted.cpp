@@ -366,6 +366,12 @@ void CCineMonster::PossessEntity()
 		}
 #endif
 
+		// SoHL 1.5 - Cancel any existing script before possessing
+		if (pTarget->m_pCine)
+		{
+			pTarget->m_pCine->CancelScript();
+		}
+
 		pTarget->m_pGoalEnt = this;
 		pTarget->m_pCine = this;
 		pTarget->m_hTargetEnt = this;

@@ -140,6 +140,36 @@ Vector CCalcVelocity::CalcVelocity(CBaseEntity* pLocus)
 }
 
 //=========================================================
+// calc_subvelocity - returns velocity with optional axis discard
+// SoHL 1.5 - Spawnflags to discard individual velocity axes
+//=========================================================
+#define SF_CALCVELOCITY_DISCARDX (1 << 5)
+#define SF_CALCVELOCITY_DISCARDY (1 << 6)
+#define SF_CALCVELOCITY_DISCARDZ (1 << 7)
+
+class CCalcSubVelocity : public CPointEntity
+{
+public:
+	Vector CalcVelocity(CBaseEntity* pLocus) override;
+};
+
+LINK_ENTITY_TO_CLASS(calc_subvelocity, CCalcSubVelocity);
+
+Vector CCalcSubVelocity::CalcVelocity(CBaseEntity* pLocus)
+{
+	Vector vecResult = pev->velocity;
+
+	if (FBitSet(pev->spawnflags, SF_CALCVELOCITY_DISCARDX))
+		vecResult.x = 0;
+	if (FBitSet(pev->spawnflags, SF_CALCVELOCITY_DISCARDY))
+		vecResult.y = 0;
+	if (FBitSet(pev->spawnflags, SF_CALCVELOCITY_DISCARDZ))
+		vecResult.z = 0;
+
+	return vecResult;
+}
+
+//=========================================================
 // calc_ratio - returns its stored ratio value
 //=========================================================
 class CCalcRatio : public CPointEntity
