@@ -116,6 +116,8 @@ Only two checks are enabled:
 | `dlls/locus.h` | Locus position/velocity/ratio system (SoHL) |
 | `dlls/locus.cpp` | Locus system implementations (SoHL) |
 | `cl_dll/hud.h` | Client HUD class definition |
+| `cl_dll/particlemgr.h` | SoHL aurora particle system manager (SoHL) |
+| `cl_dll/particlemgr.cpp` | Particle system manager implementation (SoHL) |
 | `pm_shared/pm_shared.h` | Shared player movement code |
 
 ## SoHL Integration Status
@@ -137,7 +139,13 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 3H** | Sound Enhancements (`m_pPlayFrom`, `trigger_sound`) | 🔧 Partial |
 | **Phase 3I** | Scripted Sequence Enhancements (`scripted_action`, repeat/priority, `InitIdleThink`) | ✅ Complete |
 | **Phase 3J** | Effects Enhancements (`WaitForStart`, `m_fCurSpeed`, `GetTripEntity`) | 🔧 Partial |
-| **Phase 4** | Visual & Client-Side Features (Fog, Sky, HUD, Particles) | 🔲 Pending |
+| **Phase 4A** | Fog System (`env_fog`, `SetFog` message, client-side fog data) | ✅ Complete |
+| **Phase 4B** | Sky System (`env_sky`, `SetSky` message, client-side sky data) | ✅ Complete |
+| **Phase 4C** | Custom HUD Color (`m_iHUDColor`, `HUDColor` message) | ✅ Complete |
+| **Phase 4D** | Shiny/Reflective Surfaces (`kRenderFxReflection`, `CShinySurface`, `AddShine`) | ✅ Complete |
+| **Phase 4E** | Dynamic Lighting (`KeyedDLight` message, `env_dlight` client integration) | ✅ Complete |
+| **Phase 4F** | Model/Animation Scaling (`StudioModelRenderer` scale, `GetSequenceFrames`) | ✅ Complete |
+| **Phase 4G** | Particle System (`particlemgr.h/cpp`, `env_particle`, `gmsgParticle`) | ✅ Complete |
 | **Phase 5** | New Entity Definitions & Polish | 🔲 Pending |
 
 ### SoHL Conventions

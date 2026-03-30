@@ -2,6 +2,54 @@
 
 ## Spirit of Half-Life Integration
 
+### Phase 4 — Visual & Client-Side Features
+
+#### Phase 4A — Fog System (`dlls/effects.cpp`, `cl_dll/hud.h`, `cl_dll/hud.cpp`, `cl_dll/hud_msg.cpp`, `cl_dll/hl/hl_weapons.cpp`)
+* Added `CEnvFog` entity class (`env_fog`): server-side fog entity with save/restore, KeyValue (`startdist`, `enddist`, `density`), Use toggle, `SendFog()` via `gmsgSetFog`
+* Registered `gmsgSetFog` message in `UserMessages.h/cpp`
+* Added `MsgFunc_SetFog` handler on client: stores fog color (R/G/B), start/end distance, density, active state
+* Added fog member variables to `CHud`: `m_iFogColor_R/G/B`, `m_fStartDist`, `m_fEndDist`, `m_fFogDensity`, `m_bFogOn`
+* Added fog reset in `MsgFunc_ResetHUD`
+* Added `g_iWaterLevel` global to `hl_weapons.cpp` for DMC fog support
+
+#### Phase 4B — Sky System (`dlls/effects.cpp`, `cl_dll/hud.h`, `cl_dll/hud.cpp`, `cl_dll/hud_msg.cpp`)
+* Added `CEnvSky` entity class (`env_sky`): server-side 3D skybox entity with save/restore, Use toggle, `SendSky()` via `gmsgSetSky`
+* Registered `gmsgSetSky` message in `UserMessages.h/cpp`
+* Added `MsgFunc_SetSky` handler on client: stores sky mode and position vector
+* Added `SKY_OFF`/`SKY_ON` constants, `m_vecSkyPos`, `m_iSkyMode` to `CHud`
+* Added sky mode reset in `MsgFunc_ResetHUD`
+
+#### Phase 4C — Custom HUD Color (`cl_dll/hud.h`, `cl_dll/hud.cpp`)
+* Added `m_iHUDColor` packed-int member to `CHud` (SoHL compatibility)
+* Updated `__MsgFunc_HudColor` to set `gHUD.m_iHUDColor` alongside existing `giR`/`giG`/`giB` globals
+* Initialized `m_iHUDColor` to `RGB_YELLOWISH` in `CHud::Init()`
+
+#### Phase 4D — Shiny/Reflective Surfaces (`common/const.h`, `dlls/bmodels.cpp`, `cl_dll/hud.h`, `cl_dll/tri.cpp`, `cl_dll/hud.cpp`, `cl_dll/hud_msg.cpp`)
+* Added `kRenderFxReflection` to the render FX enum in `common/const.h`
+* Added `CShine` entity class (`func_shine`) in `bmodels.cpp`: sends shiny surface data via `gmsgAddShine`
+* Registered `gmsgAddShine` message in `UserMessages.h/cpp`
+* Added `CShinySurface` class in `hud.h` (definition) and `tri.cpp` (implementation): linked list of reflective surfaces
+* Added `MsgFunc_AddShine` handler on client: creates `CShinySurface` instances
+* Added shiny surface cleanup in `MsgFunc_InitHUD`
+
+#### Phase 4E — Dynamic Lighting (`dlls/lights.cpp`, `cl_dll/hud.h`, `cl_dll/hud.cpp`, `cl_dll/hud_msg.cpp`)
+* Registered `gmsgKeyedDLight` message in `UserMessages.h/cpp`
+* Extended `CLightDynamic::Use()` to send `KeyedDLight` message with entity index, active state, position, radius, and color
+* Added `MsgFunc_KeyedDLight` handler on client: creates/destroys persistent dynamic lights via `CL_AllocDlight`
+
+#### Phase 4F — Model/Animation Scaling (`cl_dll/StudioModelRenderer.cpp`, `dlls/animation.cpp`, `dlls/animation.h`)
+* Added model scale support in `StudioDrawModel()` and `StudioDrawPlayer()`: applies `curstate.scale` to the 3×3 rotation matrix when non-zero
+* Added `GetSequenceFrames()` function to `animation.cpp`: returns frame count for current sequence
+* Added `GetSequenceFrames()` declaration to `animation.h`
+
+#### Phase 4G — Particle System (`cl_dll/particlemgr.h`, `cl_dll/particlemgr.cpp`, `dlls/effects.cpp`, `cl_dll/tri.cpp`, `cl_dll/hud.h`, `cl_dll/hud.cpp`, `cl_dll/hud_msg.cpp`)
+* Created `cl_dll/particlemgr.h` and `cl_dll/particlemgr.cpp`: `ParticleSystemManager` and `ParticleSystem` classes for SoHL aurora particle system
+* Added `CEnvParticle` entity class (`env_particle`) in `effects.cpp`: server-side particle emitter with save/restore, Use toggle, `SendParticle()` via `gmsgParticle`
+* Registered `gmsgParticle` message in `UserMessages.h/cpp`
+* Added `MsgFunc_Particle` handler on client: creates/manages particle systems
+* Added particle system update in `HUD_DrawTransparentTriangles`
+* Added `particlemgr.cpp` to Linux Makefile and VS2019 project files
+
 ### Phase 3B–3J — Entity-Specific Enhancements (Partial)
 
 #### Phase 3B — Door Enhancements (`dlls/doors.cpp`, `dlls/doors.h`)

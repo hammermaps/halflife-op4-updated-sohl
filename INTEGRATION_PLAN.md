@@ -71,7 +71,45 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
   - `bmodels.cpp`: `WaitForStart()` function for `CFuncRotating`; `m_fCurSpeed` member with save/restore
   - `effects.cpp`: `CLaser::GetTripEntity()` implemented for tripbeam support
 
-**Phase 4–5** — 🔲 Pending
+**Phase 4 (Visual & Client-Side Features)** — ✅ **COMPLETE**
+- Phase 4A (Fog System) — ✅ **COMPLETE**
+  - Server: `CEnvFog` entity class in `effects.cpp` with save/restore, KeyValue, Use toggle, `SendFog()`
+  - Server: `gmsgSetFog` message registered in `UserMessages.h/cpp`
+  - Client: `MsgFunc_SetFog` handler stores fog color, start/end distance, density
+  - Client: Fog data members in `CHud` (`m_iFogColor_R/G/B`, `m_fStartDist`, `m_fEndDist`, `m_fFogDensity`, `m_bFogOn`)
+  - Client: `g_iWaterLevel` global added to `hl_weapons.cpp` for DMC fog support
+- Phase 4B (Sky System) — ✅ **COMPLETE**
+  - Server: `CEnvSky` entity class in `effects.cpp` with save/restore, Use toggle, `SendSky()`
+  - Server: `gmsgSetSky` message registered
+  - Client: `MsgFunc_SetSky` handler stores sky mode and position
+  - Client: `SKY_OFF`/`SKY_ON` constants, `m_vecSkyPos`, `m_iSkyMode` in `CHud`
+- Phase 4C (Custom HUD Color) — ✅ **COMPLETE**
+  - Client: `m_iHUDColor` packed-int member added to `CHud`
+  - Client: `__MsgFunc_HudColor` now sets both `giR/giG/giB` globals and `gHUD.m_iHUDColor`
+  - Note: `gmsgHudColor` was already registered from previous work
+- Phase 4D (Shiny/Reflective Surfaces) — ✅ **COMPLETE**
+  - Common: `kRenderFxReflection` added to render FX enum in `const.h`
+  - Server: `CShine` (`func_shine`) entity in `bmodels.cpp` sends `gmsgAddShine` message
+  - Server: `gmsgAddShine` message registered
+  - Client: `CShinySurface` class defined in `hud.h`, implemented in `tri.cpp`
+  - Client: `MsgFunc_AddShine` handler creates linked list of shiny surfaces
+  - Client: Shiny surfaces cleared on level load in `MsgFunc_InitHUD`
+- Phase 4E (Dynamic Lighting) — ✅ **COMPLETE**
+  - Server: `gmsgKeyedDLight` message registered
+  - Server: `CLightDynamic::Use()` extended to send `KeyedDLight` message with position, radius, color
+  - Client: `MsgFunc_KeyedDLight` handler creates/destroys persistent dynamic lights via `CL_AllocDlight`
+- Phase 4F (Model/Animation Scaling) — ✅ **COMPLETE**
+  - Client: `StudioDrawModel()` and `StudioDrawPlayer()` apply `curstate.scale` to rotation matrix
+  - Server: `GetSequenceFrames()` added to `animation.cpp`/`animation.h`
+- Phase 4G (Particle System) — ✅ **COMPLETE**
+  - Client: New files `cl_dll/particlemgr.h` and `cl_dll/particlemgr.cpp` with `ParticleSystemManager` and `ParticleSystem` classes
+  - Server: `CEnvParticle` (`env_particle`) entity in `effects.cpp` with save/restore, Use toggle, `SendParticle()`
+  - Server: `gmsgParticle` message registered
+  - Client: `MsgFunc_Particle` handler manages particle systems
+  - Client: Particle systems updated in `HUD_DrawTransparentTriangles`
+  - Build: `particlemgr.cpp` added to Linux Makefile and VS2019 project
+
+**Phase 5** — 🔲 Pending
 
 ## Guiding Principles
 
