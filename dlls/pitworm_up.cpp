@@ -925,6 +925,9 @@ void COFPitWormUp::TrackEnemy()
 {
 	auto pEnemy = m_hEnemy.Entity<CBaseEntity>();
 
+	if (!pEnemy)
+		return;
+
 	Vector vecEyePos, vecEyeAng;
 	GetAttachment(0, vecEyePos, vecEyeAng);
 

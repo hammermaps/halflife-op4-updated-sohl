@@ -73,6 +73,9 @@ bool COFSquadTalkMonster::OccupySlot(int iDesiredSlots)
 
 	COFSquadTalkMonster* pSquadLeader = MySquadLeader();
 
+	if (!pSquadLeader)
+		return false;
+
 	if ((iDesiredSlots ^ pSquadLeader->m_afSquadSlots) == 0)
 	{
 		// none of the desired slots are available.
@@ -271,6 +274,9 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 	}
 
 	auto squadLeader = MySquadLeader();
+
+	if (!squadLeader)
+		return;
 
 	const bool fLeaderIsFollowing = squadLeader->m_hTargetEnt != NULL && squadLeader->m_hTargetEnt->IsPlayer();
 	const bool fImFollowing = m_hTargetEnt != NULL && m_hTargetEnt->IsPlayer();

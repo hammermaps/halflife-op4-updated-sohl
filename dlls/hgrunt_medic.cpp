@@ -1327,10 +1327,14 @@ void COFMedicAlly::StartTask(Task_t* pTask)
 		if (m_hTargetEnt)
 		{
 			auto pTarget = m_hTargetEnt.Entity<CBaseEntity>();
-			auto pTargetMonster = pTarget->MySquadTalkMonsterPointer();
 
-			if (pTargetMonster)
-				pTargetMonster->m_hWaitMedic = nullptr;
+			if (pTarget)
+			{
+				auto pTargetMonster = pTarget->MySquadTalkMonsterPointer();
+
+				if (pTargetMonster)
+					pTargetMonster->m_hWaitMedic = nullptr;
+			}
 
 			m_fHealing = false;
 			m_fUseHealing = false;
@@ -1409,11 +1413,18 @@ void COFMedicAlly::RunTask(Task_t* pTask)
 				{
 					auto pHealTarget = m_hTargetEnt.Entity<CBaseEntity>();
 
-					const auto toHeal = V_min(5, pHealTarget->pev->max_health - pHealTarget->pev->health);
-
-					if (toHeal != 0 && pHealTarget->TakeHealth(toHeal, DMG_GENERIC))
+					if (pHealTarget)
 					{
-						m_iHealCharge -= toHeal;
+						const auto toHeal = V_min(5, pHealTarget->pev->max_health - pHealTarget->pev->health);
+
+						if (toHeal != 0 && pHealTarget->TakeHealth(toHeal, DMG_GENERIC))
+						{
+							m_iHealCharge -= toHeal;
+						}
+						else
+						{
+							m_Activity = ACT_RESET;
+						}
 					}
 					else
 					{
@@ -2372,7 +2383,7 @@ Schedule_t* COFMedicAlly::GetSchedule()
 		{
 			auto pHealTarget = m_hTargetEnt.Entity<CBaseEntity>();
 
-			if ((pHealTarget->pev->origin - pev->origin).Make2D().Length() <= 50.0 && (!m_fUseHealing || gpGlobals->time - m_flLastUseTime <= 0.25) && 0 != m_iHealCharge && pHealTarget->IsAlive() && pHealTarget->pev->health != pHealTarget->pev->max_health)
+			if (pHealTarget && (pHealTarget->pev->origin - pev->origin).Make2D().Length() <= 50.0 && (!m_fUseHealing || gpGlobals->time - m_flLastUseTime <= 0.25) && 0 != m_iHealCharge && pHealTarget->IsAlive() && pHealTarget->pev->health != pHealTarget->pev->max_health)
 			{
 				return slMedicAllyHealTarget;
 			}

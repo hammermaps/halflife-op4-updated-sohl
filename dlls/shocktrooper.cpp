@@ -392,17 +392,21 @@ void CShockTrooper::PrescheduleThink()
 {
 	if (InSquad() && m_hEnemy != NULL)
 	{
+		auto pSquadLeader = MySquadLeader();
+		if (!pSquadLeader)
+			return;
+
 		if (HasConditions(bits_COND_SEE_ENEMY))
 		{
 			// update the squad's last enemy sighting time.
-			MySquadLeader()->m_flLastEnemySightTime = gpGlobals->time;
+			pSquadLeader->m_flLastEnemySightTime = gpGlobals->time;
 		}
 		else
 		{
-			if (gpGlobals->time - MySquadLeader()->m_flLastEnemySightTime > 5)
+			if (gpGlobals->time - pSquadLeader->m_flLastEnemySightTime > 5)
 			{
 				// been a while since we've seen the enemy
-				MySquadLeader()->m_fEnemyEluded = true;
+				pSquadLeader->m_fEnemyEluded = true;
 			}
 		}
 	}

@@ -167,6 +167,8 @@ Vector VecCheckThrow(entvars_t* pev, const Vector& vecSpot1, Vector vecSpot2, fl
 
 	// throw at a constant time
 	float time = vecGrenadeVel.Length() / flSpeed;
+	if (time < 0.001)
+		return g_vecZero;
 	vecGrenadeVel = vecGrenadeVel * (1.0 / time);
 
 	// adjust upward toss to compensate for gravity loss

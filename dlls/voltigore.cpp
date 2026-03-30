@@ -603,7 +603,8 @@ void COFVoltigore::HandleAnimEvent(MonsterEvent_t* pEvent)
 
 			COFChargedBolt* bolt = m_pChargedBolt.Entity<COFChargedBolt>();
 
-			bolt->LaunchChargedBolt(direction, edict(), 1000, 10);
+			if (bolt)
+				bolt->LaunchChargedBolt(direction, edict(), 1000, 10);
 
 			//We no longer have to manage the bolt now
 			m_pChargedBolt = nullptr;

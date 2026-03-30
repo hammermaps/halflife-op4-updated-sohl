@@ -527,6 +527,9 @@ void CRope::ComputeSpringForce(RopeSampleData& first, RopeSampleData& second, co
 
 	const double flDistance = vecDist.Length();
 
+	if (flDistance < 0.001)
+		return;
+
 	const double flForce = (flDistance - spring.restLength) * spring.hookConstant;
 
 	const double flNewRelativeDist = DotProduct(first.mVelocity - second.mVelocity, vecDist) * spring.springDampning;

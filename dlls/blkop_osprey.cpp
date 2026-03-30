@@ -412,6 +412,8 @@ void CBlackOpsOsprey::FlyThink()
 			do
 			{
 				m_pGoalEnt = CBaseEntity::Instance(FIND_ENTITY_BY_TARGETNAME(NULL, STRING(m_pGoalEnt->pev->target)));
+				if (!m_pGoalEnt)
+					break;
 			} while (m_pGoalEnt->pev->speed < 400 && !HasDead());
 			UpdateGoal();
 		}

@@ -375,7 +375,7 @@ void CISlave::HandleAnimEvent(MonsterEvent_t* pEvent)
 			WRITE_BYTE(255);				 // r
 			WRITE_BYTE(180);				 // g
 			WRITE_BYTE(96);					 // b
-			WRITE_BYTE(20 / pev->framerate); // time * 10
+			WRITE_BYTE(pev->framerate > 0 ? (int)(20 / pev->framerate) : 20); // time * 10
 			WRITE_BYTE(0);					 // decay * 0.1
 			MESSAGE_END();
 		}
