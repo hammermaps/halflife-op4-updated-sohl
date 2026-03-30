@@ -29,6 +29,7 @@
 #include "animation.h"
 #include "weapons.h"
 #include "func_break.h"
+#include "../engine/studio.h"
 
 extern Vector VecBModelOrigin(entvars_t* pevBModel);
 
@@ -274,6 +275,34 @@ void CGib::SpawnRandomGibs(entvars_t* pevVictim, int cGibs, bool human)
 	SpawnRandomGibs(pevVictim, cGibs, human ? HumanGibs : AlienGibs);
 }
 
+void CGib::SpawnRandomGibs(entvars_t* pevVictim, int cGibs, int notfirst, const char* szGibModel)
+{
+	int cSplat;
+
+	for (cSplat = 0; cSplat < cGibs; cSplat++)
+	{
+		CGib* pGib = GetClassPtr((CGib*)NULL);
+
+		pGib->Spawn(szGibModel);
+		pGib->pev->body = RANDOM_LONG(notfirst, cGibs - 1 + notfirst);
+
+		pGib->pev->origin.x = pevVictim->origin.x + RANDOM_FLOAT(-1, 1) * (pevVictim->size.x * 0.5);
+		pGib->pev->origin.y = pevVictim->origin.y + RANDOM_FLOAT(-1, 1) * (pevVictim->size.y * 0.5);
+		pGib->pev->origin.z = pevVictim->origin.z + RANDOM_FLOAT(0, 1) * (pevVictim->size.z);
+
+		pGib->pev->velocity.x = RANDOM_FLOAT(-100, 100);
+		pGib->pev->velocity.y = RANDOM_FLOAT(-100, 100);
+		pGib->pev->velocity.z = RANDOM_FLOAT(200, 300);
+
+		pGib->pev->avelocity.x = RANDOM_FLOAT(100, 200);
+		pGib->pev->avelocity.y = RANDOM_FLOAT(100, 300);
+
+		pGib->m_lifeTime = 25;
+		pGib->SetThink(&CGib::WaitTillLand);
+		pGib->SetNextThink(0);
+	}
+}
+
 
 bool CBaseMonster::HasHumanGibs()
 {
@@ -332,7 +361,13 @@ void CBaseMonster::GibMonster()
 	EMIT_SOUND(ENT(pev), CHAN_WEAPON, "common/bodysplat.wav", 1, ATTN_NORM);
 
 	// only humans throw skulls !!!UNDONE - eventually monsters will have their own sets of gibs
-	if (HasHumanGibs())
+	int iszCustomGibs;
+	if ((iszCustomGibs = HasCustomGibs()))
+	{
+		CGib::SpawnRandomGibs(pev, 4, 1, STRING(iszCustomGibs));
+		gibbed = true;
+	}
+	else if (HasHumanGibs())
 	{
 		if (CVAR_GET_FLOAT("violence_hgibs") != 0) // Only the player will ever get here
 		{

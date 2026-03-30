@@ -122,6 +122,9 @@ public:
 	void EXPORT MonsterUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
 	void EXPORT CorpseUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
 
+	int m_iClass;        // LRC - monster allegiance override
+	int m_iPlayerReact;  // LRC - override player reaction behavior
+
 	// overrideable Monster member functions
 
 	int BloodColor() override { return m_bloodColor; }
@@ -312,6 +315,7 @@ public:
 	void CallGibMonster();
 	virtual bool HasHumanGibs();
 	virtual bool HasAlienGibs();
+	virtual int HasCustomGibs() { return 0; } // LRC - custom gib model
 	virtual void FadeMonster(); // Called instead of GibMonster() when gibs are disabled
 
 	Vector ShootAtEnemy(const Vector& shootOrigin);

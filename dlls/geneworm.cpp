@@ -557,7 +557,7 @@ public:
 	bool Restore(CRestore& restore) override;
 	static TYPEDESCRIPTION m_SaveData[];
 
-	int Classify() override { return CLASS_ALIEN_MONSTER; }
+	int Classify() override { return m_iClass ? m_iClass : CLASS_ALIEN_MONSTER; }
 
 	int BloodColor() override { return BLOOD_COLOR_GREEN; }
 
@@ -704,7 +704,9 @@ const char* COFGeneWorm::pSpawnSounds[] =
 
 void COFGeneWorm::Precache()
 {
-	PRECACHE_MODEL("models/geneworm.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/geneworm.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_MODEL("sprites/lgtning.spr");
 	PRECACHE_MODEL("sprites/tele1.spr");
 	PRECACHE_MODEL("sprites/bigspit.spr");
@@ -753,7 +755,10 @@ void COFGeneWorm::Spawn()
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_NOT;
 
-	SET_MODEL(edict(), "models/geneworm.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(edict(), "models/geneworm.mdl");
+	else
+		SET_MODEL(edict(), STRING(pev->model));
 
 	UTIL_SetSize(pev, {-436.67, -720.49, -331.74}, {425.29, 164.85, 355.68});
 

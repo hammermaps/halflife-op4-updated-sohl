@@ -738,7 +738,7 @@ void CMOFAssassin::CheckAmmo()
 //=========================================================
 int CMOFAssassin::Classify()
 {
-	return CLASS_HUMAN_MILITARY;
+	return m_iClass ? m_iClass : CLASS_HUMAN_MILITARY;
 }
 
 //=========================================================
@@ -952,7 +952,10 @@ void CMOFAssassin::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/massn.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/massn.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -1025,7 +1028,9 @@ void CMOFAssassin::Spawn()
 //=========================================================
 void CMOFAssassin::Precache()
 {
-	PRECACHE_MODEL("models/massn.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/massn.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 
 	PRECACHE_SOUND("hgrunt/gr_mgun1.wav");
 	PRECACHE_SOUND("hgrunt/gr_mgun2.wav");
@@ -2301,8 +2306,10 @@ LINK_ENTITY_TO_CLASS(monster_massassin_dead, CDeadMOFAssassin);
 //=========================================================
 void CDeadMOFAssassin::Spawn()
 {
-	PRECACHE_MODEL("models/massn.mdl");
-	SET_MODEL(ENT(pev), "models/massn.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/massn.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
+	SET_MODEL(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

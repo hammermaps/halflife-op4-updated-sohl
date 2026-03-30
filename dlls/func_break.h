@@ -86,4 +86,7 @@ public:
 	float m_angle;
 	int m_iszGibModel;
 	int m_iszSpawnObject;
+	float m_flRespawnTime;   // LRC - time until respawn
+	float m_flRespawnHealth; // LRC - health on respawn
+	string_t m_iszWhenHit;   // LRC - locus trigger when hit
 };

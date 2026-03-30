@@ -98,6 +98,13 @@ void CGenericMonster::Spawn()
 {
 	Precache();
 
+	if (FStringNull(pev->model))
+	{
+		ALERT(at_error, "monster_generic with no model\n");
+		UTIL_Remove(this);
+		return;
+	}
+
 	SET_MODEL(ENT(pev), STRING(pev->model));
 
 	/*
@@ -133,7 +140,8 @@ void CGenericMonster::Spawn()
 //=========================================================
 void CGenericMonster::Precache()
 {
-	PRECACHE_MODEL((char*)STRING(pev->model));
+	if (!FStringNull(pev->model))
+		PRECACHE_MODEL((char*)STRING(pev->model));
 }
 
 //=========================================================

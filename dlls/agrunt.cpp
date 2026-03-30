@@ -25,6 +25,7 @@
 #include "weapons.h"
 #include "soundent.h"
 #include "hornet.h"
+#include "scripted.h"
 
 //=========================================================
 // monster-specific schedule types
@@ -488,7 +489,13 @@ void CAGrunt::HandleAnimEvent(MonsterEvent_t* pEvent)
 
 		if (pHornetMonster)
 		{
-			pHornetMonster->m_hEnemy = m_hEnemy;
+			if (m_pCine && m_pCine->PreciseAttack()) // LRC - scripted_action precision
+				pHornetMonster->m_hEnemy = m_hTargetEnt;
+			else
+				pHornetMonster->m_hEnemy = m_hEnemy;
+
+			if (m_iClass) // LRC - hornet inherits allegiance
+				pHornetMonster->m_iClass = m_iClass;
 		}
 	}
 	break;
@@ -591,7 +598,10 @@ void CAGrunt::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/agrunt.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/agrunt.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-32, -32, 0), Vector(32, 32, 64));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -617,7 +627,9 @@ void CAGrunt::Spawn()
 //=========================================================
 void CAGrunt::Precache()
 {
-	PRECACHE_MODEL("models/agrunt.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/agrunt.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 
 	PRECACHE_SOUND_ARRAY(pAttackHitSounds);
 	PRECACHE_SOUND_ARRAY(pAttackMissSounds);

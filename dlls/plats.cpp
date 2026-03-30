@@ -1580,6 +1580,11 @@ void CFuncTrackTrain::UpdateSound()
 }
 
 
+void CFuncTrackTrain::DesiredAction()
+{
+	Next();
+}
+
 void CFuncTrackTrain::Next()
 {
 	float time = 0.5;

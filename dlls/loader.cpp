@@ -25,7 +25,7 @@
 class COFLoader : public CBaseMonster
 {
 public:
-	int Classify() override { return CLASS_PLAYER_ALLY; }
+	int Classify() override { return m_iClass ? m_iClass : CLASS_PLAYER_ALLY; }
 
 	int ISoundMask() override { return bits_SOUND_NONE; }
 
@@ -50,7 +50,9 @@ LINK_ENTITY_TO_CLASS(monster_op4loader, COFLoader);
 
 void COFLoader::Precache()
 {
-	PRECACHE_MODEL("models/loader.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/loader.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_SOUND("ambience/loader_step1.wav");
 	PRECACHE_SOUND("ambience/loader_hydra1.wav");
 }
@@ -59,7 +61,10 @@ void COFLoader::Spawn()
 {
 	Precache();
 
-	SET_MODEL(edict(), "models/loader.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(edict(), "models/loader.mdl");
+	else
+		SET_MODEL(edict(), STRING(pev->model));
 
 	if (FStrEq(STRING(pev->model), "models/player.mdl") || FStrEq(STRING(pev->model), "models/holo.mdl"))
 	{

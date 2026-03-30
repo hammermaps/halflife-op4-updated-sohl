@@ -190,7 +190,10 @@ void CBloater::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/floater.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/floater.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -210,7 +213,9 @@ void CBloater::Spawn()
 //=========================================================
 void CBloater::Precache()
 {
-	PRECACHE_MODEL("models/floater.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/floater.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 }
 
 //=========================================================

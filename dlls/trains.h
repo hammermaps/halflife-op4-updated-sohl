@@ -20,6 +20,9 @@
 #define SF_TRACKTRAIN_NOCONTROL 0x0002
 #define SF_TRACKTRAIN_FORWARDONLY 0x0004
 #define SF_TRACKTRAIN_PASSABLE 0x0008
+#define SF_TRACKTRAIN_NOYAW 0x0010           // LRC - don't adjust yaw
+#define SF_TRACKTRAIN_AVELOCITY 0x800000     // LRC - avelocity set manually
+#define SF_TRACKTRAIN_AVEL_GEARS 0x400000    // LRC - scale avelocity with gear
 
 // Spawnflag for CPathTrack
 #define SF_PATH_DISABLED 0x00000001
@@ -27,11 +30,25 @@
 #define SF_PATH_ALTREVERSE 0x00000004
 #define SF_PATH_DISABLE_TRAIN 0x00000008
 #define SF_PATH_ALTERNATE 0x00008000
+#define SF_PATH_AVELOCITY 0x00080000 // LRC
 
 // Spawnflags of CPathCorner
 #define SF_CORNER_WAITFORTRIG 0x001
 #define SF_CORNER_TELEPORT 0x002
 #define SF_CORNER_FIREONCE 0x004
+
+// LRC - values in 'armortype'
+#define AVELOCITY_TYPE_NONE 0
+#define AVELOCITY_TYPE_SET 1
+#define AVELOCITY_TYPE_ADD 2
+
+// LRC - values in 'frags'
+#define TURN_TYPE_NONE 0
+#define TURN_TYPE_TURNTO 1
+
+// LRC - values in 'armorvalue'
+#define TURNFACE_NONE 0
+#define TURNFACE_TURNTO 1
 
 //#define PATH_SPARKLE_DEBUG		1	// This makes a particle effect around path_track entities for debugging
 class CPathTrack : public CPointEntity
@@ -86,6 +103,7 @@ public:
 	void EXPORT Find();
 	void EXPORT NearestPath();
 	void EXPORT DeadEnd();
+	void DesiredAction() override; // LRC - replaces Next for MoveWith
 
 	void NextThink(float thinkTime, bool alwaysThink);
 
@@ -119,6 +137,9 @@ public:
 	float m_flVolume;
 	float m_flBank;
 	float m_oldSpeed;
+
+	Vector m_vecMasterAvel;  // LRC - master avelocity
+	Vector m_vecBaseAvel;    // LRC - underlying avelocity
 
 private:
 	unsigned short m_usAdjustPitch;

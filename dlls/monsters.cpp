@@ -2083,8 +2083,11 @@ void CBaseMonster::StartMonster()
 		// Try to move the monster to make sure it's not stuck in a brush.
 		if (!WALK_MOVE(ENT(pev), 0, 0, WALKMOVE_NORMAL))
 		{
-			ALERT(at_error, "Monster %s stuck in wall--level design error", STRING(pev->classname));
-			pev->effects = EF_BRIGHTFIELD;
+			if (!(pev->spawnflags & SF_MONSTER_NO_YELLOW_BLOBS))
+			{
+				ALERT(at_error, "Monster %s stuck in wall--level design error", STRING(pev->classname));
+				pev->effects = EF_BRIGHTFIELD;
+			}
 		}
 	}
 	else
@@ -2997,6 +3000,16 @@ bool CBaseMonster::KeyValue(KeyValueData* pkvd)
 		m_iTriggerCondition = atoi(pkvd->szValue);
 		return true;
 	}
+	else if (FStrEq(pkvd->szKeyName, "m_iClass"))
+	{
+		m_iClass = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iPlayerReact"))
+	{
+		m_iPlayerReact = atoi(pkvd->szValue);
+		return true;
+	}
 	else if (FStrEq(pkvd->szKeyName, "allow_item_dropping"))
 	{
 		m_AllowItemDropping = atoi(pkvd->szValue) != 0;
@@ -3506,3 +3519,15 @@ void CBaseMonster::ClearShockEffect()
 		m_fShockEffect = false;
 	}
 }
+
+class CInfoMonsterGoal : public CPointEntity
+{
+public:
+	void Spawn() override
+	{
+		pev->solid = SOLID_NOT;
+		pev->movetype = MOVETYPE_NONE;
+	}
+};
+
+LINK_ENTITY_TO_CLASS(info_monster_goal, CInfoMonsterGoal);

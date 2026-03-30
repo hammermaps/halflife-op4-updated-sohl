@@ -33,7 +33,7 @@ class COFBlackOpsApache : public CBaseMonster
 
 	void Spawn() override;
 	void Precache() override;
-	int Classify() override { return CLASS_HUMAN_MILITARY; }
+	int Classify() override { return m_iClass ? m_iClass : CLASS_HUMAN_MILITARY; }
 	int BloodColor() override { return DONT_BLEED; }
 	void Killed(entvars_t* pevAttacker, int iGib) override;
 	void GibMonster() override;
@@ -119,7 +119,10 @@ void COFBlackOpsApache::Spawn()
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(ENT(pev), "models/blkop_apache.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/blkop_apache.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-32, -32, -64), Vector(32, 32, 0));
 	UTIL_SetOrigin(pev, pev->origin);
 
@@ -155,7 +158,9 @@ void COFBlackOpsApache::Spawn()
 
 void COFBlackOpsApache::Precache()
 {
-	PRECACHE_MODEL("models/blkop_apache.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/blkop_apache.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 
 	PRECACHE_SOUND("apache/ap_rotor1.wav");
 	PRECACHE_SOUND("apache/ap_rotor2.wav");

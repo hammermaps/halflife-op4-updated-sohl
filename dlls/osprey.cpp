@@ -149,7 +149,10 @@ void COsprey::Spawn()
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(ENT(pev), "models/osprey.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/osprey.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-400, -400, -100), Vector(400, 400, 32));
 	UTIL_SetOrigin(pev, pev->origin);
 
@@ -177,6 +180,9 @@ void COsprey::Spawn()
 		SetNextThink(1.0);
 	}
 
+	if (pev->speed == 0)
+		pev->speed = 80;
+
 	m_pos2 = pev->origin;
 	m_ang2 = pev->angles;
 	m_vel2 = pev->velocity;
@@ -187,7 +193,9 @@ void COsprey::Precache()
 {
 	UTIL_PrecacheOther("monster_human_grunt");
 
-	PRECACHE_MODEL("models/osprey.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/osprey.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_MODEL("models/HVR.mdl");
 
 	PRECACHE_SOUND("apache/ap_rotor4.wav");
@@ -224,8 +232,7 @@ void COsprey::FindAllThink()
 	if (m_iUnits == 0)
 	{
 		ALERT(at_console, "osprey error: no grunts to resupply\n");
-		UTIL_Remove(this);
-		return;
+		m_iUnits = 4; // LRC - just make the grunts
 	}
 	SetThink(&COsprey::FlyThink);
 	SetNextThink(0.1);
@@ -404,8 +411,11 @@ void COsprey::FlyThink()
 			{
 				SetThink(&COsprey::DeployThink);
 			}
+			int loopbreaker = 100; // LRC - prevent infinite loops
 			do
 			{
+				if (--loopbreaker <= 0)
+					break;
 				m_pGoalEnt = CBaseEntity::Instance(FIND_ENTITY_BY_TARGETNAME(NULL, STRING(m_pGoalEnt->pev->target)));
 			} while (m_pGoalEnt->pev->speed < 400 && !HasDead());
 			UpdateGoal();

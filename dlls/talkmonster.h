@@ -144,7 +144,7 @@ public:
 	bool IsFollowing() { return m_hTargetEnt != NULL && m_hTargetEnt->IsPlayer(); }
 	void StopFollowing(bool clearSchedule) override;
 	void StartFollowing(CBaseEntity* pLeader);
-	virtual void DeclineFollowing() {}
+	virtual void DeclineFollowing();
 	void LimitFollowers(CBaseEntity* pPlayer, int maxFollowers);
 
 	void EXPORT FollowerUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
@@ -174,6 +174,10 @@ public:
 	bool m_fStartSuspicious;
 
 	EHANDLE m_hTalkTarget; // who to look at while talking
+
+	string_t m_iszDecline;  // LRC - refuse to accompany sentence
+	string_t m_iszSpeakAs;  // LRC - speak with different voice group
+
 	CUSTOM_SCHEDULES;
 };
 

@@ -46,6 +46,8 @@ TYPEDESCRIPTION CTalkMonster::m_SaveData[] =
 		DEFINE_FIELD(CTalkMonster, m_flStopTalkTime, FIELD_TIME),
 		DEFINE_FIELD(CTalkMonster, m_hTalkTarget, FIELD_EHANDLE),
 		DEFINE_FIELD(CTalkMonster, m_fStartSuspicious, FIELD_BOOLEAN),
+		DEFINE_FIELD(CTalkMonster, m_iszDecline, FIELD_STRING),
+		DEFINE_FIELD(CTalkMonster, m_iszSpeakAs, FIELD_STRING),
 };
 
 IMPLEMENT_SAVERESTORE(CTalkMonster, CBaseMonster);
@@ -1454,6 +1456,16 @@ bool CTalkMonster::KeyValue(KeyValueData* pkvd)
 		m_fStartSuspicious = 0 != atoi(pkvd->szValue);
 		return true;
 	}
+	else if (FStrEq(pkvd->szKeyName, "RefusalSentence"))
+	{
+		m_iszDecline = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "SpeakAs"))
+	{
+		m_iszSpeakAs = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
 
 	return CBaseMonster::KeyValue(pkvd);
 }
@@ -1465,4 +1477,12 @@ void CTalkMonster::Precache()
 		m_szGrp[TLK_USE] = STRING(m_iszUse);
 	if (!FStringNull(m_iszUnUse))
 		m_szGrp[TLK_UNUSE] = STRING(m_iszUnUse);
+}
+
+void CTalkMonster::DeclineFollowing()
+{
+	if (!FStringNull(m_iszDecline))
+	{
+		PlaySentence(STRING(m_iszDecline), 2, VOL_NORM, ATTN_NORM);
+	}
 }

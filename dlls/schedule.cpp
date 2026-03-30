@@ -1318,6 +1318,7 @@ void CBaseMonster::StartTask(Task_t* pTask)
 		pev->movetype = MOVETYPE_FLY;
 		ClearBits(pev->flags, FL_ONGROUND);
 		m_scriptState = SCRIPT_PLAYING;
+		TaskComplete();
 		break;
 	}
 	case TASK_ENABLE_SCRIPT:

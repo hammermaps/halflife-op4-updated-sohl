@@ -25,6 +25,7 @@
 #define SF_BEAM_SHADEIN 0x0080
 #define SF_BEAM_SHADEOUT 0x0100
 #define SF_BEAM_TEMPORARY 0x8000
+#define SF_BEAM_TRIPPED 0x80000 // LRC - tripbeam has been tripped
 
 #define SF_SPRITE_STARTON 0x0001
 #define SF_SPRITE_ONCE 0x0002
@@ -217,4 +218,5 @@ public:
 	CSprite* m_pSprite;
 	int m_iszSpriteName;
 	Vector m_firePosition;
+	CBaseEntity* GetTripEntity(TraceResult* ptr); // LRC - tripbeam support
 };
