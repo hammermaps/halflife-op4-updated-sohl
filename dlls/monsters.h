@@ -94,12 +94,12 @@ bool FBoxVisible(entvars_t* pevLooker, entvars_t* pevTarget);
 bool FBoxVisible(entvars_t* pevLooker, entvars_t* pevTarget, Vector& vecTargetOrigin, float flSize = 0.0);
 
 // monster to monster relationship types
-#define R_AL -2 // (ALLY) pals. Good alternative to R_NO when applicable.
-#define R_FR -1 // (FEAR)will run
-#define R_NO 0	// (NO RELATIONSHIP) disregard
-#define R_DL 1	// (DISLIKE) will attack
-#define R_HT 2	// (HATE)will attack this character instead of any visible DISLIKEd characters
-#define R_NM 3	// (NEMESIS)  A monster Will ALWAYS attack its nemsis, no matter what
+constexpr int R_AL = -2; // (ALLY) pals. Good alternative to R_NO when applicable.
+constexpr int R_FR = -1; // (FEAR)will run
+constexpr int R_NO = 0;  // (NO RELATIONSHIP) disregard
+constexpr int R_DL = 1;  // (DISLIKE) will attack
+constexpr int R_HT = 2;  // (HATE)will attack this character instead of any visible DISLIKEd characters
+constexpr int R_NM = 3;  // (NEMESIS)  A monster Will ALWAYS attack its nemsis, no matter what
 
 
 // these bits represent the monster's memory

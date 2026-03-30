@@ -23,9 +23,9 @@ edict_t* EHANDLE::Get()
 		if (m_pent->serialnumber == m_serialnumber)
 			return m_pent;
 		else
-			return NULL;
+			return nullptr;
 	}
-	return NULL;
+	return nullptr;
 };
 
 edict_t* EHANDLE::Set(edict_t* pent)
@@ -39,7 +39,7 @@ edict_t* EHANDLE::Set(edict_t* pent)
 
 EHANDLE::operator CBaseEntity*()
 {
-	return (CBaseEntity*)GET_PRIVATE(Get());
+	return static_cast<CBaseEntity*>(GET_PRIVATE(Get()));
 };
 
 
@@ -53,7 +53,7 @@ CBaseEntity* EHANDLE::operator=(CBaseEntity* pEntity)
 	}
 	else
 	{
-		m_pent = NULL;
+		m_pent = nullptr;
 		m_serialnumber = 0;
 	}
 	return pEntity;
@@ -61,5 +61,5 @@ CBaseEntity* EHANDLE::operator=(CBaseEntity* pEntity)
 
 CBaseEntity* EHANDLE::operator->()
 {
-	return (CBaseEntity*)GET_PRIVATE(Get());
+	return static_cast<CBaseEntity*>(GET_PRIVATE(Get()));
 }

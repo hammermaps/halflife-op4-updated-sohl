@@ -644,7 +644,7 @@ void CHalfLifeCTFplay::InitHUD(CBasePlayer* pPlayer)
 	if (pPlayer->m_iTeamNum > CTFTeam::None && OBS_NONE == pPlayer->pev->iuser1)
 	{
 		char text[1024];
-		sprintf(text, "* you are on team '%s'\n", team_names[(int)pPlayer->m_iTeamNum - 1]);
+		snprintf(text, sizeof(text), "* you are on team '%s'\n", team_names[(int)pPlayer->m_iTeamNum - 1]);
 		UTIL_SayText(text, pPlayer);
 		ChangePlayerTeam(pPlayer, pPlayer->m_szTeamName, false, false);
 	}

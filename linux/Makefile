@@ -36,11 +36,18 @@ ARCH_CFLAGS=-march=pentium-m -mfpmath=387 -mno-sse
 ifeq "$(CFG)" "release"
 	ARCH_CFLAGS+=-O3 
 else
-	ARCH_CFLAGS+=-gdwarf-2 -g2 
+	ARCH_CFLAGS+=-gdwarf-2 -g2 -O0 -fno-omit-frame-pointer
 endif
 
-BASE_CFLAGS=-std=c++17 -fpermissive -fno-strict-aliasing -fno-exceptions -fexpensive-optimizations -Werror=return-type -w
-BASE_CFLAGS+=-DNDEBUG -DPOSIX -D_POSIX -DLINUX -D_LINUX -DGNUC -DNO_MALLOC_OVERRIDE -DCLIENT_WEAPONS
+BASE_CFLAGS=-std=c++17 -fpermissive -fno-strict-aliasing -fno-exceptions -fexpensive-optimizations -Werror=return-type
+BASE_CFLAGS+=-DPOSIX -D_POSIX -DLINUX -D_LINUX -DGNUC -DNO_MALLOC_OVERRIDE -DCLIENT_WEAPONS
+BASE_CFLAGS+=-fdiagnostics-color=always
+
+ifeq "$(CFG)" "release"
+	BASE_CFLAGS+=-DNDEBUG -w
+else
+	BASE_CFLAGS+=-DDEBUG -D_DEBUG -Wall -Wno-unused-variable -Wno-unused-function -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-but-set-variable -Wno-missing-field-initializers
+endif
 
 # flifetime-dse=1 is needed to disable a compiler optimization that optimizes out std::memset calls in CBaseEntity::operator new
 # See https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html#index-flifetime-dse for more information about this flag
