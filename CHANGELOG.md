@@ -1,5 +1,35 @@
 # Half-Life: Opposing Force Updated changelog
 
+## Zombie Class Refactoring & Bug Fixes
+
+### New: `CZombieBase` shared base class (`dlls/zombie_base.h`)
+* Created `CZombieBase` base class inheriting from `CBaseMonster` to eliminate code duplication across `CZombie`, `CZombieSoldier`, and `CZombieBarney`
+* Moved shared sound arrays (`pAttackHitSounds`, `pAttackMissSounds`, `pAttackSounds`, `pIdleSounds`, `pAlertSounds`, `pPainSounds`) to global `inline` arrays in the header
+* Moved shared methods to `CZombieBase`: `SetYawSpeed()`, `Classify()`, `TakeDamage()`, `IgnoreConditions()`, `PainSound()`, `AlertSound()`, `IdleSound()`, `AttackSound()`, `CheckRangeAttack1()`, `CheckRangeAttack2()`
+* Added helper methods `ZombieSpawnHelper()`, `ZombiePrecacheHelper()`, `ZombieHandleAnimEvent()` for common spawn/precache/anim logic
+* Added pure virtual methods `GetOneSlashDamage()`, `GetBothSlashDamage()`, `GetDefaultModel()` for variant-specific overrides
+* Centralized anim event defines (`ZOMBIE_AE_ATTACK_RIGHT/LEFT/BOTH`) and flinch delay constant in the header
+
+### Bug Fixes
+* **Fixed null-pointer dereference in `TakeDamage()`** (all zombie variants): `pevInflictor` was dereferenced without a null check when damage type was `DMG_BULLET` — added null guard so knockback is only applied when the inflictor is valid
+* **Fixed duplicate condition in `IgnoreConditions()`** (all zombie variants): `ACT_MELEE_ATTACK1` was checked twice instead of `ACT_MELEE_ATTACK1 || ACT_MELEE_ATTACK2` — second condition corrected to `ACT_MELEE_ATTACK2`
+* **Fixed out-of-bounds array access in `CDeadZombieSoldier::Spawn()`**: `m_iPose` parsed from KeyValue had no bounds check against `m_szPoses[]` array size — added clamping to valid range
+* **Fixed misleading debug message** in `CDeadZombieSoldier`: changed `"Dead hgrunt with bad pose"` to `"Dead zombie soldier with bad pose"`
+
+### SoHL Compliance Fixes (`dlls/zombie_soldier.cpp`, `dlls/zombie_barney.cpp`)
+* **Fixed `Classify()` missing `m_iClass` check**: `CZombieSoldier` and `CZombieBarney` returned hardcoded `CLASS_ALIEN_MONSTER` — now checks `m_iClass` first for SoHL allegiance override (matching `CZombie` and all other OpFor monsters)
+* **Added custom model support**: `CZombieSoldier` and `CZombieBarney` now check `FStringNull(pev->model)` and support mapper-assigned custom models via entity keyvalues (matching `CZombie`)
+
+### Code Consistency Improvements
+* Standardized sound selection to use `RANDOM_SOUND_ARRAY()` macro consistently (previously `CZombieSoldier`/`CZombieBarney` used manual array indexing)
+* Standardized sound precaching to use `PRECACHE_SOUND_ARRAY()` macro consistently (previously `CZombieSoldier`/`CZombieBarney` used 6 manual for-loops with `(char*)` casts)
+* Unified pitch calculation to `95 + RANDOM_LONG(0, 9)` for all sound methods (previously `IdleSound()`/`AttackSound()` in soldier/barney variants used `100 + RANDOM_LONG(-5, 5)`)
+* Changed `CDeadZombieSoldier::m_szPoses` from `char*` to `const char*` for const-correctness
+
+### Documentation
+* Added `docs/OPTIMIZATION_RECOMMENDATIONS.md` with detailed analysis covering: fixed bugs, code consistency improvements, performance recommendations, debugging tips, and suggestions for future extensions
+* Updated `projects/vs2019/hldll.vcxproj` and `hldll.vcxproj.filters` to include `zombie_base.h`
+
 ## Spirit of Half-Life Integration
 
 ### Phase 3H — Sound Enhancements (`dlls/sound.cpp`)
