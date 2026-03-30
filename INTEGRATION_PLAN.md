@@ -60,9 +60,15 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
   - Non-crushing trains: `pev->dmg == -1` skips damage in `Blocked()`
   - `movewith.h` included
   - Shadow `m_activated` removed from `CFuncTrain`/`CSpriteTrain` (inherited from `CBaseEntity`)
-- **Phase 3F (Func_Tank Enhancements)** — 🔧 **PARTIALLY COMPLETE**
+- **Phase 3F (Func_Tank Enhancements)** — ✅ **COMPLETE**
   - New flags: `SF_TANK_LASERSPOT`, `SF_TANK_MATCHTARGET`, `SF_TANK_SEQFIRE`
-  - New members: `m_iszFireMaster`, `m_iCrosshair` with save/restore and KeyValue handlers
+  - New members: `m_iszFireMaster`, `m_iCrosshair`, `m_iszLocusFire`, `m_pControls`, `m_pSequence`, `m_pSequenceEnemy`, `m_pSpot`, `m_pFireProxy` — all with save/restore
+  - `m_pController`, `m_flNextAttack`, `m_vecControllerUsePos` moved to public (LRC: "unprotected these")
+  - `TankActivate`/`TankDeactivate`: laser-spot lifecycle
+  - `TrackTarget`: match-target ray-cast, sequence-target mode, laser-spot update, FireMaster gate
+  - `Fire`: locus trigger fire + proxy positioning
+  - `CFuncTankControls`: `m_iCrosshair` + save/restore + KeyValue; `Use` handles crosshair; `Think` uses `UTIL_FindEntityByTargetname`
+  - New entity `CTankSequence` (`tank_sequence`): scripted tank sequence with target, duration, full save/restore
 - **Phase 3G (Light Enhancements)** — ✅ **COMPLETE**
   - `GetStyle()`/`SetStyle(int)`/`SetCorrectStyle()` methods added to `CLight`
   - `m_iszCurrentStyle` member with save/restore
