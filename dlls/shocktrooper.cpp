@@ -291,6 +291,20 @@ const GibData ShockTrooperGibs = {"models/strooper_gibs.mdl", 0, 8};
 //=========================================================
 void CShockTrooper::GibMonster()
 {
+	if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+	{
+		EMIT_SOUND(ENT(pev), CHAN_WEAPON, "common/bodysplat.wav", 1, ATTN_NORM);
+
+		if (CVAR_GET_FLOAT("violence_agibs") != 0)
+		{
+			CGib::SpawnRandomGibs(pev, 6, ShockTrooperGibs);
+		}
+
+		SetThink(&CBaseMonster::SUB_Remove);
+		SetNextThink(0);
+		return;
+	}
+
 	Vector vecGunPos;
 	Vector vecGunAngles;
 
@@ -826,6 +840,9 @@ void CShockTrooper::HandleAnimEvent(MonsterEvent_t* pEvent)
 	{
 	case STROOPER_AE_DROP_GUN:
 	{
+		if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+			break;
+
 		if (GetBodygroup(STrooperBodyGroup::Weapons) != STrooperWeapon::None)
 		{
 			Vector vecGunPos;

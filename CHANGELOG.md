@@ -181,6 +181,13 @@
 * Added `m_iClass` classification override in `CRat::Classify()`
 * Added `m_iClass` allegiance override to all Opposing Force monster `Classify()` functions: voltigore, baby_voltigore, pitdrone, gonome, shocktrooper, geneworm, pitworm, otis, drillsergeant, recruit, cleansuit_scientist, blkop_osprey, blkop_apache, hgrunt_medic, hgrunt_torch, male_assassin, hfgrunt, shockroach, loader, skeleton
 * Added `SF_MONSTER_NO_WPN_DROP` support in `CHFGrunt::GibMonster()` and `HandleAnimEvent()` weapon drop handler
+* Added `SF_MONSTER_NO_WPN_DROP` support in `CShockTrooper::GibMonster()` and `HandleAnimEvent()` weapon drop handler
+* Added `SF_MONSTER_NO_WPN_DROP` support in `COFMedicAlly::GibMonster()` and `HandleAnimEvent()` weapon drop handler
+* Added `SF_MONSTER_NO_WPN_DROP` support in `COFTorchAlly::GibMonster()` and `HandleAnimEvent()` weapon drop handler
+* Added `SF_MONSTER_NO_WPN_DROP` support in `CMOFAssassin::GibMonster()` and `HandleAnimEvent()` weapon drop handler
+* Added `SF_MONSTER_NO_WPN_DROP` support in `COtis::Killed()` weapon drop handler
+* Fixed `COFPitWorm::Precache()` to use `pev->model` override pattern instead of hardcoded `g_engfuncs.pfnPrecacheModel` call
+* Fixed `COFPitWorm::Spawn()` to support custom model via `pev->model` with `FStringNull` check
 * Added Phase 3B–3J header declarations: `SF_DOOR_FORCETOUCHABLE`, `SF_BEAM_TRIPPED`, `GetTripEntity()`, tracktrain flags, turn/avel types, `DesiredAction()`, `IsAction()`/`InitIdleThink()`, script repeat/priority, breakable respawn/whenhit
 
 ### Phase 2.5 — Entity USE_TYPE Compliance

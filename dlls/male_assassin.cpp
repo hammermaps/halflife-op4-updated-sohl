@@ -311,6 +311,12 @@ int CMOFAssassin::IRelationship(CBaseEntity* pTarget)
 //=========================================================
 void CMOFAssassin::GibMonster()
 {
+	if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+	{
+		CBaseMonster::GibMonster();
+		return;
+	}
+
 	Vector vecGunPos;
 	Vector vecGunAngles;
 
@@ -833,6 +839,9 @@ void CMOFAssassin::HandleAnimEvent(MonsterEvent_t* pEvent)
 	{
 	case MASSASSIN_AE_DROP_GUN:
 	{
+		if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+			break;
+
 		Vector vecGunPos;
 		Vector vecGunAngles;
 

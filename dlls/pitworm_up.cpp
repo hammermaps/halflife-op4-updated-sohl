@@ -1894,7 +1894,9 @@ bool COFPitWorm::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, flo
 
 void COFPitWorm::Precache()
 {
-	g_engfuncs.pfnPrecacheModel("models/pit_worm.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/pit_worm.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_SOUND_ARRAY(pChildDieSounds);
 	PRECACHE_SOUND_ARRAY(pSackSounds);
 	PRECACHE_SOUND_ARRAY(pDeathSounds);
@@ -2006,7 +2008,10 @@ void COFPitWorm::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/pit_worm.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/pit_worm.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-32, -32, 0), Vector(32, 32, 64));
 
 	pev->solid = SOLID_SLIDEBOX;
