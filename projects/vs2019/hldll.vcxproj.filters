@@ -698,6 +698,9 @@
     <ClInclude Include="..\..\dlls\weapons.h">
       <Filter>Header Files\dlls</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\dlls\zombie_base.h">
+      <Filter>Header Files\dlls</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\dlls\saverestore.h">
       <Filter>Header Files\dlls</Filter>
     </ClInclude>
