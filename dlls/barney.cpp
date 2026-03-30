@@ -85,6 +85,8 @@ public:
 	// UNDONE: What is this for?  It isn't used?
 	float m_flPlayerDamage; // how much pain has the player inflicted on me?
 
+	int m_iBaseBody; // LRC - for barneys with different bodies
+
 	CUSTOM_SCHEDULES;
 };
 
@@ -97,6 +99,7 @@ TYPEDESCRIPTION CBarney::m_SaveData[] =
 		DEFINE_FIELD(CBarney, m_checkAttackTime, FIELD_TIME),
 		DEFINE_FIELD(CBarney, m_lastAttackCheck, FIELD_BOOLEAN),
 		DEFINE_FIELD(CBarney, m_flPlayerDamage, FIELD_FLOAT),
+		DEFINE_FIELD(CBarney, m_iBaseBody, FIELD_INTEGER), // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CBarney, CTalkMonster);
@@ -251,7 +254,7 @@ int CBarney::ISoundMask()
 //=========================================================
 int CBarney::Classify()
 {
-	return CLASS_PLAYER_ALLY;
+	return m_iClass ? m_iClass : CLASS_PLAYER_ALLY; // LRC
 }
 
 //=========================================================
@@ -412,6 +415,7 @@ void CBarney::Spawn()
 	m_MonsterState = MONSTERSTATE_NONE;
 
 	pev->body = 0; // gun in holster
+	m_iBaseBody = pev->body; // LRC
 	m_fGunDrawn = false;
 
 	m_afCapability = bits_CAP_HEAR | bits_CAP_TURN_HEAD | bits_CAP_DOORS_GROUP;
@@ -493,6 +497,9 @@ bool CBarney::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float 
 	{
 		m_flPlayerDamage += flDamage;
 
+		// LRC - if my reaction to the player has been overridden, don't do this stuff
+		if (!m_iPlayerReact)
+		{
 		// This is a heurstic to determine if the player intended to harm me
 		// If I have an enemy, we can't establish intent (may just be crossfire)
 		if (m_hEnemy == NULL)
@@ -517,6 +524,7 @@ bool CBarney::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float 
 		{
 			PlaySentence("BA_SHOT", 4, VOL_NORM, ATTN_NORM);
 		}
+		} // end !m_iPlayerReact
 	}
 
 	return ret;
@@ -758,7 +766,10 @@ MONSTERSTATE CBarney::GetIdealState()
 
 void CBarney::DeclineFollowing()
 {
-	PlaySentence("BA_POK", 2, VOL_NORM, ATTN_NORM);
+	if (!FStringNull(m_iszDecline))
+		PlaySentence(STRING(m_iszDecline), 2, VOL_NORM, ATTN_NORM); // LRC
+	else
+		PlaySentence("BA_POK", 2, VOL_NORM, ATTN_NORM);
 }
 
 

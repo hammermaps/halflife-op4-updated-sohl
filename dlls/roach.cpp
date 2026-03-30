@@ -75,7 +75,7 @@ int CRoach::ISoundMask()
 //=========================================================
 int CRoach::Classify()
 {
-	return CLASS_INSECT;
+	return m_iClass ? m_iClass : CLASS_INSECT; // LRC
 }
 
 //=========================================================

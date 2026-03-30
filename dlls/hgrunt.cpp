@@ -745,7 +745,7 @@ void CHGrunt::CheckAmmo()
 //=========================================================
 int CHGrunt::Classify()
 {
-	return CLASS_HUMAN_MILITARY;
+	return m_iClass ? m_iClass : CLASS_HUMAN_MILITARY; // LRC
 }
 
 //=========================================================

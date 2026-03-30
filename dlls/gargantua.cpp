@@ -726,7 +726,7 @@ void CGargantua::PrescheduleThink()
 //=========================================================
 int CGargantua::Classify()
 {
-	return CLASS_ALIEN_MONSTER;
+	return m_iClass ? m_iClass : CLASS_ALIEN_MONSTER; // LRC
 }
 
 //=========================================================

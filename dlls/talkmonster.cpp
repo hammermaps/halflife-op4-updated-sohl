@@ -1477,6 +1477,24 @@ void CTalkMonster::Precache()
 		m_szGrp[TLK_USE] = STRING(m_iszUse);
 	if (!FStringNull(m_iszUnUse))
 		m_szGrp[TLK_UNUSE] = STRING(m_iszUnUse);
+	if (m_iszSpeakAs) // LRC: changing voice groups for monsters
+	{
+		// LRC - this is pretty dodgy; test with save/restore.
+		char szTemp[128];
+		const char* szSpeakAs = STRING(m_iszSpeakAs);
+		for (int i = 0; i < TLK_CGROUPS; i++)
+		{
+			if (m_szGrp[i])
+			{
+				const char* pszUnder = strchr(m_szGrp[i], '_');
+				if (pszUnder)
+				{
+					snprintf(szTemp, sizeof(szTemp), "%s%s", szSpeakAs, pszUnder);
+					m_szGrp[i] = STRING(ALLOC_STRING(szTemp));
+				}
+			}
+		}
+	}
 }
 
 void CTalkMonster::DeclineFollowing()

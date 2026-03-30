@@ -47,7 +47,7 @@ LINK_ENTITY_TO_CLASS(monster_generic, CGenericMonster);
 //=========================================================
 int CGenericMonster::Classify()
 {
-	return CLASS_PLAYER_ALLY;
+	return m_iClass ? m_iClass : CLASS_PLAYER_ALLY; // LRC
 }
 
 //=========================================================

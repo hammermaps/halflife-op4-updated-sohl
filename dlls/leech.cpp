@@ -110,7 +110,7 @@ public:
 	void Killed(entvars_t* pevAttacker, int iGib) override;
 	void Activate() override;
 	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override;
-	int Classify() override { return CLASS_INSECT; }
+	int Classify() override { return m_iClass ? m_iClass : CLASS_INSECT; } // LRC
 	int IRelationship(CBaseEntity* pTarget) override;
 
 	bool Save(CSave& save) override;

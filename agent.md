@@ -129,7 +129,7 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 1** | Core Infrastructure (MoveWith, Think/NextThink, State) | ✅ Complete |
 | **Phase 2** | Base Entity Enhancements (USE types, Alias, Locus, Triggers) | ✅ Complete |
 | **Phase 2.5** | Entity USE_TYPE Compliance (ShouldToggle for toggle entities) | ✅ Complete |
-| **Phase 3A** | Monster/NPC Enhancements (HL1 + OpFor: custom model, m_iClass, SF_MONSTER_NO_WPN_DROP) | 🔧 Partial |
+| **Phase 3A** | Monster/NPC Enhancements (HL1 + OpFor: custom model, m_iClass, SF_MONSTER_NO_WPN_DROP, SpeakAs) | ✅ Complete |
 | **Phase 3B** | Door Enhancements (`SF_DOOR_FORCETOUCHABLE`, synched fire, `message` target) | ✅ Complete |
 | **Phase 3C** | Button Enhancements (`game_state` entity, `SF_BUTTON_ONLYDIRECT`, master lock) | ✅ Complete |
 | **Phase 3D** | Breakable Enhancements (respawn, `whenhit`, `SF_PUSH_NOPULL`) | ✅ Complete |
@@ -160,6 +160,8 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 - All monster entities **must** check `m_iClass` in `Classify()` before returning a hardcoded class
 - All monster entities **must** support custom models via `pev->model` with `FStringNull` check in `Spawn()`/`Precache()`
 - Armed monsters **must** check `SF_MONSTER_NO_WPN_DROP` before dropping weapons on death (in both `GibMonster()` and `HandleAnimEvent()`)
+- `CTalkMonster::Precache()` applies SpeakAs voice-group replacement: when `m_iszSpeakAs` is set, the prefix in all `m_szGrp[]` entries is replaced to allow one NPC to speak with another's voice set
+- `CTalkMonster::DeclineFollowing()` subclasses should respect `m_iszDecline` (fall back to hardcoded sentence only when `m_iszDecline` is unset)
 
 ### OpFor Entity SoHL Status
 

@@ -405,7 +405,7 @@ bool CBigMomma::KeyValue(KeyValueData* pkvd)
 //=========================================================
 int CBigMomma::Classify()
 {
-	return CLASS_ALIEN_MONSTER;
+	return m_iClass ? m_iClass : CLASS_ALIEN_MONSTER; // LRC
 }
 
 //=========================================================

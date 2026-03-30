@@ -386,7 +386,7 @@ void CAGrunt::PainSound()
 //=========================================================
 int CAGrunt::Classify()
 {
-	return CLASS_ALIEN_MILITARY;
+	return m_iClass ? m_iClass : CLASS_ALIEN_MILITARY; // LRC
 }
 
 //=========================================================
