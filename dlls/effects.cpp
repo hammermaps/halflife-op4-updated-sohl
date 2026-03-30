@@ -22,6 +22,7 @@
 #include "decals.h"
 #include "func_break.h"
 #include "shake.h"
+#include "UserMessages.h"
 
 #define SF_GIBSHOOTER_REPEATABLE 1 // allows a gibshooter to be refired
 
@@ -2284,4 +2285,254 @@ void CItemSoda::CanTouch(CBaseEntity* pOther)
 	SetTouch(NULL);
 	SetThink(&CItemSoda::SUB_Remove);
 	SetNextThink(0);
+}
+
+// =========================================================
+// env_fog - SoHL fog entity
+// =========================================================
+class CEnvFog : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	void SendFog();
+
+	int m_fActive;
+	Vector m_iFogColor;
+	int m_iStartDist;
+	int m_iEndDist;
+	float m_fDensity;
+};
+
+LINK_ENTITY_TO_CLASS(env_fog, CEnvFog);
+
+TYPEDESCRIPTION CEnvFog::m_SaveData[] =
+	{
+		DEFINE_FIELD(CEnvFog, m_fActive, FIELD_INTEGER),
+		DEFINE_FIELD(CEnvFog, m_iFogColor, FIELD_VECTOR),
+		DEFINE_FIELD(CEnvFog, m_iStartDist, FIELD_INTEGER),
+		DEFINE_FIELD(CEnvFog, m_iEndDist, FIELD_INTEGER),
+		DEFINE_FIELD(CEnvFog, m_fDensity, FIELD_FLOAT),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvFog, CBaseEntity);
+
+bool CEnvFog::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "startdist"))
+	{
+		m_iStartDist = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "enddist"))
+	{
+		m_iEndDist = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "density"))
+	{
+		m_fDensity = atof(pkvd->szValue);
+		return true;
+	}
+
+	return CBaseEntity::KeyValue(pkvd);
+}
+
+void CEnvFog::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	pev->movetype = MOVETYPE_NONE;
+	pev->effects = EF_NODRAW;
+
+	m_iFogColor.x = pev->rendercolor.x;
+	m_iFogColor.y = pev->rendercolor.y;
+	m_iFogColor.z = pev->rendercolor.z;
+
+	if (pev->spawnflags & 1)
+	{
+		m_fActive = true;
+		SendFog();
+	}
+}
+
+void CEnvFog::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (useType == USE_TOGGLE)
+	{
+		m_fActive = !m_fActive;
+	}
+	else if (useType == USE_ON)
+	{
+		m_fActive = true;
+	}
+	else if (useType == USE_OFF)
+	{
+		m_fActive = false;
+	}
+
+	SendFog();
+}
+
+void CEnvFog::SendFog()
+{
+	MESSAGE_BEGIN(MSG_ALL, gmsgSetFog);
+	WRITE_BYTE((int)m_iFogColor.x);
+	WRITE_BYTE((int)m_iFogColor.y);
+	WRITE_BYTE((int)m_iFogColor.z);
+	if (m_fActive)
+	{
+		WRITE_SHORT(m_iStartDist);
+		WRITE_SHORT(m_iEndDist);
+		WRITE_SHORT((int)(m_fDensity * 1000));
+	}
+	else
+	{
+		WRITE_SHORT(0);
+		WRITE_SHORT(0);
+		WRITE_SHORT(0);
+	}
+	MESSAGE_END();
+}
+
+// ==================
+// CEnvSky - 3D skybox
+// ==================
+
+class CEnvSky : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	void SendSky();
+
+	int m_fActive;
+};
+
+LINK_ENTITY_TO_CLASS(env_sky, CEnvSky);
+
+TYPEDESCRIPTION CEnvSky::m_SaveData[] =
+	{
+		DEFINE_FIELD(CEnvSky, m_fActive, FIELD_INTEGER),
+	};
+
+IMPLEMENT_SAVERESTORE(CEnvSky, CBaseEntity);
+
+void CEnvSky::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	pev->movetype = MOVETYPE_NONE;
+	pev->effects = EF_NODRAW;
+
+	if (pev->spawnflags & 1)
+	{
+		m_fActive = true;
+		SendSky();
+	}
+}
+
+void CEnvSky::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (useType == USE_TOGGLE)
+		m_fActive = !m_fActive;
+	else if (useType == USE_ON)
+		m_fActive = true;
+	else if (useType == USE_OFF)
+		m_fActive = false;
+
+	SendSky();
+}
+
+void CEnvSky::SendSky()
+{
+	MESSAGE_BEGIN(MSG_ALL, gmsgSetSky);
+	WRITE_BYTE(m_fActive ? 1 : 0);
+	if (m_fActive)
+	{
+		WRITE_COORD(pev->origin.x);
+		WRITE_COORD(pev->origin.y);
+		WRITE_COORD(pev->origin.z);
+	}
+	MESSAGE_END();
+}
+
+// =========================================================
+// env_particle - SoHL particle system entity
+// =========================================================
+class CEnvParticle : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	void Precache() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	void SendParticle(int iActive);
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	int m_fActive;
+};
+
+LINK_ENTITY_TO_CLASS(env_particle, CEnvParticle);
+
+TYPEDESCRIPTION CEnvParticle::m_SaveData[] =
+	{
+		DEFINE_FIELD(CEnvParticle, m_fActive, FIELD_INTEGER),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvParticle, CBaseEntity);
+
+void CEnvParticle::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	pev->movetype = MOVETYPE_NONE;
+	pev->effects = EF_NODRAW;
+
+	Precache();
+
+	if (pev->spawnflags & 1)
+	{
+		m_fActive = true;
+		SendParticle(1);
+	}
+}
+
+void CEnvParticle::Precache()
+{
+	// Aurora particle files are client-side assets, no server precache needed
+}
+
+void CEnvParticle::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (useType == USE_TOGGLE)
+		m_fActive = !m_fActive;
+	else if (useType == USE_ON)
+		m_fActive = true;
+	else if (useType == USE_OFF)
+		m_fActive = false;
+
+	SendParticle(m_fActive ? 1 : 0);
+}
+
+void CEnvParticle::SendParticle(int iActive)
+{
+	MESSAGE_BEGIN(MSG_ALL, gmsgParticle);
+	WRITE_SHORT(ENTINDEX(ENT(pev)));
+	WRITE_BYTE(iActive);
+	WRITE_COORD(pev->origin.x);
+	WRITE_COORD(pev->origin.y);
+	WRITE_COORD(pev->origin.z);
+	WRITE_STRING(STRING(pev->message));
+	MESSAGE_END();
 }

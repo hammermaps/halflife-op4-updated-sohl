@@ -25,6 +25,7 @@
 #include "parsemsg.h"
 #include "vgui_int.h"
 #include "vgui_TeamFortressViewport.h"
+#include "particlemgr.h"
 
 #include "demo.h"
 #include "demo_api.h"
@@ -99,7 +100,35 @@ int __MsgFunc_HudColor(const char* pszName, int iSize, void* pbuf)
 	giR = READ_BYTE();
 	giG = READ_BYTE();
 	giB = READ_BYTE();
+	gHUD.m_iHUDColor = (giR << 16) | (giG << 8) | giB;
 	return 1;
+}
+
+int __MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_SetFog(pszName, iSize, pbuf));
+}
+
+int __MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_SetSky(pszName, iSize, pbuf));
+}
+
+int __MsgFunc_AddShine(const char* pszName, int iSize, void* pbuf)
+{
+	gHUD.MsgFunc_AddShine(pszName, iSize, pbuf);
+	return 1;
+}
+
+int __MsgFunc_KeyedDLight(const char* pszName, int iSize, void* pbuf)
+{
+	gHUD.MsgFunc_KeyedDLight(pszName, iSize, pbuf);
+	return 1;
+}
+
+int __MsgFunc_Particle(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_Particle(pszName, iSize, pbuf));
 }
 
 int __MsgFunc_OldWeapon(const char* pszName, int iSize, void* pbuf)
@@ -341,6 +370,11 @@ void CHud::Init()
 	HOOK_MESSAGE(SetFOV);
 	HOOK_MESSAGE(Concuss);
 	HOOK_MESSAGE(HudColor);
+	HOOK_MESSAGE(SetFog);
+	HOOK_MESSAGE(SetSky);
+	HOOK_MESSAGE(AddShine);
+	HOOK_MESSAGE(KeyedDLight);
+	HOOK_MESSAGE(Particle);
 	HOOK_MESSAGE(OldWeapon);
 	HOOK_MESSAGE(Weapons);
 
@@ -383,6 +417,22 @@ void CHud::Init()
 
 	m_iLogo = 0;
 	m_iFOV = 0;
+
+	m_bFogOn = false;
+	m_iFogColor_R = m_iFogColor_G = m_iFogColor_B = 0;
+	m_fStartDist = 0;
+	m_fEndDist = 0;
+	m_fFogDensity = 0;
+
+	m_iSkyMode = SKY_OFF;
+	m_vecSkyPos = Vector(0, 0, 0);
+
+	if (!g_pParticleSystems)
+		g_pParticleSystems = new ParticleSystemManager();
+
+	m_iHUDColor = RGB_YELLOWISH;
+	m_pShinySurface = NULL;
+
 	setNightVisionState(false);
 
 	CVAR_CREATE("zoom_sensitivity_ratio", "1.2", FCVAR_ARCHIVE);

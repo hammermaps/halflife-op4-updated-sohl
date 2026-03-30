@@ -23,6 +23,7 @@
 #include "extdll.h"
 #include "util.h"
 #include "cbase.h"
+#include "UserMessages.h"
 
 
 
@@ -281,6 +282,19 @@ void CLightDynamic::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 		m_iState = STATE_ON;
 		pev->effects &= ~EF_NODRAW;
 	}
+
+	// Send keyed dynamic light message to client
+	MESSAGE_BEGIN(MSG_ALL, gmsgKeyedDLight);
+	WRITE_BYTE(ENTINDEX(ENT(pev)));
+	WRITE_BYTE(m_iState == STATE_ON ? 1 : 0);
+	WRITE_COORD(pev->origin.x);
+	WRITE_COORD(pev->origin.y);
+	WRITE_COORD(pev->origin.z);
+	WRITE_BYTE((int)pev->armorvalue); // radius
+	WRITE_BYTE((int)pev->rendercolor.x); // R
+	WRITE_BYTE((int)pev->rendercolor.y); // G
+	WRITE_BYTE((int)pev->rendercolor.z); // B
+	MESSAGE_END();
 }
 
 // LRC - CTriggerLightstyle: temporarily changes the style of a CLight entity
