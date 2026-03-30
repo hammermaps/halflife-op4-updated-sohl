@@ -134,7 +134,7 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 3C** | Button Enhancements (`game_state` entity, `SF_BUTTON_ONLYDIRECT`, master lock) | ✅ Complete |
 | **Phase 3D** | Breakable Enhancements (respawn, `whenhit`, `SF_PUSH_NOPULL`) | ✅ Complete |
 | **Phase 3E** | Platform/Train Enhancements (`UTIL_SetVelocity`, `SF_TRACKTRAIN_NOYAW`, non-crushing) | ✅ Complete |
-| **Phase 3F** | Func_Tank Enhancements (new flags, `m_iszFireMaster`, `m_iCrosshair`) | 🔧 Partial |
+| **Phase 3F** | Func_Tank Enhancements (new flags, `m_iszFireMaster`, `m_iCrosshair`) | ✅ Complete |
 | **Phase 3G** | Light Enhancements (`env_dlight`, `trigger_lightstyle`, `SetStyle`) | ✅ Complete |
 | **Phase 3H** | Sound Enhancements (`m_pPlayFrom`, `trigger_sound`) | 🔧 Partial |
 | **Phase 3I** | Scripted Sequence Enhancements (`scripted_action`, repeat/priority, `InitIdleThink`) | ✅ Complete |

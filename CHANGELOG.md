@@ -129,7 +129,22 @@
 * Added `SF_TANK_SEQFIRE` (0x10000): TankSequence is currently firing
 * Added `m_iszFireMaster` (string_t): FireMaster entity that prevents firing when it's inactive (KeyValue: `firemaster`)
 * Added `m_iCrosshair` (int): crosshair style to show while controlling the tank (KeyValue: `crosshair`)
-* Added `DEFINE_FIELD` entries for both new members
+* Added `m_iszLocusFire` (string_t): locus trigger name for custom-shot fire events (KeyValue: `locusfire`)
+* Added `m_pControls` (CFuncTankControls*): back-pointer to the linked `func_tankcontrols` go-between
+* Added `m_pSequence` (CTankSequence*): currently active scripted tank sequence
+* Added `m_pSequenceEnemy` (CBaseEntity*): entity the active sequence wants the tank to attack
+* Added `m_pSpot` (CLaserSpot*): laser dot spawned when `SF_TANK_LASERSPOT` is set
+* Added `m_pFireProxy` (CPointEntity*): point entity used as the locus fire origin
+* Added `DEFINE_FIELD` entries for all new members
+* LRC – unprotected `m_pController`, `m_flNextAttack`, `m_vecControllerUsePos` so `CTankSequence`/`CFuncTankControls` can access them
+* `TankActivate()`: creates a `CLaserSpot` when `SF_TANK_LASERSPOT` is set
+* `TankDeactivate()`: destroys `m_pSpot` if it exists
+* `CFuncTank::TrackTarget()`: added match-target ray-cast mode (SF_TANK_MATCHTARGET + controller), scripted-sequence target tracking, laser-spot position update, and FireMaster gate before firing
+* `CFuncTank::Fire()`: fires the `m_iszLocusFire` locus trigger and moves `m_pFireProxy` to the barrel end when set
+* `CFuncTankControls`: added `m_iCrosshair` member with save/restore and KeyValue handler (`crosshair`)
+* `CFuncTankControls::Use()`: rewritten to handle crosshair show/hide and relay player-control start/stop through the tank; now uses `HIDEHUD_CUSTOMCROSSHAIR`
+* `CFuncTankControls::Think()`: uses `UTIL_FindEntityByTargetname` for alias support; links `m_pTank->m_pControls` back-pointer
+* Added `CTankSequence` entity (`tank_sequence`): scripted tank sequence — points a `func_tank` at a named enemy entity, sets `SF_TANK_SEQFIRE`, and releases after an optional duration; full save/restore
 
 #### Phase 3G — Light Enhancements (`dlls/lights.cpp`)
 * Added `m_iszCurrentStyle` member to `CLight`: tracks the currently active light pattern (save/restore)

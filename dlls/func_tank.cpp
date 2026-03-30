@@ -46,6 +46,10 @@ enum TANKBULLET
 //			rockets
 //			explosion?
 
+// LRC - forward declarations
+class CFuncTankControls;
+class CTankSequence;
+
 class CFuncTank : public CBaseEntity
 {
 public:
@@ -74,12 +78,19 @@ public:
 		pev->spawnflags |= SF_TANK_ACTIVE;
 		SetNextThink(0.1);
 		m_fireLast = 0;
+		if ((pev->spawnflags & SF_TANK_LASERSPOT) != 0 && !m_pSpot) // LRC - create laser spot
+			m_pSpot = CLaserSpot::CreateSpot();
 	}
 	inline void TankDeactivate()
 	{
 		pev->spawnflags &= ~SF_TANK_ACTIVE;
 		m_fireLast = 0;
 		StopRotSound();
+		if (m_pSpot) // LRC - destroy laser spot when tank deactivates
+		{
+			UTIL_Remove(m_pSpot);
+			m_pSpot = NULL;
+		}
 	}
 	inline bool CanFire() { return (gpGlobals->time - m_lastSightTime) < m_persist; }
 	bool InRange(float range);
@@ -107,12 +118,18 @@ public:
 	void StopControl();
 	void ControllerPostFrame();
 
-
-protected:
+	// LRC - unprotected these, so that TankSequence can look at them
 	CBasePlayer* m_pController;
 	float m_flNextAttack;
 	Vector m_vecControllerUsePos;
+	int m_iszLocusFire;             // LRC - locus trigger to fire with custom shots
+	CFuncTankControls* m_pControls; // LRC - tankcontrols go-between
+	CTankSequence* m_pSequence;     // LRC - current scripted sequence
+	CBaseEntity* m_pSequenceEnemy;  // LRC - entity the sequence wants to attack
+	CLaserSpot* m_pSpot;            // LRC - laser spot (SF_TANK_LASERSPOT)
+	CPointEntity* m_pFireProxy;     // LRC - locus fire position proxy
 
+protected:
 	float m_yawCenter;	  // "Center" yaw
 	float m_yawRate;	  // Max turn rate to track targets
 	float m_yawRange;	  // Range of turning motion (one-sided: 30 is +/- 30 degress from center)
@@ -176,6 +193,12 @@ TYPEDESCRIPTION CFuncTank::m_SaveData[] =
 		DEFINE_FIELD(CFuncTank, m_iszMaster, FIELD_STRING),
 		DEFINE_FIELD(CFuncTank, m_iszFireMaster, FIELD_STRING), // LRC
 		DEFINE_FIELD(CFuncTank, m_iCrosshair, FIELD_INTEGER),   // LRC
+		DEFINE_FIELD(CFuncTank, m_iszLocusFire, FIELD_STRING),  // LRC
+		DEFINE_FIELD(CFuncTank, m_pControls, FIELD_CLASSPTR),   // LRC
+		DEFINE_FIELD(CFuncTank, m_pSequence, FIELD_CLASSPTR),   // LRC
+		DEFINE_FIELD(CFuncTank, m_pSequenceEnemy, FIELD_CLASSPTR), // LRC
+		DEFINE_FIELD(CFuncTank, m_pSpot, FIELD_CLASSPTR),       // LRC
+		DEFINE_FIELD(CFuncTank, m_pFireProxy, FIELD_CLASSPTR),  // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CFuncTank, CBaseEntity);
@@ -343,6 +366,11 @@ bool CFuncTank::KeyValue(KeyValueData* pkvd)
 	else if (FStrEq(pkvd->szKeyName, "crosshair")) // LRC - crosshair
 	{
 		m_iCrosshair = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "locusfire")) // LRC - locus fire trigger
+	{
+		m_iszLocusFire = ALLOC_STRING(pkvd->szValue);
 		return true;
 	}
 
@@ -517,10 +545,41 @@ void CFuncTank::TrackTarget()
 	// Get a position to aim for
 	if (m_pController)
 	{
-		// Tanks attempt to mirror the player's angles
-		angles = m_pController->pev->v_angle;
-		angles[0] = 0 - angles[0];
+		// LRC - match target: trace from player view to get exact aim point
+		if ((pev->spawnflags & SF_TANK_MATCHTARGET) != 0)
+		{
+			barrelEnd = BarrelPosition();
+			Vector vecSrc = m_pController->GetGunPosition();
+			Vector vecAim = m_pController->GetAutoaimVector(AUTOAIM_5DEGREES);
+
+			// Store original owner so trace doesn't hit the player or the tank
+			edict_t* ownerTemp = pev->owner; // LRC - store owner
+			pev->owner = m_pController->edict(); // LRC - exclude player and tank from trace
+			UTIL_TraceLine(vecSrc, vecSrc + vecAim * 8192, dont_ignore_monsters, m_pController->edict(), &tr);
+			pev->owner = ownerTemp; // LRC - restore owner
+
+			direction = tr.vecEndPos - pev->origin;
+			angles = UTIL_VecToAngles(direction);
+			AdjustAnglesForBarrel(angles, direction.Length());
+		}
+		else
+		{
+			// Tanks attempt to mirror the player's angles
+			angles = m_pController->pev->v_angle;
+			angles[0] = 0 - angles[0];
+		}
 		SetNextThink(0.05);
+	}
+	else if (m_pSequence && m_pSequenceEnemy) // LRC - scripted sequence targeting
+	{
+		SetNextThink(0.1);
+		barrelEnd = BarrelPosition();
+		targetPosition = m_pSequenceEnemy->BodyTarget(barrelEnd);
+		direction = targetPosition - pev->origin;
+		angles = UTIL_VecToAngles(direction);
+		AdjustAnglesForBarrel(angles, direction.Length());
+		updateTime = true;
+		m_sightOrigin = targetPosition;
 	}
 	else
 	{
@@ -618,10 +677,23 @@ void CFuncTank::TrackTarget()
 	else if (pev->avelocity.x < -m_pitchRate)
 		pev->avelocity.x = -m_pitchRate;
 
+	// LRC - update laser spot position
+	if (m_pSpot)
+	{
+		Vector forward;
+		UTIL_MakeVectorsPrivate(pev->angles, forward, NULL, NULL);
+		barrelEnd = BarrelPosition();
+		UTIL_TraceLine(barrelEnd, barrelEnd + forward * 8192, dont_ignore_monsters, edict(), &tr);
+		UTIL_SetOrigin(m_pSpot->pev, tr.vecEndPos);
+	}
+
 	if (m_pController)
 		return;
 
-	if (CanFire() && ((fabs(distX) < m_pitchTolerance && fabs(distY) < m_yawTolerance) || (pev->spawnflags & SF_TANK_LINEOFSIGHT) != 0))
+	// LRC - check sequence fire flag
+	bool seqFire = (pev->spawnflags & SF_TANK_SEQFIRE) != 0;
+
+	if ((seqFire || CanFire()) && ((fabs(distX) < m_pitchTolerance && fabs(distY) < m_yawTolerance) || (pev->spawnflags & SF_TANK_LINEOFSIGHT) != 0))
 	{
 		bool fire = false;
 		Vector forward;
@@ -636,6 +708,10 @@ void CFuncTank::TrackTarget()
 		}
 		else
 			fire = true;
+
+		// LRC - check FireMaster before firing
+		if (fire && !FStringNull(m_iszFireMaster) && !UTIL_IsMasterTriggered(m_iszFireMaster, this))
+			fire = false;
 
 		if (fire)
 		{
@@ -702,6 +778,13 @@ void CFuncTank::Fire(const Vector& barrelEnd, const Vector& forward, entvars_t* 
 			pSprite->AbsoluteNextThink(pSprite->pev->nextthink + 0.1);
 		}
 		SUB_UseTargets(this, USE_TOGGLE, 0);
+		if (!FStringNull(m_iszLocusFire)) // LRC - fire locus trigger
+		{
+			// Move fire proxy to barrel end for locus position
+			if (m_pFireProxy)
+				UTIL_SetOrigin(m_pFireProxy->pev, barrelEnd);
+			FireTargets(STRING(m_iszLocusFire), this, this, USE_TOGGLE, 0);
+		}
 	}
 	m_fireLast = gpGlobals->time;
 }
@@ -1003,6 +1086,7 @@ class CFuncTankControls : public CBaseEntity
 public:
 	int ObjectCaps() override;
 	void Spawn() override;
+	bool KeyValue(KeyValueData* pkvd) override;
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
 	void Think() override;
 
@@ -1011,12 +1095,14 @@ public:
 	static TYPEDESCRIPTION m_SaveData[];
 
 	CFuncTank* m_pTank;
+	int m_iCrosshair; // LRC - crosshair style to show when player is controlling
 };
 LINK_ENTITY_TO_CLASS(func_tankcontrols, CFuncTankControls);
 
 TYPEDESCRIPTION CFuncTankControls::m_SaveData[] =
 	{
 		DEFINE_FIELD(CFuncTankControls, m_pTank, FIELD_CLASSPTR),
+		DEFINE_FIELD(CFuncTankControls, m_iCrosshair, FIELD_INTEGER), // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CFuncTankControls, CBaseEntity);
@@ -1026,13 +1112,55 @@ int CFuncTankControls::ObjectCaps()
 	return (CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION) | FCAP_IMPULSE_USE;
 }
 
+bool CFuncTankControls::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "crosshair")) // LRC - crosshair style
+	{
+		m_iCrosshair = atoi(pkvd->szValue);
+		return true;
+	}
+	return CBaseEntity::KeyValue(pkvd);
+}
 
 void CFuncTankControls::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
-{ // pass the Use command onto the controls
-	if (m_pTank)
-		m_pTank->Use(pActivator, pCaller, useType, value);
+{
+	// LRC - rewritten to allow TankControls to be the thing that handles the relationship
+	if (!m_pTank)
+	{
+		ASSERT(m_pTank != NULL); // if this fails,  most likely means save/restore hasn't worked properly
+		return;
+	}
 
-	ASSERT(m_pTank != NULL); // if this fails,  most likely means save/restore hasn't worked properly
+	if (pActivator && pActivator->IsPlayer())
+	{
+		CBasePlayer* pPlayer = (CBasePlayer*)pActivator;
+
+		if (value == 2 && useType == USE_SET)
+		{
+			// Forward frame update to the tank
+			m_pTank->Use(pActivator, pCaller, useType, value);
+		}
+		else if (!m_pTank->m_pController && useType != USE_OFF)
+		{
+			// LRC - allow tank crosshairs
+			if (m_iCrosshair != 0)
+				pPlayer->m_iHideHUD &= ~HIDEHUD_CUSTOMCROSSHAIR;
+			pPlayer->m_pTank = m_pTank;
+			m_pTank->StartControl(pPlayer);
+		}
+		else if (m_pTank->m_pController)
+		{
+			// LRC - restore crosshair state when stopping
+			if (m_iCrosshair != 0)
+				m_pTank->m_pController->m_iHideHUD |= HIDEHUD_CUSTOMCROSSHAIR;
+			m_pTank->StopControl();
+		}
+	}
+	else
+	{
+		// Non-player activation: pass to tank as toggle
+		m_pTank->Use(pActivator, pCaller, useType, value);
+	}
 }
 
 
@@ -1040,18 +1168,21 @@ void CFuncTankControls::Think()
 {
 	edict_t* pTarget = NULL;
 
-	do
+	// LRC - Now uses FindEntityByTargetname, so that aliases work.
+	CBaseEntity* pEnt = NULL;
+	while ((pEnt = UTIL_FindEntityByTargetname(pEnt, STRING(pev->target))) != NULL)
 	{
-		pTarget = FIND_ENTITY_BY_TARGETNAME(pTarget, STRING(pev->target));
-	} while (!FNullEnt(pTarget) && 0 != strncmp(STRING(pTarget->v.classname), "func_tank", 9));
-
-	if (FNullEnt(pTarget))
-	{
-		ALERT(at_console, "No tank %s\n", STRING(pev->target));
-		return;
+		if (strncmp(STRING(pEnt->pev->classname), "func_tank", 9) == 0)
+		{
+			m_pTank = (CFuncTank*)pEnt;
+			// Link back: let the tank know its controls
+			m_pTank->m_pControls = this;
+			return;
+		}
 	}
 
-	m_pTank = (CFuncTank*)Instance(pTarget);
+	if (!m_pTank)
+		ALERT(at_console, "No tank %s\n", STRING(pev->target));
 }
 
 void CFuncTankControls::Spawn()
@@ -1067,4 +1198,147 @@ void CFuncTankControls::Spawn()
 	SetNextThink(0.3); // After all the func_tank's have spawned
 
 	CBaseEntity::Spawn();
+}
+
+
+//============================================================================
+// TANK SEQUENCE - LRC Scripted Tank Sequence entity
+//============================================================================
+class CTankSequence : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	void Think() override;
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	CFuncTank* m_pTank;    // the tank this sequence controls
+	CBaseEntity* m_pEnemy; // the entity to attack
+	int m_iszTank;         // targetname of the func_tank
+	int m_iszEnemy;        // targetname of the enemy entity
+	float m_flDuration;    // how long to hold the sequence (0 = indefinite)
+	float m_flStopTime;    // when to stop (world time)
+};
+LINK_ENTITY_TO_CLASS(tank_sequence, CTankSequence);
+
+TYPEDESCRIPTION CTankSequence::m_SaveData[] =
+	{
+		DEFINE_FIELD(CTankSequence, m_pTank, FIELD_CLASSPTR),
+		DEFINE_FIELD(CTankSequence, m_pEnemy, FIELD_CLASSPTR),
+		DEFINE_FIELD(CTankSequence, m_iszTank, FIELD_STRING),
+		DEFINE_FIELD(CTankSequence, m_iszEnemy, FIELD_STRING),
+		DEFINE_FIELD(CTankSequence, m_flDuration, FIELD_FLOAT),
+		DEFINE_FIELD(CTankSequence, m_flStopTime, FIELD_TIME),
+};
+
+IMPLEMENT_SAVERESTORE(CTankSequence, CBaseEntity);
+
+void CTankSequence::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	pev->movetype = MOVETYPE_NONE;
+	pev->effects |= EF_NODRAW;
+}
+
+bool CTankSequence::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "tank"))
+	{
+		m_iszTank = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "enemy"))
+	{
+		m_iszEnemy = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "duration"))
+	{
+		m_flDuration = atof(pkvd->szValue);
+		return true;
+	}
+	return CBaseEntity::KeyValue(pkvd);
+}
+
+void CTankSequence::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (!ShouldToggle(useType, m_pTank != NULL))
+		return;
+
+	if (m_pTank)
+	{
+		// Deactivate: release the tank from this sequence
+		pev->spawnflags &= ~SF_TANK_SEQFIRE;
+		m_pTank->pev->spawnflags &= ~SF_TANK_SEQFIRE;
+		m_pTank->m_pSequence = NULL;
+		m_pTank->m_pSequenceEnemy = NULL;
+		m_pTank = NULL;
+		m_pEnemy = NULL;
+		DontThink();
+		return;
+	}
+
+	// Activate: find tank and enemy
+	if (!FStringNull(m_iszTank))
+	{
+		CBaseEntity* pEnt = UTIL_FindEntityByTargetname(NULL, STRING(m_iszTank));
+		while (pEnt)
+		{
+			if (strncmp(STRING(pEnt->pev->classname), "func_tank", 9) == 0)
+			{
+				m_pTank = (CFuncTank*)pEnt;
+				break;
+			}
+			pEnt = UTIL_FindEntityByTargetname(pEnt, STRING(m_iszTank));
+		}
+	}
+	else if (pev->target)
+	{
+		CBaseEntity* pEnt = UTIL_FindEntityByTargetname(NULL, STRING(pev->target));
+		while (pEnt)
+		{
+			if (strncmp(STRING(pEnt->pev->classname), "func_tank", 9) == 0)
+			{
+				m_pTank = (CFuncTank*)pEnt;
+				break;
+			}
+			pEnt = UTIL_FindEntityByTargetname(pEnt, STRING(pev->target));
+		}
+	}
+
+	if (!m_pTank)
+		return;
+
+	if (!FStringNull(m_iszEnemy))
+		m_pEnemy = UTIL_FindEntityByTargetname(NULL, STRING(m_iszEnemy));
+
+	// Set the sequence on the tank
+	m_pTank->m_pSequence = this;
+	m_pTank->m_pSequenceEnemy = m_pEnemy;
+	m_pTank->pev->spawnflags |= SF_TANK_SEQFIRE;
+
+	// Schedule timeout if duration is set
+	if (m_flDuration > 0)
+	{
+		m_flStopTime = gpGlobals->time + m_flDuration;
+		SetNextThink(m_flDuration);
+	}
+}
+
+void CTankSequence::Think()
+{
+	// Duration expired: release the tank
+	if (m_pTank)
+	{
+		m_pTank->pev->spawnflags &= ~SF_TANK_SEQFIRE;
+		m_pTank->m_pSequence = NULL;
+		m_pTank->m_pSequenceEnemy = NULL;
+		m_pTank = NULL;
+		m_pEnemy = NULL;
+	}
+	DontThink();
 }
