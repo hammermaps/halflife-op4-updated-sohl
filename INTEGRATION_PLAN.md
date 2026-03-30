@@ -68,18 +68,22 @@ This document outlines a phased plan to integrate all Spirit of Half-Life 1.2 (S
   - `m_iszCurrentStyle` member with save/restore
   - `CLightDynamic` (`env_dlight`): dynamic entity light creator
   - `CTriggerLightstyle` (`trigger_lightstyle`): temporarily changes a light's pattern
-- **Phase 3H (Sound Enhancements)** — 🔧 **PARTIALLY COMPLETE**
+- **Phase 3H (Sound Enhancements)** — ✅ **COMPLETE**
   - `m_pPlayFrom` and `m_iChannel` members added to `CAmbientGeneric` with save/restore
   - Defaults: `m_pPlayFrom = edict()`, `m_iChannel = CHAN_STATIC`
+  - `StartPlayFrom()` think function: defers initial sound playback one frame so `m_pPlayFrom` entity is ready
+  - All `UTIL_EmitAmbientSound` calls replaced with `EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, ...)` in `RampThink()` and `ToggleUse()`
+  - All sound-stop calls use `STOP_SOUND(m_pPlayFrom, m_iChannel, ...)` in `RampThink()` and `ToggleUse()`
   - `trigger_sound` stub entity registered
 - **Phase 3I (Scripted Sequence Enhancements)** — ✅ **COMPLETE**
   - `scripted_action` and `aiscripted_sequence` both linked to `CCineMonster`
   - Full save/restore for: `m_iState`, `m_iszAttack`, `m_iszMoveTarget`, `m_iRepeats`, `m_iRepeatsLeft`, `m_fRepeatFrame`, `m_iPriority`
   - KeyValue handlers for `attack`, `movetarget`, `repeats`, `priority`
   - `InitIdleThink()` implemented: resets state and restarts idle sequence
-- **Phase 3J (Effects Enhancements)** — 🔧 **PARTIALLY COMPLETE**
-  - `bmodels.cpp`: `WaitForStart()` function for `CFuncRotating`; `m_fCurSpeed` member with save/restore
-  - `effects.cpp`: `CLaser::GetTripEntity()` implemented for tripbeam support
+- **Phase 3J (Effects Enhancements)** — ✅ **COMPLETE**
+  - `bmodels.cpp`: `#include "movewith.h"` added; `m_iState` now saved/restored; `m_flFanFriction <= 0` guard; `m_fCurSpeed` tracks speed in `SpinUp`/`SpinDown`; `UTIL_SetAvelocity` used throughout `CFuncRotating` and `CPendulum`; `UTIL_SetAngles` used in `CPendulum`; `HurtTouch` uses `m_fCurSpeed/10`; `WaitForStart` used for instant-use and unnamed auto-start in `Spawn()`; `Precache()` guarded with `!m_pMoveWith`
+  - `effects.cpp`: includes `player.h`/`locus.h`/`movewith.h`; `info_target` as proper `CInfoTarget` class with `null.spr`; `SF_GIBSHOOTER_DEBUG` flag; simultaneous gib fire when delay=0; non-restriking beams (`m_restrike == -1`); `CLightning::ToggleUse` fires `USE_OFF`/`USE_ON`; `SF_FADE_PERMANENT` flag + `FFADE_STAYOUT` in `CFade`
+  - `CLaser::GetTripEntity()` implemented for tripbeam support
 
 **Phase 4 (Visual & Client-Side Features)** — ✅ **COMPLETE**
 - Phase 4A (Fog System) — ✅ **COMPLETE**

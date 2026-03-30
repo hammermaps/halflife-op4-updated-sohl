@@ -123,6 +123,7 @@ public:
 	void Precache() override;
 	void EXPORT ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
 	void EXPORT RampThink();
+	void EXPORT StartPlayFrom(); // LRC - deferred sound start so m_pPlayFrom entity is ready
 	void InitModulationParms();
 
 	bool Save(CSave& save) override;
@@ -251,11 +252,21 @@ void CAmbientGeneric::Precache()
 	}
 	if (m_iState != STATE_OFF) // LRC
 	{
-		UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
-			(m_dpv.vol * 0.01), m_flAttenuation, SND_SPAWNING, m_dpv.pitch);
-
-		SetNextThink(0.1);
+		// LRC - defer by one frame so m_pPlayFrom entity is fully initialised
+		SetThink(&CAmbientGeneric::StartPlayFrom);
+		SetNextThink(0);
 	}
+}
+
+// LRC - StartPlayFrom: deferred one frame so m_pPlayFrom entity is available after Activate
+void CAmbientGeneric::StartPlayFrom()
+{
+	char* szSoundFile = (char*)STRING(pev->message);
+	EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, szSoundFile, // LRC
+		(m_dpv.vol * 0.01), m_flAttenuation, SND_SPAWNING, m_dpv.pitch);
+
+	SetThink(&CAmbientGeneric::RampThink);
+	SetNextThink(0.1);
 }
 
 // RampThink - Think at 5hz if we are dynamically modifying
@@ -301,8 +312,7 @@ void CAmbientGeneric::RampThink()
 			m_dpv.spindown = 0; // done with ramp down
 
 			// shut sound off
-			UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
-				0, 0, SND_STOP, 0);
+			STOP_SOUND(m_pPlayFrom, m_iChannel, szSoundFile); // LRC
 
 			// return without setting nextthink
 			return;
@@ -345,8 +355,7 @@ void CAmbientGeneric::RampThink()
 			m_dpv.fadeout = 0; // done with ramp down
 
 			// shut sound off
-			UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
-				0, 0, SND_STOP, 0);
+			STOP_SOUND(m_pPlayFrom, m_iChannel, szSoundFile); // LRC
 
 			// return without setting nextthink
 			return;
@@ -451,7 +460,7 @@ void CAmbientGeneric::RampThink()
 		if (pitch == PITCH_NORM)
 			pitch = PITCH_NORM + 1; // don't send 'no pitch' !
 
-		UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
+		EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, szSoundFile, // LRC
 			(vol * 0.01), m_flAttenuation, flags, pitch);
 	}
 
@@ -571,7 +580,7 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 
 		m_dpv.pitch = fraction * 255;
 
-		UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
+		EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, szSoundFile, // LRC
 			0, 0, SND_CHANGE_PITCH, m_dpv.pitch);
 
 		return;
@@ -626,8 +635,7 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 				SetNextThink(0.1);
 			}
 			else
-				UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
-					0, 0, SND_STOP, 0);
+				STOP_SOUND(m_pPlayFrom, m_iChannel, szSoundFile); // LRC
 		}
 	}
 	else
@@ -642,14 +650,13 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 			m_iState = STATE_ON; // LRC
 		else
 			// shut sound off now - may be interrupting a long non-looping sound
-			UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
-				0, 0, SND_STOP, 0);
+			STOP_SOUND(m_pPlayFrom, m_iChannel, szSoundFile); // LRC
 
 		// init all ramp params for startup
 
 		InitModulationParms();
 
-		UTIL_EmitAmbientSound(ENT(pev), pev->origin, szSoundFile,
+		EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, szSoundFile, // LRC
 			(m_dpv.vol * 0.01), m_flAttenuation, 0, m_dpv.pitch);
 
 		SetNextThink(0.1);

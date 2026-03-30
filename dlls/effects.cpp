@@ -23,14 +23,38 @@
 #include "func_break.h"
 #include "shake.h"
 #include "UserMessages.h"
+#include "player.h"   // LRC - footstep custom sound support
+#include "locus.h"    // LRC - locus utilities
+#include "movewith.h" // LRC - UTIL_SetVelocity for sprite resets
 
 #define SF_GIBSHOOTER_REPEATABLE 1 // allows a gibshooter to be refired
+#define SF_GIBSHOOTER_DEBUG      4 // LRC - debug mode: show gib velocity vectors
 
 #define SF_FUNNEL_REVERSE 1 // funnel effect repels particles instead of attracting them.
 
+#define INFO_TARGET_NULLSPR "sprites/null.spr" // LRC - null sprite for info_target editor visibility
 
-// Lightning target, just alias landmark
-LINK_ENTITY_TO_CLASS(info_target, CPointEntity);
+
+// LRC - make info_target a proper entity class (sprites/null.spr for editor visibility)
+class CInfoTarget : public CPointEntity
+{
+public:
+	void Spawn() override
+	{
+		pev->solid = SOLID_NOT;
+		pev->movetype = MOVETYPE_NONE;
+		if (FStringNull(pev->model))
+			SET_MODEL(ENT(pev), INFO_TARGET_NULLSPR); // LRC - use null sprite so editor can see it
+		else
+			SET_MODEL(ENT(pev), STRING(pev->model));
+	}
+	void Precache() override
+	{
+		PRECACHE_MODEL(INFO_TARGET_NULLSPR); // LRC
+	}
+};
+
+LINK_ENTITY_TO_CLASS(info_target, CInfoTarget); // LRC - proper class, not just alias
 
 
 class CBubbling : public CBaseEntity
@@ -602,6 +626,7 @@ void CLightning::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TY
 		m_active = false;
 		pev->effects |= EF_NODRAW;
 		DontThink();
+		SUB_UseTargets(this, USE_OFF, 0); // LRC
 	}
 	else
 	{
@@ -613,6 +638,7 @@ void CLightning::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TY
 			SetNextThink(0);
 			pev->dmgtime = gpGlobals->time;
 		}
+		SUB_UseTargets(this, USE_ON, 0); // LRC
 	}
 }
 
@@ -653,7 +679,12 @@ void CLightning::StrikeThink()
 {
 	if (m_life != 0)
 	{
-		if ((pev->spawnflags & SF_BEAM_RANDOM) != 0)
+		if (m_restrike == -1) // LRC - non-restriking beam: fire once and stop
+		{
+			m_active = true;
+			// fall through to strike, then don't set nextthink again
+		}
+		else if ((pev->spawnflags & SF_BEAM_RANDOM) != 0)
 			SetNextThink(m_life + RANDOM_FLOAT(0, m_restrike));
 		else
 			SetNextThink(m_life + m_restrike);
@@ -1436,8 +1467,16 @@ bool CGibShooter::KeyValue(KeyValueData* pkvd)
 
 void CGibShooter::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	SetThink(&CGibShooter::ShootThink);
-	SetNextThink(0);
+	if (m_flDelay == 0) // LRC - delay is 0, fire them all at once
+	{
+		while (m_iGibs > 0)
+			ShootThink();
+	}
+	else
+	{
+		SetThink(&CGibShooter::ShootThink);
+		SetNextThink(0);
+	}
 }
 
 void CGibShooter::Spawn()
@@ -1446,11 +1485,6 @@ void CGibShooter::Spawn()
 
 	pev->solid = SOLID_NOT;
 	pev->effects = EF_NODRAW;
-
-	if (m_flDelay == 0)
-	{
-		m_flDelay = 0.1;
-	}
 
 	if (m_flGibLife == 0)
 	{
@@ -1484,7 +1518,8 @@ CGib* CGibShooter::CreateGib()
 
 void CGibShooter::ShootThink()
 {
-	SetNextThink(m_flDelay);
+	if (m_flDelay != 0) // LRC - only set next think if using delay (0 = fire all at once via Use)
+		SetNextThink(m_flDelay);
 
 	Vector vecShootDir;
 
@@ -1513,6 +1548,9 @@ void CGibShooter::ShootThink()
 			pGib->SetNextThink(pGib->m_lifeTime);
 			pGib->m_lifeTime = 0;
 		}
+
+		if ((pev->spawnflags & SF_GIBSHOOTER_DEBUG) != 0) // LRC - debug: show velocity vector
+			ALERT(at_console, "GibShooter: velocity (%f %f %f)\n", pGib->pev->velocity.x, pGib->pev->velocity.y, pGib->pev->velocity.z);
 	}
 
 	if (--m_iGibs <= 0)
@@ -1950,6 +1988,7 @@ LINK_ENTITY_TO_CLASS(env_fade, CFade);
 #define SF_FADE_IN 0x0001		// Fade in, not out
 #define SF_FADE_MODULATE 0x0002 // Modulate, don't blend
 #define SF_FADE_ONLYONE 0x0004
+#define SF_FADE_PERMANENT 0x0008 // LRC - hold fade permanently (FFADE_STAYOUT)
 
 void CFade::Spawn()
 {
@@ -1987,6 +2026,9 @@ void CFade::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType,
 
 	if ((pev->spawnflags & SF_FADE_MODULATE) != 0)
 		fadeFlags |= FFADE_MODULATE;
+
+	if ((pev->spawnflags & SF_FADE_PERMANENT) != 0) // LRC - hold fade permanently
+		fadeFlags |= FFADE_STAYOUT;
 
 	if ((pev->spawnflags & SF_FADE_ONLYONE) != 0)
 	{

@@ -25,6 +25,7 @@
 #include "cbase.h"
 #include "doors.h"
 #include "UserMessages.h"
+#include "movewith.h" // LRC - UTIL_SetAvelocity / UTIL_SetAngles
 
 #define SF_BRUSH_ACCDCC 16		 // brush should accelerate and decelerate when toggled
 #define SF_BRUSH_HURT 32		 // rotating brush that inflicts pain based on rotation speed
@@ -313,6 +314,7 @@ TYPEDESCRIPTION CFuncRotating::m_SaveData[] =
 		DEFINE_FIELD(CFuncRotating, m_flVolume, FIELD_FLOAT),
 		DEFINE_FIELD(CFuncRotating, m_pitch, FIELD_FLOAT),
 		DEFINE_FIELD(CFuncRotating, m_sounds, FIELD_INTEGER),
+		DEFINE_FIELD(CFuncRotating, m_iState, FIELD_INTEGER),  // LRC
 		DEFINE_FIELD(CFuncRotating, m_fCurSpeed, FIELD_FLOAT), // LRC
 };
 
@@ -397,7 +399,7 @@ void CFuncRotating::Spawn()
 	}
 
 	// prevent divide by zero if level designer forgets friction!
-	if (m_flFanFriction == 0)
+	if (m_flFanFriction <= 0) // LRC - also guard against negative values
 	{
 		m_flFanFriction = 1;
 	}
@@ -441,8 +443,13 @@ void CFuncRotating::Spawn()
 	// instant-use brush?
 	if (FBitSet(pev->spawnflags, SF_BRUSH_ROTATE_INSTANT))
 	{
-		SetThink(&CFuncRotating::SUB_CallUseToggle);
+		SetThink(&CFuncRotating::WaitForStart); // LRC - use WaitForStart for proper deferred spin-up
 		SetNextThink(1.5); // leave a magic delay for client to start up
+	}
+	else if (FStringNull(pev->targetname)) // LRC - start immediately if unnamed
+	{
+		SetThink(&CFuncRotating::WaitForStart);
+		SetNextThink(1.5);
 	}
 	// can this brush inflict pain?
 	if (FBitSet(pev->spawnflags, SF_BRUSH_HURT))
@@ -517,9 +524,11 @@ void CFuncRotating::Precache()
 	{
 		// if fan was spinning, and we went through transition or save/restore,
 		// make sure we restart the sound.  1.5 sec delay is magic number. KDB
-
-		SetThink(&CFuncRotating::SpinUp);
-		SetNextThink(1.5);
+		if (!m_pMoveWith) // LRC - only restart if not a MoveWith child (parent will handle timing)
+		{
+			SetThink(&CFuncRotating::SpinUp);
+			SetNextThink(1.5);
+		}
 	}
 }
 
@@ -537,7 +546,7 @@ void CFuncRotating::HurtTouch(CBaseEntity* pOther)
 		return;
 
 	// calculate damage based on rotation speed
-	pev->dmg = pev->avelocity.Length() / 10;
+	pev->dmg = m_fCurSpeed / 10; // LRC - use tracked speed rather than raw avelocity length
 
 	pOther->TakeDamage(pev, pev, pev->dmg, DMG_CRUSH);
 
@@ -553,36 +562,13 @@ void CFuncRotating::HurtTouch(CBaseEntity* pOther)
 
 void CFuncRotating::RampPitchVol(bool fUp)
 {
+	// LRC - use m_fCurSpeed for more accurate pitch/vol ramping
+	float fpct = (pev->speed != 0) ? (m_fCurSpeed / pev->speed) : 0.0f;
+	float fvol = m_flVolume * fpct; // slowdown volume ramps down to 0
 
-	Vector vecAVel = pev->avelocity;
-	vec_t vecCur;
-	vec_t vecFinal;
-	float fpct;
-	float fvol;
-	float fpitch;
-	int pitch;
+	float fpitch = FANPITCHMIN + (FANPITCHMAX - FANPITCHMIN) * fpct;
 
-	// get current angular velocity
-
-	vecCur = fabs(vecAVel.x != 0 ? vecAVel.x : (vecAVel.y != 0 ? vecAVel.y : vecAVel.z));
-
-	// get target angular velocity
-
-	vecFinal = (pev->movedir.x != 0 ? pev->movedir.x : (pev->movedir.y != 0 ? pev->movedir.y : pev->movedir.z));
-	vecFinal *= pev->speed;
-	vecFinal = fabs(vecFinal);
-
-	// calc volume and pitch as % of final vol and pitch
-
-	fpct = vecCur / vecFinal;
-	//	if (fUp)
-	//		fvol = m_flVolume * (0.5 + fpct/2.0); // spinup volume ramps up from 50% max vol
-	//	else
-	fvol = m_flVolume * fpct; // slowdown volume ramps down to 0
-
-	fpitch = FANPITCHMIN + (FANPITCHMAX - FANPITCHMIN) * fpct;
-
-	pitch = (int)fpitch;
+	int pitch = (int)fpitch;
 	if (pitch == PITCH_NORM)
 		pitch = PITCH_NORM - 1;
 
@@ -597,20 +583,15 @@ void CFuncRotating::RampPitchVol(bool fUp)
 //
 void CFuncRotating::SpinUp()
 {
-	Vector vecAVel; //rotational velocity
-
 	SetNextThink(0.1);
-	pev->avelocity = pev->avelocity + (pev->movedir * (pev->speed * m_flFanFriction));
-
-	vecAVel = pev->avelocity; // cache entity's rotational velocity
+	m_fCurSpeed += pev->speed * m_flFanFriction; // LRC - track current speed separately
 
 	// if we've met or exceeded target speed, set target speed and stop thinking
-	if (fabs(vecAVel.x) >= fabs(pev->movedir.x * pev->speed) &&
-		fabs(vecAVel.y) >= fabs(pev->movedir.y * pev->speed) &&
-		fabs(vecAVel.z) >= fabs(pev->movedir.z * pev->speed))
+	if (m_fCurSpeed >= pev->speed)
 	{
+		m_fCurSpeed = pev->speed; // set speed in case we overshot
 		m_iState = STATE_ON;  // LRC
-		pev->avelocity = pev->movedir * pev->speed; // set speed in case we overshot
+		UTIL_SetAvelocity(this, pev->movedir * m_fCurSpeed); // LRC
 		EMIT_SOUND_DYN(ENT(pev), CHAN_STATIC, (char*)STRING(pev->noiseRunning),
 			m_flVolume, m_flAttenuation, SND_CHANGE_PITCH | SND_CHANGE_VOL, FANPITCHMAX);
 
@@ -619,6 +600,7 @@ void CFuncRotating::SpinUp()
 	}
 	else
 	{
+		UTIL_SetAvelocity(this, pev->movedir * m_fCurSpeed); // LRC
 		RampPitchVol(true);
 	}
 }
@@ -628,29 +610,16 @@ void CFuncRotating::SpinUp()
 //
 void CFuncRotating::SpinDown()
 {
-	Vector vecAVel; //rotational velocity
-	vec_t vecdir;
-
 	SetNextThink(0.1);
 
-	pev->avelocity = pev->avelocity - (pev->movedir * (pev->speed * m_flFanFriction)); //spin down slower than spinup
+	m_fCurSpeed -= pev->speed * m_flFanFriction; // LRC - track current speed separately
 
-	vecAVel = pev->avelocity; // cache entity's rotational velocity
-
-	if (pev->movedir.x != 0)
-		vecdir = pev->movedir.x;
-	else if (pev->movedir.y != 0)
-		vecdir = pev->movedir.y;
-	else
-		vecdir = pev->movedir.z;
-
-	// if we've met or exceeded target speed, set target speed and stop thinking
-	// (note: must check for movedir > 0 or < 0)
-	if (((vecdir > 0) && (vecAVel.x <= 0 && vecAVel.y <= 0 && vecAVel.z <= 0)) ||
-		((vecdir < 0) && (vecAVel.x >= 0 && vecAVel.y >= 0 && vecAVel.z >= 0)))
+	// if we've decelerated to zero, stop
+	if (m_fCurSpeed <= 0) // LRC - stop when speed reaches or drops below zero
 	{
+		m_fCurSpeed = 0; // set speed in case we overshot
 		m_iState = STATE_OFF;  // LRC
-		pev->avelocity = g_vecZero; // set speed in case we overshot
+		UTIL_SetAvelocity(this, g_vecZero); // LRC
 
 		// stop sound, we're done
 		EMIT_SOUND_DYN(ENT(pev), CHAN_STATIC, (char*)STRING(pev->noiseRunning /* Stop */),
@@ -661,6 +630,7 @@ void CFuncRotating::SpinDown()
 	}
 	else
 	{
+		UTIL_SetAvelocity(this, pev->movedir * m_fCurSpeed); // LRC
 		RampPitchVol(false);
 	}
 }
@@ -683,14 +653,14 @@ void CFuncRotating::WaitForStart()
 void CFuncRotating::RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
 	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
-	if (!ShouldToggle(useType, pev->avelocity != g_vecZero))
+	if (!ShouldToggle(useType, m_fCurSpeed != 0)) // LRC - use m_fCurSpeed for state
 		return;
 
 	// is this a brush that should accelerate and decelerate when turned on/off (fan)?
 	if (FBitSet(pev->spawnflags, SF_BRUSH_ACCDCC))
 	{
 		// fan is spinning, so stop it.
-		if (pev->avelocity != g_vecZero)
+		if (m_fCurSpeed != 0) // LRC
 		{
 			SetThink(&CFuncRotating::SpinDown);
 			//EMIT_SOUND_DYN(ENT(pev), CHAN_WEAPON, (char *)STRING(pev->noiseStop),
@@ -709,7 +679,7 @@ void CFuncRotating::RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 	}
 	else if (!FBitSet(pev->spawnflags, SF_BRUSH_ACCDCC)) //this is a normal start/stop brush.
 	{
-		if (pev->avelocity != g_vecZero)
+		if (m_fCurSpeed != 0) // LRC
 		{
 			// play stopping sound here
 			SetThink(&CFuncRotating::SpinDown);
@@ -724,7 +694,9 @@ void CFuncRotating::RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 		{
 			EMIT_SOUND_DYN(ENT(pev), CHAN_STATIC, (char*)STRING(pev->noiseRunning),
 				m_flVolume, m_flAttenuation, 0, FANPITCHMAX);
-			pev->avelocity = pev->movedir * pev->speed;
+			m_fCurSpeed = pev->speed; // LRC
+			m_iState = STATE_ON;      // LRC
+			UTIL_SetAvelocity(this, pev->movedir * m_fCurSpeed); // LRC
 
 			SetThink(&CFuncRotating::Rotate);
 			Rotate();
@@ -865,7 +837,7 @@ void CPendulum::PendulumUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_T
 
 			delta = CBaseToggle::AxisDelta(pev->spawnflags, pev->angles, m_start);
 
-			pev->avelocity = m_maxSpeed * pev->movedir;
+			UTIL_SetAvelocity(this, m_maxSpeed * pev->movedir); // LRC
 			SetNextThink(delta / m_maxSpeed);
 			SetThink(&CPendulum::Stop);
 		}
@@ -873,7 +845,7 @@ void CPendulum::PendulumUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_T
 		{
 			pev->speed = 0; // Dead stop
 			SetThink(NULL);
-			pev->avelocity = g_vecZero;
+			UTIL_SetAvelocity(this, g_vecZero); // LRC
 		}
 	}
 	else
@@ -888,10 +860,10 @@ void CPendulum::PendulumUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_T
 
 void CPendulum::Stop()
 {
-	pev->angles = m_start;
+	UTIL_SetAngles(this, m_start); // LRC
 	pev->speed = 0;
 	SetThink(NULL);
-	pev->avelocity = g_vecZero;
+	UTIL_SetAvelocity(this, g_vecZero); // LRC
 }
 
 
@@ -919,7 +891,7 @@ void CPendulum::Swing()
 	else if (pev->speed < -m_maxSpeed)
 		pev->speed = -m_maxSpeed;
 	// scale the destdelta vector by the time spent traveling to get velocity
-	pev->avelocity = pev->speed * pev->movedir;
+	UTIL_SetAvelocity(this, pev->speed * pev->movedir); // LRC
 
 	// Call this again
 	SetNextThink(0.1);
@@ -929,10 +901,10 @@ void CPendulum::Swing()
 		m_dampSpeed -= m_damp * m_dampSpeed * dt;
 		if (m_dampSpeed < 30.0)
 		{
-			pev->angles = m_center;
+			UTIL_SetAngles(this, m_center); // LRC
 			pev->speed = 0;
 			SetThink(NULL);
-			pev->avelocity = g_vecZero;
+			UTIL_SetAvelocity(this, g_vecZero); // LRC
 		}
 		else if (pev->speed > m_dampSpeed)
 			pev->speed = m_dampSpeed;

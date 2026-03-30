@@ -136,9 +136,9 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 3E** | Platform/Train Enhancements (`UTIL_SetVelocity`, `SF_TRACKTRAIN_NOYAW`, non-crushing) | ✅ Complete |
 | **Phase 3F** | Func_Tank Enhancements (new flags, `m_iszFireMaster`, `m_iCrosshair`) | 🔧 Partial |
 | **Phase 3G** | Light Enhancements (`env_dlight`, `trigger_lightstyle`, `SetStyle`) | ✅ Complete |
-| **Phase 3H** | Sound Enhancements (`m_pPlayFrom`, `trigger_sound`) | 🔧 Partial |
+| **Phase 3H** | Sound Enhancements (`m_pPlayFrom`, `trigger_sound`) | ✅ Complete |
 | **Phase 3I** | Scripted Sequence Enhancements (`scripted_action`, repeat/priority, `InitIdleThink`) | ✅ Complete |
-| **Phase 3J** | Effects Enhancements (`WaitForStart`, `m_fCurSpeed`, `GetTripEntity`) | 🔧 Partial |
+| **Phase 3J** | Effects Enhancements (`WaitForStart`, `m_fCurSpeed`, `GetTripEntity`) | ✅ Complete |
 | **Phase 4A** | Fog System (`env_fog`, `SetFog` message, client-side fog data) | ✅ Complete |
 | **Phase 4B** | Sky System (`env_sky`, `SetSky` message, client-side sky data) | ✅ Complete |
 | **Phase 4C** | Custom HUD Color (`m_iHUDColor`, `HUDColor` message) | ✅ Complete |
@@ -162,6 +162,11 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 - Armed monsters **must** check `SF_MONSTER_NO_WPN_DROP` before dropping weapons on death (in both `GibMonster()` and `HandleAnimEvent()`)
 - `CTalkMonster::Precache()` applies SpeakAs voice-group replacement: when `m_iszSpeakAs` is set, the prefix in all `m_szGrp[]` entries is replaced to allow one NPC to speak with another's voice set
 - `CTalkMonster::DeclineFollowing()` subclasses should respect `m_iszDecline` (fall back to hardcoded sentence only when `m_iszDecline` is unset)
+- `CAmbientGeneric::m_pPlayFrom` defaults to `edict()`; sound emission uses `EMIT_SOUND_DYN(m_pPlayFrom, m_iChannel, ...)` / `STOP_SOUND(m_pPlayFrom, m_iChannel, ...)` everywhere; startup deferred via `StartPlayFrom` think
+- `CFuncRotating` tracks current speed in `m_fCurSpeed` (scalar) and uses `UTIL_SetAvelocity` for MoveWith propagation; state is saved/restored; unnamed entities auto-start via `WaitForStart`
+- `CPendulum` uses `UTIL_SetAvelocity` and `UTIL_SetAngles` for MoveWith propagation in all motion methods
+- `env_fade` supports `SF_FADE_PERMANENT` (0x0008): applies `FFADE_STAYOUT` to hold the fade until a new ScreenFade message
+- `gibshooter` supports `SF_GIBSHOOTER_DEBUG` (4) for velocity console logging and zero-delay simultaneous fire
 
 ### OpFor Entity SoHL Status
 
