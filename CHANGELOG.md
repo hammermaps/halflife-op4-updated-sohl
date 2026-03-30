@@ -2,6 +2,38 @@
 
 ## Spirit of Half-Life Integration
 
+### Phase 5 — New Entity Definitions & Polish
+
+#### Phase 5A — New Entity Definitions (`dlls/cbase.h`, `common/const.h`, `dlls/cdll_dll.h`)
+* Added `CLASS_FACTION_A` (16), `CLASS_FACTION_B` (17), `CLASS_FACTION_C` (18) classification constants for use with "Behaves As" feature
+* Added `CONTENT_SPECIAL1` (-20) content type for particle systems
+* Added `HIDEHUD_CUSTOMCROSSHAIR` (1<<4) HUD hide flag for custom crosshair experiment
+
+#### Phase 5B — Miscellaneous Changes & Debug Tools
+* Added `sohl_impulsetarget` and `sohl_mw_debug` cvars to `dlls/game.cpp`/`dlls/game.h` for manual entity triggering and MoveWith debug info
+* Added "fire" console command to `dlls/client.cpp`: triggers entities manually (requires `sv_cheats 1`)
+* Added impulse 90/91/92 handlers to `dlls/player.cpp`: sends `USE_TOGGLE`/`USE_ON`/`USE_OFF` to the entity named in `sohl_impulsetarget`
+* Added direct entity use via traceline to `dlls/player.cpp` `PlayerUse()`: tries exact traceline hit before sphere search
+* Added `FCAP_ONLYDIRECT_USE` filtering in `PlayerUse()`: entities with this flag are skipped during sphere search (require direct traceline)
+* Added player-inside-entity check in `PlayerUse()`: allows using entities the player is standing inside
+* Added suit flatline sound fix to `dlls/player.cpp` `DeathSound()`: no flatline sound if player has no suit (except in multiplayer)
+* Added `SF_WORLD_STARTSUIT` (0x0020) spawnflag and `g_startSuit` global to `dlls/world.cpp`/`dlls/world.h`: map designers can start players with HEV suit
+* Added `startsuit` KeyValue handler to `CWorld`: sets `SF_WORLD_STARTSUIT` flag
+* Added start-with-suit support to `dlls/singleplay_gamerules.cpp` `PlayerSpawn()`: grants suit on spawn if world flag is set
+* Added `game_player_equip` support in singleplayer: `PlayerSpawn()` now fires `game_player_equip` entities
+* Precached `sprites/null.spr` in `dlls/world.cpp`
+* Added custom model/sound support to `CItemSuit` in `dlls/items.cpp`: `pev->model` for custom model, `pev->noise` for custom pickup sound
+* Fixed crowbar attack timing bug in `dlls/crowbar.cpp`: miss delay changed from `GetNextAttackDelay(0.5)` to `UTIL_WeaponTimeBase() + 0.25`
+* Added RPG laser `-1` suspend indefinitely support to `dlls/rpg.cpp`: `Suspend(-1)` now keeps laser hidden without auto-revive
+* Added explosion origin fix to `dlls/explode.cpp`: reset `pev->origin` to original position after decal trace for correct fireball/damage position
+* Added `turnspeed` KeyValue handler to `CPathCorner` and `CPathTrack` in `dlls/pathcorner.cpp`: stores turn speed in `pev->armorvalue`
+* Added `UTIL_AxisRotationToAngles()` to `dlls/util.cpp`: converts axis-angle rotation to euler angles
+* Added `UTIL_AxisRotationToVec()` to `dlls/util.cpp`: returns position of point (1,0,0) under axis-angle rotation
+* Added `UTIL_StringToRandomVector()` to `dlls/util.cpp`: parses "x y z" or "x y z .. x y z" range strings into random vectors
+* Added all three utility function declarations to `dlls/util.h`
+* Added `at_debug` ALERT type to `engine/eiface.h`: identifies debug ALERT statements that don't need removing before release
+* Added `CONPRINT` macro to `cl_dll/cl_dll.h`: convenience wrapper for `gEngfuncs.Con_Printf`
+
 ### Phase 4 — Visual & Client-Side Features
 
 #### Phase 4A — Fog System (`dlls/effects.cpp`, `cl_dll/hud.h`, `cl_dll/hud.cpp`, `cl_dll/hud_msg.cpp`, `cl_dll/hl/hl_weapons.cpp`)

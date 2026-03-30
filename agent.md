@@ -146,7 +146,7 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 4E** | Dynamic Lighting (`KeyedDLight` message, `env_dlight` client integration) | ✅ Complete |
 | **Phase 4F** | Model/Animation Scaling (`StudioModelRenderer` scale, `GetSequenceFrames`) | ✅ Complete |
 | **Phase 4G** | Particle System (`particlemgr.h/cpp`, `env_particle`, `gmsgParticle`) | ✅ Complete |
-| **Phase 5** | New Entity Definitions & Polish | 🔲 Pending |
+| **Phase 5** | New Entity Definitions & Polish | ✅ Complete |
 
 ### SoHL Conventions
 
