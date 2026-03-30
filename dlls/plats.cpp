@@ -25,6 +25,7 @@
 #include "cbase.h"
 #include "trains.h"
 #include "saverestore.h"
+#include "movewith.h" // LRC - UTIL_SetVelocity, UTIL_SetAvelocity
 
 static void PlatSpawnInsideTrigger(entvars_t* pevPlatform);
 
@@ -1370,6 +1371,8 @@ TYPEDESCRIPTION CFuncTrackTrain::m_SaveData[] =
 		DEFINE_FIELD(CFuncTrackTrain, m_flVolume, FIELD_FLOAT),
 		DEFINE_FIELD(CFuncTrackTrain, m_flBank, FIELD_FLOAT),
 		DEFINE_FIELD(CFuncTrackTrain, m_oldSpeed, FIELD_FLOAT),
+		DEFINE_FIELD(CFuncTrackTrain, m_vecMasterAvel, FIELD_VECTOR), // LRC
+		DEFINE_FIELD(CFuncTrackTrain, m_vecBaseAvel, FIELD_VECTOR),   // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CFuncTrackTrain, CBaseEntity);
@@ -1444,6 +1447,8 @@ void CFuncTrackTrain::Blocked(CBaseEntity* pOther)
 	ALERT(at_aiconsole, "TRAIN(%s): Blocked by %s (dmg:%.2f)\n", STRING(pev->targetname), STRING(pOther->pev->classname), pev->dmg);
 	if (pev->dmg <= 0)
 		return;
+	if (pev->dmg == -1) // LRC - a train that doesn't crush people!
+		return;
 	// we can't hurt this thing, so we're not concerned with it
 	pOther->TakeDamage(pev, pev, pev->dmg, DMG_CRUSH);
 }
@@ -1465,8 +1470,8 @@ void CFuncTrackTrain::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYP
 		else
 		{
 			pev->speed = 0;
-			pev->velocity = g_vecZero;
-			pev->avelocity = g_vecZero;
+			UTIL_SetVelocity(this, g_vecZero);    // LRC
+			UTIL_SetAvelocity(this, g_vecZero);   // LRC
 			StopSound();
 			SetThink(NULL);
 		}
@@ -1613,7 +1618,7 @@ void CFuncTrackTrain::Next()
 	CPathTrack* pnext = m_ppath->LookAhead(&nextPos, pev->speed * 0.1, true);
 	nextPos.z += m_height;
 
-	pev->velocity = (nextPos - pev->origin) * 10;
+	UTIL_SetVelocity(this, (nextPos - pev->origin) * 10); // LRC
 	Vector nextFront = pev->origin;
 
 	nextFront.z -= m_height;
@@ -1636,23 +1641,26 @@ void CFuncTrackTrain::Next()
 		angles = pev->angles;
 
 	float vy, vx;
-	if ((pev->spawnflags & SF_TRACKTRAIN_NOPITCH) == 0)
-		vx = UTIL_AngleDistance(angles.x, pev->angles.x);
-	else
-		vx = 0;
-	vy = UTIL_AngleDistance(angles.y, pev->angles.y);
-
-	pev->avelocity.y = vy * 10;
-	pev->avelocity.x = vx * 10;
-
-	if (m_flBank != 0)
+	if (!(pev->spawnflags & SF_TRACKTRAIN_NOYAW)) // LRC - don't auto-adjust yaw if NOYAW is set
 	{
-		if (pev->avelocity.y < -5)
-			pev->avelocity.z = UTIL_AngleDistance(UTIL_ApproachAngle(-m_flBank, pev->angles.z, m_flBank * 2), pev->angles.z);
-		else if (pev->avelocity.y > 5)
-			pev->avelocity.z = UTIL_AngleDistance(UTIL_ApproachAngle(m_flBank, pev->angles.z, m_flBank * 2), pev->angles.z);
+		if ((pev->spawnflags & SF_TRACKTRAIN_NOPITCH) == 0)
+			vx = UTIL_AngleDistance(angles.x, pev->angles.x);
 		else
-			pev->avelocity.z = UTIL_AngleDistance(UTIL_ApproachAngle(0, pev->angles.z, m_flBank * 4), pev->angles.z) * 4;
+			vx = 0;
+		vy = UTIL_AngleDistance(angles.y, pev->angles.y);
+
+		Vector newAvel(vx * 10, vy * 10, 0);
+
+		if (m_flBank != 0)
+		{
+			if (newAvel.y < -5)
+				newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(-m_flBank, pev->angles.z, m_flBank * 2), pev->angles.z);
+			else if (newAvel.y > 5)
+				newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(m_flBank, pev->angles.z, m_flBank * 2), pev->angles.z);
+			else
+				newAvel.z = UTIL_AngleDistance(UTIL_ApproachAngle(0, pev->angles.z, m_flBank * 4), pev->angles.z) * 4;
+		}
+		UTIL_SetAvelocity(this, newAvel); // LRC
 	}
 
 	if (pnext)

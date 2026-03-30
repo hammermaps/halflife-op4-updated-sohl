@@ -688,10 +688,12 @@ void CBaseDoor::DoorHitTop()
 		}
 	}
 
-	// LRC: 'message' is the open target - fire it when we fully open
-	if (!FStringNull(pev->message))
+	// LRC: 'message' is the open target — fire when door reaches open position
+	// For normal doors (not start_open), reaching top = now open
+	if (!FStringNull(pev->message) && (pev->spawnflags & SF_DOOR_START_OPEN) == 0)
 		FireTargets(STRING(pev->message), m_hActivator, this, USE_TOGGLE, 0);
-	// LRC - fire netname target only if startopen (closed position reached = top when startopen set)
+	// LRC - 'netname' is the close target — fire when door reaches closed position
+	// When start_open, reaching top means door is now closed
 	if (!FStringNull(pev->netname) && (pev->spawnflags & SF_DOOR_START_OPEN) != 0)
 		FireTargets(STRING(pev->netname), m_hActivator, this, USE_TOGGLE, 0);
 }
@@ -746,9 +748,12 @@ void CBaseDoor::DoorHitBottom()
 	else // touchable door
 		SetTouch(&CBaseDoor::DoorTouch);
 
-	// LRC: 'message' is the open target (fire it when we fully close)
-	if (!FStringNull(pev->message))
+	// LRC: 'message' is the open target — fire when door reaches open position
+	// When start_open, reaching bottom = now open
+	if (!FStringNull(pev->message) && (pev->spawnflags & SF_DOOR_START_OPEN) != 0)
 		FireTargets(STRING(pev->message), m_hActivator, this, USE_TOGGLE, 0);
+	// LRC - 'netname' is the close target — fire when door reaches closed position
+	// For normal doors (not start_open), reaching bottom = now closed
 	if (!FStringNull(pev->netname) && (pev->spawnflags & SF_DOOR_START_OPEN) == 0)
 		FireTargets(STRING(pev->netname), m_hActivator, this, USE_TOGGLE, 0);
 }

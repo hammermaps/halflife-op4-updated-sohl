@@ -26,6 +26,10 @@
 
 
 
+#define MIN_CUSTOM_LIGHT_STYLE 32 // LRC - styles 0-31 are reserved engine styles; styles >= 32 are designer-defined
+
+class CTriggerLightstyle; // LRC - forward declaration
+
 class CLight : public CPointEntity
 {
 public:
@@ -44,11 +48,12 @@ public:
 
 	static TYPEDESCRIPTION m_SaveData[];
 
-	int m_iStyle;         // public so CTriggerLightstyle can access it
-	int m_iszPattern;
-	STATE m_iState;       // LRC
+	friend class CTriggerLightstyle; // LRC - allow CTriggerLightstyle to access m_iStyle
 
 private:
+	int m_iStyle;
+	int m_iszPattern;
+	STATE m_iState;        // LRC
 	int m_iszCurrentStyle; // LRC - currently active pattern
 };
 LINK_ENTITY_TO_CLASS(light, CLight);
@@ -102,7 +107,7 @@ void CLight::Spawn()
 		return;
 	}
 
-	if (m_iStyle >= 32)
+	if (m_iStyle >= MIN_CUSTOM_LIGHT_STYLE) // styles 0-31 are reserved engine styles
 	{
 		//		CHANGE_METHOD(ENT(pev), em_use, light_use);
 		if (FBitSet(pev->spawnflags, SF_LIGHT_START_OFF))
@@ -126,7 +131,7 @@ void CLight::Spawn()
 
 void CLight::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	if (m_iStyle >= 32)
+	if (m_iStyle >= MIN_CUSTOM_LIGHT_STYLE) // styles 0-31 are reserved engine styles
 	{
 		if (!ShouldToggle(useType, !FBitSet(pev->spawnflags, SF_LIGHT_START_OFF)))
 			return;
@@ -219,7 +224,7 @@ void CEnvLight::Spawn()
 // LRC
 void CLight::SetStyle(int iszPattern)
 {
-	if (m_iStyle < 32) return;
+	if (m_iStyle < MIN_CUSTOM_LIGHT_STYLE) return; // styles 0-31 are reserved engine styles
 	m_iszCurrentStyle = iszPattern;
 	if (iszPattern)
 		LIGHT_STYLE(m_iStyle, (char*)STRING(iszPattern));
@@ -230,7 +235,7 @@ void CLight::SetStyle(int iszPattern)
 // LRC
 void CLight::SetCorrectStyle()
 {
-	if (m_iStyle < 32) return;
+	if (m_iStyle < MIN_CUSTOM_LIGHT_STYLE) return; // styles 0-31 are reserved engine styles
 	if (m_iState == STATE_OFF)
 		LIGHT_STYLE(m_iStyle, "a");
 	else

@@ -29,6 +29,9 @@
 #define SF_TANK_LINEOFSIGHT 0x0010
 #define SF_TANK_CANCONTROL 0x0020
 #define SF_TANK_SOUNDON 0x8000
+#define SF_TANK_LASERSPOT 0x0040  // LRC - laser spot targeting
+#define SF_TANK_MATCHTARGET 0x0080 // LRC - match target position
+#define SF_TANK_SEQFIRE 0x10000    // LRC - TankSequence is firing
 
 enum TANKBULLET
 {
@@ -138,6 +141,8 @@ protected:
 	Vector m_sightOrigin; // Last sight of target
 	int m_spread;		  // firing spread
 	int m_iszMaster;	  // Master entity (game_team_master or multisource)
+	int m_iszFireMaster;  // LRC - FireMaster entity (prevents firing when inactive)
+	int m_iCrosshair;     // LRC - show crosshair while in use
 };
 
 
@@ -169,6 +174,8 @@ TYPEDESCRIPTION CFuncTank::m_SaveData[] =
 		DEFINE_FIELD(CFuncTank, m_flNextAttack, FIELD_TIME),
 		DEFINE_FIELD(CFuncTank, m_iBulletDamage, FIELD_INTEGER),
 		DEFINE_FIELD(CFuncTank, m_iszMaster, FIELD_STRING),
+		DEFINE_FIELD(CFuncTank, m_iszFireMaster, FIELD_STRING), // LRC
+		DEFINE_FIELD(CFuncTank, m_iCrosshair, FIELD_INTEGER),   // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CFuncTank, CBaseEntity);
@@ -326,6 +333,16 @@ bool CFuncTank::KeyValue(KeyValueData* pkvd)
 	else if (FStrEq(pkvd->szKeyName, "master"))
 	{
 		m_iszMaster = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "firemaster")) // LRC - FireMaster
+	{
+		m_iszFireMaster = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "crosshair")) // LRC - crosshair
+	{
+		m_iCrosshair = atoi(pkvd->szValue);
 		return true;
 	}
 

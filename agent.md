@@ -127,7 +127,16 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 1** | Core Infrastructure (MoveWith, Think/NextThink, State) | ✅ Complete |
 | **Phase 2** | Base Entity Enhancements (USE types, Alias, Locus, Triggers) | ✅ Complete |
 | **Phase 2.5** | Entity USE_TYPE Compliance (ShouldToggle for toggle entities) | ✅ Complete |
-| **Phase 3** | Entity-Specific Enhancements (Monsters, Doors, Buttons, etc.) | 🔧 In Progress (3A partial) |
+| **Phase 3A** | Monster/NPC Enhancements | 🔧 Partial |
+| **Phase 3B** | Door Enhancements (`SF_DOOR_FORCETOUCHABLE`, synched fire, `message` target) | ✅ Complete |
+| **Phase 3C** | Button Enhancements (`game_state` entity, `SF_BUTTON_ONLYDIRECT`, master lock) | ✅ Complete |
+| **Phase 3D** | Breakable Enhancements (respawn, `whenhit`, `SF_PUSH_NOPULL`) | ✅ Complete |
+| **Phase 3E** | Platform/Train Enhancements (`UTIL_SetVelocity`, `SF_TRACKTRAIN_NOYAW`, non-crushing) | 🔧 Partial |
+| **Phase 3F** | Func_Tank Enhancements (new flags, `m_iszFireMaster`, `m_iCrosshair`) | 🔧 Partial |
+| **Phase 3G** | Light Enhancements (`env_dlight`, `trigger_lightstyle`, `SetStyle`) | ✅ Complete |
+| **Phase 3H** | Sound Enhancements (`m_pPlayFrom`, `trigger_sound`) | 🔧 Partial |
+| **Phase 3I** | Scripted Sequence Enhancements (`scripted_action`, repeat/priority, `InitIdleThink`) | ✅ Complete |
+| **Phase 3J** | Effects Enhancements (`WaitForStart`, `m_fCurSpeed`, `GetTripEntity`) | 🔧 Partial |
 | **Phase 4** | Visual & Client-Side Features (Fog, Sky, HUD, Particles) | 🔲 Pending |
 | **Phase 5** | New Entity Definitions & Polish | 🔲 Pending |
 
