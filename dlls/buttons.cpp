@@ -31,6 +31,7 @@
 #define SF_BUTTON_TOGGLE 32		  // button stays pushed until reactivated
 #define SF_BUTTON_SPARK_IF_OFF 64 // button sparks in OFF state
 #define SF_BUTTON_TOUCH_ONLY 256  // button only fires as a result of USE key.
+#define SF_BUTTON_ONLYDIRECT 16   // LRC - button can't be used through walls
 
 #define SF_GLOBAL_SET 1 // Set global state to initial state on spawn
 
@@ -147,6 +148,34 @@ TYPEDESCRIPTION CMultiSource::m_SaveData[] =
 IMPLEMENT_SAVERESTORE(CMultiSource, CBaseEntity);
 
 LINK_ENTITY_TO_CLASS(multisource, CMultiSource);
+
+// LRC - game_state: a simple entity that just maintains a state for watchers
+class CGameState : public CPointEntity
+{
+public:
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override
+	{
+		if (!ShouldToggle(useType, m_iState == STATE_ON))
+			return;
+		if (m_iState == STATE_ON)
+			m_iState = STATE_OFF;
+		else
+			m_iState = STATE_ON;
+	}
+	STATE GetState() override { return m_iState; }
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+private:
+	STATE m_iState = STATE_OFF;
+};
+LINK_ENTITY_TO_CLASS(game_state, CGameState);
+TYPEDESCRIPTION CGameState::m_SaveData[] = {
+	DEFINE_FIELD(CGameState, m_iState, FIELD_INTEGER),
+};
+IMPLEMENT_SAVERESTORE(CGameState, CPointEntity);
 //
 // Cache user-entity-field values until spawn is called.
 //
@@ -550,6 +579,7 @@ void CBaseButton::Spawn()
 	if (FBitSet(pev->spawnflags, SF_BUTTON_TOUCH_ONLY)) // touchable button
 	{
 		SetTouch(&CBaseButton::ButtonTouch);
+		SetUse(&CBaseButton::ButtonUse); // LRC - touch-only buttons should still be triggerable
 	}
 	else
 	{
@@ -1092,6 +1122,8 @@ void CMomentaryRotButton::PlaySound()
 // current, not future position.
 void CMomentaryRotButton::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	if (IsLockedByMaster()) return; // LRC - master lock check
+
 	pev->ideal_yaw = CBaseToggle::AxisDelta(pev->spawnflags, pev->angles, m_start) / m_flMoveDistance;
 
 	UpdateAllButtons(pev->ideal_yaw, true);

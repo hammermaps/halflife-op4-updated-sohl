@@ -59,6 +59,7 @@ public:
 	int DamageDecal(int bitsDamageType) override;
 
 	void EXPORT Die();
+	void EXPORT RespawnThink(); // LRC - respawn after being broken
 	int ObjectCaps() override { return (CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION); }
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
@@ -90,3 +91,5 @@ public:
 	float m_flRespawnHealth; // LRC - health on respawn
 	string_t m_iszWhenHit;   // LRC - locus trigger when hit
 };
+
+#define SF_PUSH_NOPULL 256 // LRC - pushable cannot be pulled

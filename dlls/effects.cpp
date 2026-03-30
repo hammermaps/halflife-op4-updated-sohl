@@ -351,6 +351,18 @@ CBaseEntity* CBeam::RandomTargetname(const char* szName)
 	return pEntity;
 }
 
+// LRC - tripbeam support
+CBaseEntity* CLaser::GetTripEntity(TraceResult* ptr)
+{
+	CBaseEntity* pHit;
+	if (ptr->flFraction == 1.0 || ptr->pHit == NULL)
+		return NULL;
+	pHit = CBaseEntity::Instance(ptr->pHit);
+	if (!pHit || pHit->pev->solid == SOLID_BSP)
+		return NULL;
+	return pHit;
+}
+
 
 void CBeam::DoSparks(const Vector& start, const Vector& end)
 {

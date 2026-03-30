@@ -85,6 +85,27 @@ bool CCineMonster::KeyValue(KeyValueData* pkvd)
 		m_iFinishSchedule = atoi(pkvd->szValue);
 		return true;
 	}
+	else if (FStrEq(pkvd->szKeyName, "attack")) // LRC - scripted_action attack target
+	{
+		m_iszAttack = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "movetarget")) // LRC - scripted_action move target
+	{
+		m_iszMoveTarget = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "repeats")) // LRC
+	{
+		m_iRepeats = atoi(pkvd->szValue);
+		m_iRepeatsLeft = m_iRepeats;
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "priority")) // LRC
+	{
+		m_iPriority = atoi(pkvd->szValue);
+		return true;
+	}
 
 	return CBaseMonster::KeyValue(pkvd);
 }
@@ -106,6 +127,13 @@ TYPEDESCRIPTION CCineMonster::m_SaveData[] =
 		DEFINE_FIELD(CCineMonster, m_saved_effects, FIELD_INTEGER),
 		DEFINE_FIELD(CCineMonster, m_iFinishSchedule, FIELD_INTEGER),
 		DEFINE_FIELD(CCineMonster, m_interruptable, FIELD_BOOLEAN),
+		DEFINE_FIELD(CCineMonster, m_iState, FIELD_INTEGER),       // LRC
+		DEFINE_FIELD(CCineMonster, m_iszAttack, FIELD_STRING),     // LRC
+		DEFINE_FIELD(CCineMonster, m_iszMoveTarget, FIELD_STRING), // LRC
+		DEFINE_FIELD(CCineMonster, m_iRepeats, FIELD_INTEGER),     // LRC
+		DEFINE_FIELD(CCineMonster, m_iRepeatsLeft, FIELD_INTEGER), // LRC
+		DEFINE_FIELD(CCineMonster, m_fRepeatFrame, FIELD_FLOAT),   // LRC
+		DEFINE_FIELD(CCineMonster, m_iPriority, FIELD_INTEGER),    // LRC
 };
 
 
@@ -114,7 +142,8 @@ IMPLEMENT_SAVERESTORE(CCineMonster, CBaseMonster);
 LINK_ENTITY_TO_CLASS(scripted_sequence, CCineMonster);
 #define CLASSNAME "scripted_sequence"
 
-LINK_ENTITY_TO_CLASS(aiscripted_sequence, CCineAI);
+LINK_ENTITY_TO_CLASS(scripted_action, CCineMonster); // LRC
+LINK_ENTITY_TO_CLASS(aiscripted_sequence, CCineMonster); // LRC - aiscripted sequences don't need to be separate
 
 
 void CCineMonster::Spawn()
@@ -199,6 +228,16 @@ void CCineMonster::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE u
 // This doesn't really make sense since only MOVETYPE_PUSH get 'Blocked' events
 void CCineMonster::Blocked(CBaseEntity* pOther)
 {
+}
+
+void CCineMonster::InitIdleThink()
+{
+	m_iState = STATE_OFF; // LRC
+	if (!FStringNull(m_iszIdle))
+	{
+		SetThink(&CCineMonster::CineThink);
+		SetNextThink(0.1);
+	}
 }
 
 void CCineMonster::Touch(CBaseEntity* pOther)

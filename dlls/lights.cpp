@@ -38,13 +38,18 @@ public:
 
 	// LRC
 	STATE GetState() override { return m_iState; }
+	int GetStyle() { return m_iszCurrentStyle; } // LRC
+	void SetStyle(int iszPattern);                // LRC
+	void SetCorrectStyle();                       // LRC
 
 	static TYPEDESCRIPTION m_SaveData[];
 
-private:
-	int m_iStyle;
+	int m_iStyle;         // public so CTriggerLightstyle can access it
 	int m_iszPattern;
-	STATE m_iState;  // LRC
+	STATE m_iState;       // LRC
+
+private:
+	int m_iszCurrentStyle; // LRC - currently active pattern
 };
 LINK_ENTITY_TO_CLASS(light, CLight);
 
@@ -52,6 +57,7 @@ TYPEDESCRIPTION CLight::m_SaveData[] =
 	{
 		DEFINE_FIELD(CLight, m_iStyle, FIELD_INTEGER),
 		DEFINE_FIELD(CLight, m_iszPattern, FIELD_STRING),
+		DEFINE_FIELD(CLight, m_iszCurrentStyle, FIELD_STRING), // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CLight, CPointEntity);
@@ -209,3 +215,106 @@ void CEnvLight::Spawn()
 
 	CLight::Spawn();
 }
+
+// LRC
+void CLight::SetStyle(int iszPattern)
+{
+	if (m_iStyle < 32) return;
+	m_iszCurrentStyle = iszPattern;
+	if (iszPattern)
+		LIGHT_STYLE(m_iStyle, (char*)STRING(iszPattern));
+	else
+		LIGHT_STYLE(m_iStyle, "m");
+}
+
+// LRC
+void CLight::SetCorrectStyle()
+{
+	if (m_iStyle < 32) return;
+	if (m_iState == STATE_OFF)
+		LIGHT_STYLE(m_iStyle, "a");
+	else
+		SetStyle(m_iszCurrentStyle ? m_iszCurrentStyle : m_iszPattern);
+}
+
+// LRC - CLightDynamic: dynamic entity light (works like flashlight)
+class CLightDynamic : public CPointEntity
+{
+public:
+	void Spawn() override
+	{
+		if (pev->armorvalue == 0)
+			pev->armorvalue = 200;
+	}
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	STATE GetState() override { return m_iState; }
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+private:
+	STATE m_iState = STATE_OFF;
+};
+LINK_ENTITY_TO_CLASS(env_dlight, CLightDynamic);
+TYPEDESCRIPTION CLightDynamic::m_SaveData[] = {
+	DEFINE_FIELD(CLightDynamic, m_iState, FIELD_INTEGER),
+};
+IMPLEMENT_SAVERESTORE(CLightDynamic, CPointEntity);
+
+void CLightDynamic::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (!ShouldToggle(useType, m_iState == STATE_ON))
+		return;
+	if (m_iState == STATE_ON)
+	{
+		m_iState = STATE_OFF;
+		pev->effects |= EF_NODRAW;
+	}
+	else
+	{
+		m_iState = STATE_ON;
+		pev->effects &= ~EF_NODRAW;
+	}
+}
+
+// LRC - CTriggerLightstyle: temporarily changes the style of a CLight entity
+class CTriggerLightstyle : public CPointEntity
+{
+public:
+	bool KeyValue(KeyValueData* pkvd) override
+	{
+		if (FStrEq(pkvd->szKeyName, "style"))
+		{
+			m_iszNewStyle = ALLOC_STRING(pkvd->szValue);
+			return true;
+		}
+		return CPointEntity::KeyValue(pkvd);
+	}
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override
+	{
+		CBaseEntity* pLight = UTIL_FindEntityByTargetname(NULL, STRING(pev->target));
+		while (pLight)
+		{
+			if (FClassnameIs(pLight->pev, "light") || FClassnameIs(pLight->pev, "light_spot"))
+			{
+				CLight* pCLight = static_cast<CLight*>(pLight);
+				if (!FStringNull(m_iszNewStyle))
+					LIGHT_STYLE(pCLight->m_iStyle, (char*)STRING(m_iszNewStyle));
+			}
+			pLight = UTIL_FindEntityByTargetname(pLight, STRING(pev->target));
+		}
+	}
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+private:
+	int m_iszNewStyle = 0;
+};
+LINK_ENTITY_TO_CLASS(trigger_lightstyle, CTriggerLightstyle);
+TYPEDESCRIPTION CTriggerLightstyle::m_SaveData[] = {
+	DEFINE_FIELD(CTriggerLightstyle, m_iszNewStyle, FIELD_STRING),
+};
+IMPLEMENT_SAVERESTORE(CTriggerLightstyle, CPointEntity);

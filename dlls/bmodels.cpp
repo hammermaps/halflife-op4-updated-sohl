@@ -281,6 +281,7 @@ public:
 	void Precache() override;
 	void EXPORT SpinUp();
 	void EXPORT SpinDown();
+	void EXPORT WaitForStart(); // LRC - handle startup behavior
 	bool KeyValue(KeyValueData* pkvd) override;
 	void EXPORT HurtTouch(CBaseEntity* pOther);
 	void EXPORT RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
@@ -300,7 +301,8 @@ public:
 	float m_flVolume;
 	float m_pitch;
 	int m_sounds;
-	STATE m_iState;  // LRC
+	STATE m_iState;     // LRC
+	float m_fCurSpeed;  // LRC - current speed during spin-up/down
 };
 
 TYPEDESCRIPTION CFuncRotating::m_SaveData[] =
@@ -309,7 +311,9 @@ TYPEDESCRIPTION CFuncRotating::m_SaveData[] =
 		DEFINE_FIELD(CFuncRotating, m_flAttenuation, FIELD_FLOAT),
 		DEFINE_FIELD(CFuncRotating, m_flVolume, FIELD_FLOAT),
 		DEFINE_FIELD(CFuncRotating, m_pitch, FIELD_FLOAT),
-		DEFINE_FIELD(CFuncRotating, m_sounds, FIELD_INTEGER)};
+		DEFINE_FIELD(CFuncRotating, m_sounds, FIELD_INTEGER),
+		DEFINE_FIELD(CFuncRotating, m_fCurSpeed, FIELD_FLOAT), // LRC
+};
 
 IMPLEMENT_SAVERESTORE(CFuncRotating, CBaseEntity);
 
@@ -663,6 +667,13 @@ void CFuncRotating::SpinDown()
 void CFuncRotating::Rotate()
 {
 	SetNextThink(10);
+}
+
+// LRC - wait one frame before starting rotation, to allow other entities to spawn
+void CFuncRotating::WaitForStart()
+{
+	SetThink(&CFuncRotating::SpinUp);
+	SetNextThink(0.1);
 }
 
 //=========================================================
