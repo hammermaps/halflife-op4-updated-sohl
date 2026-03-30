@@ -1165,6 +1165,21 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 	StudioSetUpTransform(false);
 
+	// LRC - apply scale to models
+	if (m_pCurrentEntity->curstate.scale != 0)
+	{
+		float scale = m_pCurrentEntity->curstate.scale;
+		(*m_protationmatrix)[0][0] *= scale;
+		(*m_protationmatrix)[0][1] *= scale;
+		(*m_protationmatrix)[0][2] *= scale;
+		(*m_protationmatrix)[1][0] *= scale;
+		(*m_protationmatrix)[1][1] *= scale;
+		(*m_protationmatrix)[1][2] *= scale;
+		(*m_protationmatrix)[2][0] *= scale;
+		(*m_protationmatrix)[2][1] *= scale;
+		(*m_protationmatrix)[2][2] *= scale;
+	}
+
 	if ((flags & STUDIO_RENDER) != 0)
 	{
 		// see if the bounding box lets us trivially reject, also sets
@@ -1442,6 +1457,22 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		m_pPlayerInfo = NULL;
 
 		StudioSetUpTransform(false);
+
+		// LRC - apply scale to models
+		if (m_pCurrentEntity->curstate.scale != 0)
+		{
+			float scale = m_pCurrentEntity->curstate.scale;
+			(*m_protationmatrix)[0][0] *= scale;
+			(*m_protationmatrix)[0][1] *= scale;
+			(*m_protationmatrix)[0][2] *= scale;
+			(*m_protationmatrix)[1][0] *= scale;
+			(*m_protationmatrix)[1][1] *= scale;
+			(*m_protationmatrix)[1][2] *= scale;
+			(*m_protationmatrix)[2][0] *= scale;
+			(*m_protationmatrix)[2][1] *= scale;
+			(*m_protationmatrix)[2][2] *= scale;
+		}
+
 		VectorCopy(orig_angles, m_pCurrentEntity->angles);
 	}
 	else
@@ -1459,6 +1490,21 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		m_pPlayerInfo->gaitsequence = 0;
 
 		StudioSetUpTransform(false);
+
+		// LRC - apply scale to models
+		if (m_pCurrentEntity->curstate.scale != 0)
+		{
+			float scale = m_pCurrentEntity->curstate.scale;
+			(*m_protationmatrix)[0][0] *= scale;
+			(*m_protationmatrix)[0][1] *= scale;
+			(*m_protationmatrix)[0][2] *= scale;
+			(*m_protationmatrix)[1][0] *= scale;
+			(*m_protationmatrix)[1][1] *= scale;
+			(*m_protationmatrix)[1][2] *= scale;
+			(*m_protationmatrix)[2][0] *= scale;
+			(*m_protationmatrix)[2][1] *= scale;
+			(*m_protationmatrix)[2][2] *= scale;
+		}
 	}
 
 	if ((flags & STUDIO_RENDER) != 0)

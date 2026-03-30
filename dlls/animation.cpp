@@ -499,3 +499,20 @@ int GetBodygroup(void* pmodel, entvars_t* pev, int iGroup)
 
 	return iCurrent;
 }
+
+int GetSequenceFrames(void* pmodel, entvars_t* pev)
+{
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)pmodel;
+	if (!pstudiohdr)
+		return 0;
+
+	if ((int)pev->sequence >= pstudiohdr->numseq)
+		return 0;
+
+	mstudioseqdesc_t* pseqdesc;
+	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex) + (int)pev->sequence;
+
+	return pseqdesc->numframes;
+}
