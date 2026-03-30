@@ -149,7 +149,10 @@ void CBlackOpsOsprey::Spawn()
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(ENT(pev), "models/blkop_osprey.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/blkop_osprey.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-400, -400, -100), Vector(400, 400, 32));
 	UTIL_SetOrigin(pev, pev->origin);
 
@@ -187,7 +190,9 @@ void CBlackOpsOsprey::Precache()
 {
 	UTIL_PrecacheOther("monster_male_assassin");
 
-	PRECACHE_MODEL("models/blkop_osprey.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/blkop_osprey.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_MODEL("models/HVR.mdl");
 
 	PRECACHE_SOUND("apache/ap_rotor4.wav");

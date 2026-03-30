@@ -444,7 +444,10 @@ void COtis::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/otis.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/otis.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -482,7 +485,9 @@ void COtis::Spawn()
 //=========================================================
 void COtis::Precache()
 {
-	PRECACHE_MODEL("models/otis.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/otis.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 
 	PRECACHE_SOUND("barney/ba_attack1.wav");
 	PRECACHE_SOUND("barney/ba_attack2.wav");
@@ -880,8 +885,10 @@ LINK_ENTITY_TO_CLASS(monster_otis_dead, CDeadOtis);
 //=========================================================
 void CDeadOtis::Spawn()
 {
-	PRECACHE_MODEL("models/otis.mdl");
-	SET_MODEL(ENT(pev), "models/otis.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/otis.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
+	SET_MODEL(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

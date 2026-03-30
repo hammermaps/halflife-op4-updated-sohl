@@ -982,7 +982,10 @@ void CHFGrunt::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/hgrunt.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/hgrunt.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -1047,7 +1050,9 @@ void CHFGrunt::Spawn()
 //=========================================================
 void CHFGrunt::Precache()
 {
-	PRECACHE_MODEL("models/hgrunt.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/hgrunt.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 
 	PRECACHE_SOUND("hgrunt/gr_mgun1.wav");
 	PRECACHE_SOUND("hgrunt/gr_mgun2.wav");
@@ -2425,8 +2430,10 @@ LINK_ENTITY_TO_CLASS(monster_fhgrunt_dead, CDeadHFGrunt);
 //=========================================================
 void CDeadHFGrunt::Spawn()
 {
-	PRECACHE_MODEL("models/hgrunt.mdl");
-	SET_MODEL(ENT(pev), "models/hgrunt.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/hgrunt.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
+	SET_MODEL(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

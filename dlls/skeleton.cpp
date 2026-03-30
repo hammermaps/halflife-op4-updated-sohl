@@ -51,8 +51,10 @@ LINK_ENTITY_TO_CLASS(monster_skeleton_dead, COFSkeleton);
 //=========================================================
 void COFSkeleton::Spawn()
 {
-	PRECACHE_MODEL("models/skeleton.mdl");
-	SET_MODEL(ENT(pev), "models/skeleton.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/skeleton.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
+	SET_MODEL(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

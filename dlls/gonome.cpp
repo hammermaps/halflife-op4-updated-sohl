@@ -605,7 +605,10 @@ void COFGonome::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/gonome.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/gonome.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -631,7 +634,9 @@ void COFGonome::Precache()
 {
 	int i;
 
-	PRECACHE_MODEL("models/gonome.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/gonome.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_MODEL("sprites/bigspit.spr");
 
 	for (i = 0; i < ARRAYSIZE(pAttackHitSounds); i++)
@@ -924,8 +929,10 @@ LINK_ENTITY_TO_CLASS(monster_gonome_dead, CDeadGonome);
 //=========================================================
 void CDeadGonome::Spawn()
 {
-	PRECACHE_MODEL("models/gonome.mdl");
-	SET_MODEL(ENT(pev), "models/gonome.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/gonome.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
+	SET_MODEL(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->sequence = 0;

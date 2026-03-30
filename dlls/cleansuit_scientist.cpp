@@ -640,7 +640,10 @@ void CCleansuitScientist::Spawn()
 {
 	Precache();
 
-	SET_MODEL(ENT(pev), "models/cleansuit_scientist.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(ENT(pev), "models/cleansuit_scientist.mdl");
+	else
+		SET_MODEL(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -676,7 +679,9 @@ void CCleansuitScientist::Spawn()
 //=========================================================
 void CCleansuitScientist::Precache()
 {
-	PRECACHE_MODEL("models/cleansuit_scientist.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/cleansuit_scientist.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_SOUND("scientist/sci_pain1.wav");
 	PRECACHE_SOUND("scientist/sci_pain2.wav");
 	PRECACHE_SOUND("scientist/sci_pain3.wav");
@@ -1211,8 +1216,10 @@ typedef enum
 //
 void CSittingCleansuitScientist::Spawn()
 {
-	PRECACHE_MODEL("models/cleansuit_scientist.mdl");
-	SET_MODEL(ENT(pev), "models/cleansuit_scientist.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/cleansuit_scientist.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
+	SET_MODEL(ENT(pev), STRING(pev->model));
 	Precache();
 	InitBoneControllers();
 

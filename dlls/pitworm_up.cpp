@@ -285,7 +285,9 @@ const char* COFPitWormUp::pIdleSounds[] =
 
 void COFPitWormUp::Precache()
 {
-	PRECACHE_MODEL("models/pit_worm_up.mdl");
+	if (FStringNull(pev->model))
+		pev->model = MAKE_STRING("models/pit_worm_up.mdl");
+	PRECACHE_MODEL(STRING(pev->model));
 	PRECACHE_MODEL("sprites/tele1.spr");
 
 	PRECACHE_SOUND_ARRAY(pAttackSounds);
@@ -327,7 +329,10 @@ void COFPitWormUp::Spawn()
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(edict(), "models/pit_worm_up.mdl");
+	if (FStringNull(pev->model))
+		SET_MODEL(edict(), "models/pit_worm_up.mdl");
+	else
+		SET_MODEL(edict(), STRING(pev->model));
 
 	UTIL_SetSize(pev, {-32, -32, 0}, {32, 32, 64});
 
