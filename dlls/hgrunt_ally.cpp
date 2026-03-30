@@ -2902,7 +2902,7 @@ void CHGruntAlly::Killed(entvars_t* pevAttacker, int iGib)
 	if (m_hWaitMedic)
 	{
 		auto v4 = m_hWaitMedic.Entity<COFSquadTalkMonster>();
-		if (DEAD_NO != v4->pev->deadflag)
+		if (!v4 || DEAD_NO != v4->pev->deadflag)
 			m_hWaitMedic = nullptr;
 		else
 			v4->HealMe(nullptr);

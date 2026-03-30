@@ -2702,7 +2702,9 @@ void COFTorchAlly::Killed(entvars_t* pevAttacker, int iGib)
 {
 	if (m_hTargetEnt != nullptr)
 	{
-		m_hTargetEnt.Entity<COFSquadTalkMonster>()->m_hWaitMedic = nullptr;
+		auto pTarget = m_hTargetEnt.Entity<COFSquadTalkMonster>();
+		if (pTarget)
+			pTarget->m_hWaitMedic = nullptr;
 	}
 
 	if (m_MonsterState != MONSTERSTATE_DEAD)

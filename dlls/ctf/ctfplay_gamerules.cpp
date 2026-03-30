@@ -1287,7 +1287,9 @@ void CHalfLifeCTFplay::ChangePlayerTeam(CBasePlayer* pPlayer, const char* pCharN
 				{
 					if (pPlayer->m_pFlag)
 					{
-						pPlayer->m_pFlag.Entity<CTFGoalFlag>()->DropFlag(pPlayer);
+						auto pFlag = pPlayer->m_pFlag.Entity<CTFGoalFlag>();
+						if (pFlag)
+							pFlag->DropFlag(pPlayer);
 					}
 
 					if ((pPlayer->m_iItems & CTFItem::ItemsMask) != 0)
@@ -1417,7 +1419,9 @@ void CHalfLifeCTFplay::ChangePlayerTeam(CBasePlayer* pPlayer, const char* pCharN
 		{
 			if (pPlayer->m_pFlag)
 			{
-				pPlayer->m_pFlag.Entity<CTFGoalFlag>()->DropFlag(pPlayer);
+				auto pFlag = pPlayer->m_pFlag.Entity<CTFGoalFlag>();
+				if (pFlag)
+					pFlag->DropFlag(pPlayer);
 			}
 
 			if ((pPlayer->m_iItems & CTFItem::ItemsMask) != 0)
