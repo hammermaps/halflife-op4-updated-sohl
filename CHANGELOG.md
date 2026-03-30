@@ -1,5 +1,25 @@
 # Half-Life: Opposing Force Updated changelog
 
+## SOHL 1.4 Bugfix Port (plan_1.4.md)
+
+### Critical Bugfixes (Server-DLL)
+
+* **Fixed division by zero in player health display** (`dlls/player.cpp`): `pEntity->pev->health / pEntity->pev->max_health` crashed when `max_health` was 0 — added zero guard so the expression evaluates to 0 instead of dividing by zero
+* **Fixed NULL pointer dereference in `CHGrunt::CheckRangeAttack1()`** (`dlls/hgrunt.cpp`): `m_hEnemy->IsPlayer()` was called without first checking whether `m_hEnemy` is non-NULL — added `m_hEnemy != NULL &&` guard
+* **Fixed NULL pointer dereference in `CHGrunt::GetScheduleOfType(SCHED_GRUNT_SUPPRESS)`** (`dlls/hgrunt.cpp`): `m_hEnemy->IsPlayer()` was called without a null check — added `m_hEnemy != NULL &&` guard
+* **Fixed NULL pointer dereference in `TASK_WAIT_FOR_SCRIPT` (RunTask)** (`dlls/schedule.cpp`): `m_pCine->m_iDelay` / `m_pCine->m_startTime` were read without checking if `m_pCine` was non-NULL — added `m_pCine &&` guard
+* **Fixed NULL pointer dereference in `TASK_WAIT_FOR_SCRIPT` (StartTask)** (`dlls/schedule.cpp`): `m_pCine->m_iszIdle` was dereferenced without a null check — added `m_pCine &&` guard
+* **Fixed NULL pointer dereference in `TASK_ENABLE_SCRIPT`** (`dlls/schedule.cpp`): `m_pCine->DelayStart(false)` was called without checking if `m_pCine` was non-NULL — added null guard
+
+### Buffer Overflow / Safety Fixes
+
+* **Fixed buffer overflow in `CChangeLevel::KeyValue()`** (`dlls/triggers.cpp`): when the map or landmark name exceeded `cchMapNameMost`, an error was logged but `strcpy` was still performed, overflowing the fixed-size `m_szMapName`/`m_szLandmarkName` buffers — added early `return true` after the ALERT to prevent the copy
+* **Fixed unsafe `strcpy` in sentence name loading** (`dlls/sound.cpp`): `strcpy(gszallsentencenames[...], pString)` was used even after a length-warning, allowing overflow of `CBSENTENCENAME_MAX`-sized slots — replaced with `strncpy` + explicit null termination
+* **Fixed `sprintf` → `snprintf` in `CTriggerCDAudio`** (`dlls/triggers.cpp`): `sprintf(string, "cd play %3d\n", iTrack)` used a 64-byte buffer without bounds enforcement — replaced with `snprintf(string, sizeof(string), ...)`
+* **Fixed `sprintf` → `snprintf` in `Host_Say()`** (`dlls/client.cpp`): four `sprintf` calls building chat prefix strings (`szTemp`, `text`) had no bounds enforcement — replaced with `snprintf(..., sizeof(...), ...)`
+* **Fixed `sprintf` → `snprintf` in `ClientUserInfoChanged()`** (`dlls/client.cpp`): `sprintf(text, "* %s changed name to %s\n", ...)` could overflow the 256-byte `text` buffer if names are long — replaced with `snprintf(text, sizeof(text), ...)`
+* **Fixed `sprintf` → `snprintf` in `InconsistentFile()`** (`dlls/client.cpp`): `sprintf(disconnect_message, ...)` used an engine-provided buffer (max 256 bytes) without size enforcement — replaced with `snprintf(disconnect_message, 256, ...)`
+
 ## Zombie Class Refactoring & Bug Fixes
 
 ### New: `CZombieBase` shared base class (`dlls/zombie_base.h`)

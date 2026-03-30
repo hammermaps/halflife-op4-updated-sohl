@@ -147,6 +147,7 @@ Spirit of Half-Life features are being integrated in phases. See [`INTEGRATION_P
 | **Phase 4F** | Model/Animation Scaling (`StudioModelRenderer` scale, `GetSequenceFrames`) | ✅ Complete |
 | **Phase 4G** | Particle System (`particlemgr.h/cpp`, `env_particle`, `gmsgParticle`) | ✅ Complete |
 | **Phase 5** | New Entity Definitions & Polish | ✅ Complete |
+| **plan_1.4 Bugfixes** | SOHL 1.4 critical bugfixes (NULL-ptr, div-by-zero, buffer overflows) | ✅ Complete |
 
 ### SoHL Conventions
 

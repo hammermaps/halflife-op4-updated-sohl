@@ -395,12 +395,12 @@ void Host_Say(edict_t* pEntity, bool teamonly)
 	{
 		if (CMD_ARGC() >= 2)
 		{
-			sprintf(szTemp, "%s %s", (char*)pcmd, (char*)CMD_ARGS());
+			snprintf(szTemp, sizeof(szTemp), "%s %s", (char*)pcmd, (char*)CMD_ARGS());
 		}
 		else
 		{
 			// Just a one word command, use the first word...sigh
-			sprintf(szTemp, "%s", (char*)pcmd);
+			snprintf(szTemp, sizeof(szTemp), "%s", (char*)pcmd);
 		}
 		p = szTemp;
 	}
@@ -420,11 +420,11 @@ void Host_Say(edict_t* pEntity, bool teamonly)
 	// turn on color set 2  (color on,  no sound)
 	// turn on color set 2  (color on,  no sound)
 	if (player->IsObserver() && (teamonly))
-		sprintf(text, "%c(SPEC) %s: ", 2, STRING(pEntity->v.netname));
+		snprintf(text, sizeof(text), "%c(SPEC) %s: ", 2, STRING(pEntity->v.netname));
 	else if (teamonly)
-		sprintf(text, "%c(TEAM) %s: ", 2, STRING(pEntity->v.netname));
+		snprintf(text, sizeof(text), "%c(TEAM) %s: ", 2, STRING(pEntity->v.netname));
 	else
-		sprintf(text, "%c%s: ", 2, STRING(pEntity->v.netname));
+		snprintf(text, sizeof(text), "%c%s: ", 2, STRING(pEntity->v.netname));
 
 	j = sizeof(text) - 2 - strlen(text); // -2 for /n and null terminator
 	if ((int)strlen(p) > j)
@@ -735,7 +735,7 @@ void ClientUserInfoChanged(edict_t* pEntity, char* infobuffer)
 		if (gpGlobals->maxClients > 1)
 		{
 			char text[256];
-			sprintf(text, "* %s changed name to %s\n", STRING(pEntity->v.netname), g_engfuncs.pfnInfoKeyValue(infobuffer, "name"));
+			snprintf(text, sizeof(text), "* %s changed name to %s\n", STRING(pEntity->v.netname), g_engfuncs.pfnInfoKeyValue(infobuffer, "name"));
 			MESSAGE_BEGIN(MSG_ALL, gmsgSayText, NULL);
 			WRITE_BYTE(ENTINDEX(pEntity));
 			WRITE_STRING(text);
@@ -2140,7 +2140,7 @@ int InconsistentFile(const edict_t* player, const char* filename, char* disconne
 		return 0;
 
 	// Default behavior is to kick the player
-	sprintf(disconnect_message, "Server is enforcing file consistency for %s\n", filename);
+	snprintf(disconnect_message, 256, "Server is enforcing file consistency for %s\n", filename);
 
 	// Kick now with specified disconnect message.
 	return 1;

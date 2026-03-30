@@ -1829,7 +1829,7 @@ void CBasePlayer::UpdateStatusBar()
 				// allies and medics get to see the targets health
 				if (g_pGameRules->PlayerRelationship(this, pEntity) == GR_TEAMMATE)
 				{
-					newSBarState[SBAR_ID_TARGETHEALTH] = 100 * (pEntity->pev->health / pEntity->pev->max_health);
+					newSBarState[SBAR_ID_TARGETHEALTH] = (pEntity->pev->max_health > 0) ? (int)(100 * (pEntity->pev->health / pEntity->pev->max_health)) : 0;
 					newSBarState[SBAR_ID_TARGETARMOR] = pEntity->pev->armorvalue; //No need to get it % based since 100 it's the max.
 				}
 

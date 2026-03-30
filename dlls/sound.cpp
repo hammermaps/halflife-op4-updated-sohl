@@ -1340,7 +1340,9 @@ void SENTENCEG_Init()
 		if (strlen(pString) >= CBSENTENCENAME_MAX)
 			ALERT(at_warning, "Sentence %s longer than %d letters\n", pString, CBSENTENCENAME_MAX - 1);
 
-		strcpy(gszallsentencenames[gcallsentences++], pString);
+		const int iSent = gcallsentences++;
+		strncpy(gszallsentencenames[iSent], pString, CBSENTENCENAME_MAX - 1);
+		gszallsentencenames[iSent][CBSENTENCENAME_MAX - 1] = '\0';
 
 		j--;
 		if (j <= i)
