@@ -804,7 +804,7 @@ void PlayCDTrack(int iTrack)
 	{
 		char string[64];
 
-		sprintf(string, "cd play %3d\n", iTrack);
+		snprintf(string, sizeof(string), "cd play %3d\n", iTrack);
 		CLIENT_COMMAND(pClient->edict(), string);
 	}
 }
@@ -1480,14 +1480,20 @@ bool CChangeLevel::KeyValue(KeyValueData* pkvd)
 	if (FStrEq(pkvd->szKeyName, "map"))
 	{
 		if (strlen(pkvd->szValue) >= cchMapNameMost)
+		{
 			ALERT(at_error, "Map name '%s' too long (32 chars)\n", pkvd->szValue);
+			return true;
+		}
 		strcpy(m_szMapName, pkvd->szValue);
 		return true;
 	}
 	else if (FStrEq(pkvd->szKeyName, "landmark"))
 	{
 		if (strlen(pkvd->szValue) >= cchMapNameMost)
+		{
 			ALERT(at_error, "Landmark name '%s' too long (32 chars)\n", pkvd->szValue);
+			return true;
+		}
 		strcpy(m_szLandmarkName, pkvd->szValue);
 		return true;
 	}

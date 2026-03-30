@@ -535,7 +535,7 @@ void CBaseMonster::RunTask(Task_t* pTask)
 	break;
 	case TASK_WAIT_FOR_SCRIPT:
 	{
-		if (m_pCine->m_iDelay <= 0 && gpGlobals->time >= m_pCine->m_startTime)
+		if (m_pCine && m_pCine->m_iDelay <= 0 && gpGlobals->time >= m_pCine->m_startTime)
 		{
 			TaskComplete();
 			m_pCine->StartSequence((CBaseMonster*)this, m_pCine->m_iszPlay, true);
@@ -1300,7 +1300,7 @@ void CBaseMonster::StartTask(Task_t* pTask)
 	}
 	case TASK_WAIT_FOR_SCRIPT:
 	{
-		if (!FStringNull(m_pCine->m_iszIdle))
+		if (m_pCine && !FStringNull(m_pCine->m_iszIdle))
 		{
 			m_pCine->StartSequence((CBaseMonster*)this, m_pCine->m_iszIdle, false);
 			if (FStrEq(STRING(m_pCine->m_iszIdle), STRING(m_pCine->m_iszPlay)))
@@ -1323,7 +1323,8 @@ void CBaseMonster::StartTask(Task_t* pTask)
 	}
 	case TASK_ENABLE_SCRIPT:
 	{
-		m_pCine->DelayStart(false);
+		if (m_pCine)
+			m_pCine->DelayStart(false);
 		TaskComplete();
 		break;
 	}
