@@ -550,7 +550,7 @@ void COFVoltigore::PainSound()
 //=========================================================
 int COFVoltigore::Classify()
 {
-	return CLASS_ALIEN_MILITARY;
+	return m_iClass ? m_iClass : CLASS_ALIEN_MILITARY;
 }
 
 //=========================================================

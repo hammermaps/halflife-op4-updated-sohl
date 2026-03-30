@@ -570,7 +570,7 @@ void CCleansuitScientist::RunTask(Task_t* pTask)
 //=========================================================
 int CCleansuitScientist::Classify()
 {
-	return CLASS_HUMAN_PASSIVE;
+	return m_iClass ? m_iClass : CLASS_HUMAN_PASSIVE;
 }
 
 
@@ -1266,7 +1266,7 @@ void CSittingCleansuitScientist::Precache()
 //=========================================================
 int CSittingCleansuitScientist::Classify()
 {
-	return CLASS_HUMAN_PASSIVE;
+	return m_iClass ? m_iClass : CLASS_HUMAN_PASSIVE;
 }
 
 

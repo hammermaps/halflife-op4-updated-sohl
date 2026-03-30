@@ -735,7 +735,7 @@ void CShockTrooper::CheckAmmo()
 //=========================================================
 int CShockTrooper::Classify()
 {
-	return CLASS_ALIEN_RACE_X;
+	return m_iClass ? m_iClass : CLASS_ALIEN_RACE_X;
 }
 
 //=========================================================

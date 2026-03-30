@@ -164,7 +164,7 @@ const char* COFShockRoach::pBiteSounds[] =
 //=========================================================
 int COFShockRoach::Classify()
 {
-	return CLASS_ALIEN_PREY;
+	return m_iClass ? m_iClass : CLASS_ALIEN_PREY;
 }
 
 //=========================================================

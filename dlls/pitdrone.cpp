@@ -406,7 +406,7 @@ int CPitdrone::ISoundMask()
 //=========================================================
 int CPitdrone::Classify()
 {
-	return CLASS_ALIEN_PREDATOR;
+	return m_iClass ? m_iClass : CLASS_ALIEN_PREDATOR;
 }
 
 //=========================================================

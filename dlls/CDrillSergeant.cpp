@@ -230,7 +230,7 @@ int CDrillSergeant::ISoundMask()
 
 int CDrillSergeant::Classify()
 {
-	return CLASS_HUMAN_MILITARY_FRIENDLY;
+	return m_iClass ? m_iClass : CLASS_HUMAN_MILITARY_FRIENDLY;
 }
 
 void CDrillSergeant::SetYawSpeed()

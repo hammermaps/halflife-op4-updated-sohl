@@ -339,7 +339,7 @@ IMPLEMENT_CUSTOM_SCHEDULES(COFGonome, CBaseMonster);
 //=========================================================
 int COFGonome::Classify()
 {
-	return CLASS_ALIEN_MONSTER;
+	return m_iClass ? m_iClass : CLASS_ALIEN_MONSTER;
 }
 
 //=========================================================

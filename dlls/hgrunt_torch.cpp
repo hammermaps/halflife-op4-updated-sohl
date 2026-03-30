@@ -860,7 +860,7 @@ void COFTorchAlly::CheckAmmo()
 //=========================================================
 int COFTorchAlly::Classify()
 {
-	return CLASS_HUMAN_MILITARY_FRIENDLY;
+	return m_iClass ? m_iClass : CLASS_HUMAN_MILITARY_FRIENDLY;
 }
 
 //=========================================================

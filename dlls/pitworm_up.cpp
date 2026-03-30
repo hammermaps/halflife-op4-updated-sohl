@@ -1683,7 +1683,7 @@ public:
 
 	int Classify() override
 	{
-		return CLASS_ALIEN_MONSTER;
+		return m_iClass ? m_iClass : CLASS_ALIEN_MONSTER;
 	}
 
 	void SetYawSpeed() override

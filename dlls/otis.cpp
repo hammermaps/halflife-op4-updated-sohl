@@ -290,7 +290,7 @@ int COtis::ISoundMask()
 //=========================================================
 int COtis::Classify()
 {
-	return CLASS_PLAYER_ALLY;
+	return m_iClass ? m_iClass : CLASS_PLAYER_ALLY;
 }
 
 //=========================================================

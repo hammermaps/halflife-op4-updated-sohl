@@ -557,7 +557,7 @@ public:
 	bool Restore(CRestore& restore) override;
 	static TYPEDESCRIPTION m_SaveData[];
 
-	int Classify() override { return CLASS_ALIEN_MONSTER; }
+	int Classify() override { return m_iClass ? m_iClass : CLASS_ALIEN_MONSTER; }
 
 	int BloodColor() override { return BLOOD_COLOR_GREEN; }
 

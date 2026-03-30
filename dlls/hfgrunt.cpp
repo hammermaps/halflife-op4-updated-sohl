@@ -280,6 +280,12 @@ int CHFGrunt::IRelationship(CBaseEntity* pTarget)
 //=========================================================
 void CHFGrunt::GibMonster()
 {
+	if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+	{
+		CBaseMonster::GibMonster();
+		return;
+	}
+
 	Vector vecGunPos;
 	Vector vecGunAngles;
 
@@ -744,7 +750,7 @@ void CHFGrunt::CheckAmmo()
 //=========================================================
 int CHFGrunt::Classify()
 {
-	return CLASS_HUMAN_MILITARY;
+	return m_iClass ? m_iClass : CLASS_HUMAN_MILITARY;
 }
 
 //=========================================================
@@ -852,6 +858,9 @@ void CHFGrunt::HandleAnimEvent(MonsterEvent_t* pEvent)
 	{
 	case HGRUNT_AE_DROP_GUN:
 	{
+		if (pev->spawnflags & SF_MONSTER_NO_WPN_DROP)
+			break;
+
 		Vector vecGunPos;
 		Vector vecGunAngles;
 
