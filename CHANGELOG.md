@@ -350,6 +350,7 @@
 * Added `trigger_startpatrol` — starts monster patrol routes
 * Added `trigger_motion` — applies position/angle/velocity to entities via locus
 * Added `motion_manager` — continuous motion control entity
+* Fixed `motion_manager` save/restore bug — re-resolves target from `pev->target` when EHANDLE becomes invalid after loading a saved game, instead of silently deactivating
 * Added `render_fx_fader` — smooth entity render amount fading
 * Fixed pre-existing `DontThink()` bug in `set_suicide_frame()` (`dlls/client.cpp`)
 * Added all new files to Linux Makefile and Visual Studio 2019 project

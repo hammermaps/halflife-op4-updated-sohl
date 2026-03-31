@@ -3587,15 +3587,21 @@ void CMotionManager::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE
 
 void CMotionManager::MotionThink()
 {
-	// SoHL 1.5 - Null-pointer workaround after save/restore
-	if (!m_bActive || !m_hTarget)
+	if (!m_bActive)
 	{
-		m_bActive = false;
 		DontThink();
 		return;
 	}
 
 	CBaseEntity* pTarget = m_hTarget;
+
+	// Re-resolve target if EHANDLE became invalid (e.g. after save/restore)
+	if (!pTarget && !FStringNull(pev->target))
+	{
+		m_hTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+		pTarget = m_hTarget;
+	}
+
 	if (!pTarget)
 	{
 		m_bActive = false;
