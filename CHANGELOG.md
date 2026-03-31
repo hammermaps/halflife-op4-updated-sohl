@@ -1,5 +1,10 @@
 # Half-Life: Opposing Force Updated changelog
 
+## Sentences Limit Increase
+
+* **Increased max. sentences count from 2048 to 4096** (`dlls/util.h`): raised `CVOXFILESENTENCEMAX` to allow more entries in `sound/sentences.txt`
+* **Increased max. sentence groups from 200 to 400** (`dlls/sound.cpp`): raised `CSENTENCEG_MAX` proportionally to support the higher sentence count
+
 ## SOHL 1.4 Bugfix Port (plan_1.4.md)
 
 ### Critical Bugfixes (Server-DLL)
