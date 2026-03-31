@@ -41,6 +41,10 @@ TYPEDESCRIPTION COFSquadTalkMonster::m_SaveData[] =
 
 		DEFINE_FIELD(COFSquadTalkMonster, m_iMySlot, FIELD_INTEGER),
 
+		DEFINE_FIELD(COFSquadTalkMonster, m_hWaitMedic, FIELD_EHANDLE),
+		DEFINE_FIELD(COFSquadTalkMonster, m_flMedicWaitTime, FIELD_TIME),
+		DEFINE_FIELD(COFSquadTalkMonster, m_flLastHitByPlayer, FIELD_TIME),
+		DEFINE_FIELD(COFSquadTalkMonster, m_iPlayerHits, FIELD_INTEGER),
 
 };
 

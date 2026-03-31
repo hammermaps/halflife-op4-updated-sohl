@@ -305,6 +305,9 @@ TYPEDESCRIPTION COFMedicAlly::m_SaveData[] =
 		DEFINE_FIELD(COFMedicAlly, m_fHealActive, FIELD_BOOLEAN),
 		DEFINE_FIELD(COFMedicAlly, m_iWeaponIdx, FIELD_INTEGER),
 		DEFINE_FIELD(COFMedicAlly, m_flLastShot, FIELD_TIME),
+		DEFINE_FIELD(COFMedicAlly, m_flPlayerDamage, FIELD_FLOAT),
+		DEFINE_FIELD(COFMedicAlly, m_fQueueFollow, FIELD_BOOLEAN),
+		DEFINE_FIELD(COFMedicAlly, m_fHealAudioPlaying, FIELD_BOOLEAN),
 };
 
 IMPLEMENT_SAVERESTORE(COFMedicAlly, COFSquadTalkMonster);
@@ -2446,7 +2449,7 @@ Schedule_t* COFMedicAlly::GetSchedule()
 		{
 			auto pMedic = m_hWaitMedic.Entity<COFSquadTalkMonster>();
 
-			if (pMedic->pev->deadflag != DEAD_NO)
+			if (!pMedic || pMedic->pev->deadflag != DEAD_NO)
 				m_hWaitMedic = nullptr;
 			else
 				pMedic->HealMe(nullptr);

@@ -262,6 +262,8 @@ TYPEDESCRIPTION COFTorchAlly::m_SaveData[] =
 		DEFINE_FIELD(COFTorchAlly, m_fTorchActive, FIELD_BOOLEAN),
 		DEFINE_FIELD(COFTorchAlly, m_pTorchBeam, FIELD_CLASSPTR),
 		DEFINE_FIELD(COFTorchAlly, m_flLastShot, FIELD_TIME),
+		DEFINE_FIELD(COFTorchAlly, m_flPlayerDamage, FIELD_FLOAT),
+		DEFINE_FIELD(COFTorchAlly, m_hNewTargetEnt, FIELD_EHANDLE),
 };
 
 IMPLEMENT_SAVERESTORE(COFTorchAlly, COFSquadTalkMonster);
