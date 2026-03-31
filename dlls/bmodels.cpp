@@ -60,7 +60,7 @@ public:
 	// Bmodels don't go across transitions
 	int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
 
-	bool m_bHasRotation; // SoHL 1.5 - Track if rotation was set via message key
+	bool m_bHasRotation = false; // SoHL 1.5 - Track if rotation was set via message key
 };
 
 LINK_ENTITY_TO_CLASS(func_wall, CFuncWall);

@@ -983,9 +983,8 @@ void CBaseTrigger::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_
 	if (!ShouldToggle(useType, pev->solid == SOLID_TRIGGER))
 		return;
 
-	// SoHL 1.5 - Store activator for frag attribution
-	if (pActivator)
-		m_hActivator = pActivator;
+	// SoHL 1.5 - Always update, even when pActivator is null, so stale activators are not reused.
+	m_hActivator = pActivator;
 
 	if (pev->solid == SOLID_NOT)
 	{ // if the trigger is off, turn it on

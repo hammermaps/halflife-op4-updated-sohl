@@ -656,7 +656,7 @@ public:
 
 	entvars_t* m_pevCurrentTarget;
 	int m_sounds;
-	bool m_soundPlaying; // SoHL 1.5 - Track sound state
+	bool m_soundPlaying = false; // SoHL 1.5 - Track sound state
 	// LRC - m_activated is now part of CBaseEntity
 };
 
@@ -782,6 +782,7 @@ void CFuncTrain::Next()
 		// Play stop sound
 		if (!FStringNull(pev->noiseStopMoving))
 			EMIT_SOUND(ENT(pev), CHAN_VOICE, (char*)STRING(pev->noiseStopMoving), m_volume, ATTN_NORM);
+		m_soundPlaying = false; // SoHL 1.5
 		return;
 	}
 

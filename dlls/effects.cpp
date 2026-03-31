@@ -2461,8 +2461,8 @@ public:
 
 	void SendSky();
 
-	int m_fActive;
-	int m_iScale; // SoHL 1.5 - Scale parameter for parallax
+	int m_fActive = 0;
+	int m_iScale = 0; // SoHL 1.5 - Scale parameter for parallax
 };
 
 LINK_ENTITY_TO_CLASS(env_sky, CEnvSky);

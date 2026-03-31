@@ -824,7 +824,6 @@ void CHalfLifeMultiplay::DeathNotice(CBasePlayer* pVictim, entvars_t* pKiller, e
 		killer_weapon_name += 5;
 
 	// SoHL 1.5 - Check for custom kill fields on inflictor
-	const char* kill_technique = "";
 	if (pevInflictor)
 	{
 		CBaseEntity* pInflictorEnt = CBaseEntity::Instance(pevInflictor);
@@ -832,8 +831,6 @@ void CHalfLifeMultiplay::DeathNotice(CBasePlayer* pVictim, entvars_t* pKiller, e
 		{
 			if (pInflictorEnt->killname)
 				killer_weapon_name = STRING(pInflictorEnt->killname);
-			if (pInflictorEnt->killmethod)
-				kill_technique = STRING(pInflictorEnt->killmethod);
 		}
 	}
 

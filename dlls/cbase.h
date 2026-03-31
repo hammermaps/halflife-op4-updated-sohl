@@ -205,8 +205,8 @@ public:
 
 	bool m_activated;		  // signifies entity has been activated (moved here from func_train)
 
-	string_t killname;		  // Custom Kill-Name for death notices
-	string_t killmethod;	  // Custom Kill-Method for death notices
+	string_t killname{};	  // Custom Kill-Name for death notices
+	string_t killmethod{};	  // Custom Kill-Method for death notices
 
 	virtual ~CBaseEntity() {}
 
