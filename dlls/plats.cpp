@@ -656,6 +656,7 @@ public:
 
 	entvars_t* m_pevCurrentTarget;
 	int m_sounds;
+	bool m_soundPlaying = false; // SoHL 1.5 - Track sound state
 	// LRC - m_activated is now part of CBaseEntity
 };
 
@@ -664,6 +665,7 @@ TYPEDESCRIPTION CFuncTrain::m_SaveData[] =
 	{
 		DEFINE_FIELD(CFuncTrain, m_sounds, FIELD_INTEGER),
 		DEFINE_FIELD(CFuncTrain, m_pevCurrentTarget, FIELD_EVARS),
+		DEFINE_FIELD(CFuncTrain, m_soundPlaying, FIELD_BOOLEAN),
 };
 
 IMPLEMENT_SAVERESTORE(CFuncTrain, CBasePlatTrain);
@@ -738,6 +740,7 @@ void CFuncTrain::Wait()
 			STOP_SOUND(edict(), CHAN_STATIC, (char*)STRING(pev->noiseMovement));
 		if (!FStringNull(pev->noiseStopMoving))
 			EMIT_SOUND(ENT(pev), CHAN_VOICE, (char*)STRING(pev->noiseStopMoving), m_volume, ATTN_NORM);
+		m_soundPlaying = false; // SoHL 1.5
 		DontThink();
 		return;
 	}
@@ -751,6 +754,7 @@ void CFuncTrain::Wait()
 			STOP_SOUND(edict(), CHAN_STATIC, (char*)STRING(pev->noiseMovement));
 		if (!FStringNull(pev->noiseStopMoving))
 			EMIT_SOUND(ENT(pev), CHAN_VOICE, (char*)STRING(pev->noiseStopMoving), m_volume, ATTN_NORM);
+		m_soundPlaying = false; // SoHL 1.5
 		SetThink(&CFuncTrain::Next);
 	}
 	else
@@ -778,6 +782,7 @@ void CFuncTrain::Next()
 		// Play stop sound
 		if (!FStringNull(pev->noiseStopMoving))
 			EMIT_SOUND(ENT(pev), CHAN_VOICE, (char*)STRING(pev->noiseStopMoving), m_volume, ATTN_NORM);
+		m_soundPlaying = false; // SoHL 1.5
 		return;
 	}
 
@@ -810,10 +815,13 @@ void CFuncTrain::Next()
 		// CHANGED this from CHAN_VOICE to CHAN_STATIC around OEM beta time because trains should
 		// use CHAN_STATIC for their movement sounds to prevent sound field problems.
 		// this is not a hack or temporary fix, this is how things should be. (sjb).
-		if (!FStringNull(pev->noiseMovement))
+		// SoHL 1.5 - Only restart sound on state change
+		if (!FStringNull(pev->noiseMovement) && !m_soundPlaying)
+		{
 			STOP_SOUND(edict(), CHAN_STATIC, (char*)STRING(pev->noiseMovement));
-		if (!FStringNull(pev->noiseMovement))
 			EMIT_SOUND(ENT(pev), CHAN_STATIC, (char*)STRING(pev->noiseMovement), m_volume, ATTN_NORM);
+			m_soundPlaying = true;
+		}
 		ClearBits(pev->effects, EF_NOINTERP);
 		SetMoveDone(&CFuncTrain::Wait);
 		LinearMove(pTarg->pev->origin - (pev->mins + pev->maxs) * 0.5, pev->speed);

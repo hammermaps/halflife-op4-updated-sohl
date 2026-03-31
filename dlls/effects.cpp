@@ -1492,7 +1492,9 @@ void CGibShooter::Spawn()
 	}
 
 	SetMovedir(pev);
-	pev->body = MODEL_FRAMES(m_iGibModelIndex);
+	// SoHL 1.5 - Initialize body after model is set in Precache
+	if (m_iGibModelIndex)
+		pev->body = MODEL_FRAMES(m_iGibModelIndex);
 }
 
 
@@ -2451,6 +2453,7 @@ class CEnvSky : public CBaseEntity
 public:
 	void Spawn() override;
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	bool KeyValue(KeyValueData* pkvd) override;
 
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
@@ -2458,7 +2461,8 @@ public:
 
 	void SendSky();
 
-	int m_fActive;
+	int m_fActive = 0;
+	int m_iScale = 0; // SoHL 1.5 - Scale parameter for parallax
 };
 
 LINK_ENTITY_TO_CLASS(env_sky, CEnvSky);
@@ -2466,9 +2470,21 @@ LINK_ENTITY_TO_CLASS(env_sky, CEnvSky);
 TYPEDESCRIPTION CEnvSky::m_SaveData[] =
 	{
 		DEFINE_FIELD(CEnvSky, m_fActive, FIELD_INTEGER),
+		DEFINE_FIELD(CEnvSky, m_iScale, FIELD_INTEGER),
 	};
 
 IMPLEMENT_SAVERESTORE(CEnvSky, CBaseEntity);
+
+bool CEnvSky::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "scale"))
+	{
+		m_iScale = atoi(pkvd->szValue);
+		return true;
+	}
+
+	return CBaseEntity::KeyValue(pkvd);
+}
 
 void CEnvSky::Spawn()
 {
@@ -2504,6 +2520,7 @@ void CEnvSky::SendSky()
 		WRITE_COORD(pev->origin.x);
 		WRITE_COORD(pev->origin.y);
 		WRITE_COORD(pev->origin.z);
+		WRITE_BYTE(m_iScale); // SoHL 1.5 - Scale for parallax
 	}
 	MESSAGE_END();
 }
@@ -2543,6 +2560,8 @@ void CEnvParticle::Spawn()
 
 	Precache();
 
+	// SoHL 1.5 - Auto-activate if start-on flag is set
+	// Named entities can also auto-activate via spawnflags
 	if (pev->spawnflags & 1)
 	{
 		m_fActive = true;

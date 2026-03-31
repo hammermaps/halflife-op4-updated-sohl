@@ -406,7 +406,7 @@ bool CFuncTank::StartControl(CBasePlayer* pController)
 			return false;
 	}
 
-	ALERT(at_console, "using TANK!\n");
+	ALERT(at_aiconsole, "using TANK!\n");
 
 	m_pController = pController;
 	if (m_pController->m_pActiveItem)
@@ -432,7 +432,7 @@ void CFuncTank::StopControl()
 
 	m_pController->EquipWeapon();
 
-	ALERT(at_console, "stopped using TANK\n");
+	ALERT(at_aiconsole, "stopped using TANK\n");
 
 	m_pController->m_iHideHUD &= ~HIDEHUD_WEAPONS;
 
@@ -1182,7 +1182,7 @@ void CFuncTankControls::Think()
 	}
 
 	if (!m_pTank)
-		ALERT(at_console, "No tank %s\n", STRING(pev->target));
+		ALERT(at_aiconsole, "No tank %s\n", STRING(pev->target));
 }
 
 void CFuncTankControls::Spawn()

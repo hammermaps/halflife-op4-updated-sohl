@@ -486,21 +486,22 @@ void SaveReadFields(SAVERESTOREDATA* pSaveData, const char* pname, void* pBaseDa
 }
 
 // give health
-bool CBaseEntity::TakeHealth(float flHealth, int bitsDamageType)
+float CBaseEntity::TakeHealth(float flHealth, int bitsDamageType)
 {
 	if (0 == pev->takedamage)
-		return false;
+		return 0;
 
 	// heal
 	if (pev->health >= pev->max_health)
-		return false;
+		return 0;
 
+	float flOldHealth = pev->health;
 	pev->health += flHealth;
 
 	if (pev->health > pev->max_health)
 		pev->health = pev->max_health;
 
-	return true;
+	return pev->health - flOldHealth;
 }
 
 // inflict damage on this entity.  bitsDamageType indicates type of damage inflicted, ie: DMG_CRUSH

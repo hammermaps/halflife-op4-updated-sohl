@@ -866,10 +866,10 @@ void CGib::Spawn(const char* szGibModel)
 }
 
 // take health
-bool CBaseMonster::TakeHealth(float flHealth, int bitsDamageType)
+float CBaseMonster::TakeHealth(float flHealth, int bitsDamageType)
 {
 	if (0 == pev->takedamage)
-		return false;
+		return 0;
 
 	// clear out any damage types we healed.
 	// UNDONE: generic health should not heal any

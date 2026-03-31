@@ -983,6 +983,9 @@ void CBaseTrigger::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_
 	if (!ShouldToggle(useType, pev->solid == SOLID_TRIGGER))
 		return;
 
+	// SoHL 1.5 - Always update, even when pActivator is null, so stale activators are not reused.
+	m_hActivator = pActivator;
+
 	if (pev->solid == SOLID_NOT)
 	{ // if the trigger is off, turn it on
 		pev->solid = SOLID_TRIGGER;
@@ -1105,7 +1108,13 @@ void CBaseTrigger::HurtTouch(CBaseEntity* pOther)
 		}
 	}
 	else
-		pOther->TakeDamage(pev, pev, fldmg, m_bitsDamageInflict);
+	{
+		// SoHL 1.5 - Use activator as attacker for frag attribution
+		entvars_t* pevAttacker = pev;
+		if (m_hActivator != 0)
+			pevAttacker = m_hActivator->pev;
+		pOther->TakeDamage(pev, pevAttacker, fldmg, m_bitsDamageInflict);
+	}
 
 	// Store pain time so we can get all of the other entities on this frame
 	pev->pain_finished = gpGlobals->time;
@@ -3578,13 +3587,21 @@ void CMotionManager::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE
 
 void CMotionManager::MotionThink()
 {
+	// SoHL 1.5 - Null-pointer workaround after save/restore
 	if (!m_bActive || !m_hTarget)
 	{
 		m_bActive = false;
+		DontThink();
 		return;
 	}
 
 	CBaseEntity* pTarget = m_hTarget;
+	if (!pTarget)
+	{
+		m_bActive = false;
+		DontThink();
+		return;
+	}
 
 	if (!FStringNull(m_iszPosition))
 	{

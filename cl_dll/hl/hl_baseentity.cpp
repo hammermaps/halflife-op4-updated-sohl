@@ -33,7 +33,7 @@ This file contains "stubs" of class member implementations so that we can predic
 void EMIT_SOUND_DYN(edict_t* entity, int channel, const char* sample, float volume, float attenuation, int flags, int pitch) {}
 
 // CBaseEntity Stubs
-bool CBaseEntity::TakeHealth(float flHealth, int bitsDamageType) { return true; }
+float CBaseEntity::TakeHealth(float flHealth, int bitsDamageType) { return 1; }
 bool CBaseEntity::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) { return true; }
 CBaseEntity* CBaseEntity::GetNextTarget() { return NULL; }
 bool CBaseEntity::Save(CSave& save) { return true; }
@@ -234,14 +234,14 @@ Schedule_t* CBaseMonster::ScheduleFromName(const char* pName) { return NULL; }
 void CBaseMonster::BecomeDead() {}
 void CBaseMonster::RunAI() {}
 void CBaseMonster::Killed(entvars_t* pevAttacker, int iGib) {}
-bool CBaseMonster::TakeHealth(float flHealth, int bitsDamageType) { return false; }
+float CBaseMonster::TakeHealth(float flHealth, int bitsDamageType) { return 0; }
 bool CBaseMonster::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) { return false; }
 bool CBaseMonster::Restore(class CRestore&) { return true; }
 bool CBaseMonster::Save(class CSave&) { return true; }
 
 int TrainSpeed(int iSpeed, int iMax) { return 0; }
 void CBasePlayer::DeathSound() {}
-bool CBasePlayer::TakeHealth(float flHealth, int bitsDamageType) { return false; }
+float CBasePlayer::TakeHealth(float flHealth, int bitsDamageType) { return 0; }
 void CBasePlayer::TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType) {}
 bool CBasePlayer::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) { return false; }
 void CBasePlayer::PackDeadPlayerItems() {}

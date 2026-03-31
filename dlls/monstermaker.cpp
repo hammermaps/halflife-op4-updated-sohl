@@ -98,6 +98,27 @@ bool CMonsterMaker::KeyValue(KeyValueData* pkvd)
 		m_iszMonsterClassname = ALLOC_STRING(pkvd->szValue);
 		return true;
 	}
+	// SoHL 1.5 - Dynamic value keys for spawned monsters
+	else if (FStrEq(pkvd->szKeyName, "noise"))
+	{
+		pev->noise = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "noise1"))
+	{
+		pev->noise1 = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "noise2"))
+	{
+		pev->noise2 = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "noise3"))
+	{
+		pev->noise3 = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
 
 	return CBaseMonster::KeyValue(pkvd);
 }
@@ -192,6 +213,11 @@ void CMonsterMaker::MakeMonster()
 		return;
 	}
 
+	// SoHL 1.5 - Use pev->vuser1 for spawn position override if set
+	Vector vecSpawnOrigin = pev->origin;
+	if (pev->vuser1 != g_vecZero)
+		vecSpawnOrigin = pev->vuser1;
+
 	pent = CREATE_NAMED_ENTITY(m_iszMonsterClassname);
 
 	if (FNullEnt(pent))
@@ -208,8 +234,18 @@ void CMonsterMaker::MakeMonster()
 	}
 
 	pevCreate = VARS(pent);
-	pevCreate->origin = pev->origin;
-	pevCreate->angles = pev->angles;
+	pevCreate->origin = vecSpawnOrigin;
+
+	// SoHL 1.5 - Use pev->vuser2 for angle override if set, otherwise use maker angles
+	if (pev->vuser2 != g_vecZero)
+		pevCreate->angles = pev->vuser2;
+	else
+		pevCreate->angles = pev->angles;
+
+	// SoHL 1.5 - Use pev->vuser3 for velocity override if set
+	if (pev->vuser3 != g_vecZero)
+		pevCreate->velocity = pev->vuser3;
+
 	SetBits(pevCreate->spawnflags, SF_MONSTER_FALL_TO_GROUND);
 
 	// Children hit monsterclip brushes
@@ -224,6 +260,16 @@ void CMonsterMaker::MakeMonster()
 		// if I have a netname (overloaded), give the child monster that name as a targetname
 		pevCreate->targetname = pev->netname;
 	}
+
+	// SoHL 1.5 - Pass dynamic values via noise fields
+	if (!FStringNull(pev->noise))
+		pevCreate->noise = pev->noise;
+	if (!FStringNull(pev->noise1))
+		pevCreate->noise1 = pev->noise1;
+	if (!FStringNull(pev->noise2))
+		pevCreate->noise2 = pev->noise2;
+	if (!FStringNull(pev->noise3))
+		pevCreate->noise3 = pev->noise3;
 
 	m_cLiveChildren++; // count this monster
 	m_cNumMonsters--;

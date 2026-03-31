@@ -54,17 +54,36 @@ class CFuncWall : public CBaseEntity
 {
 public:
 	void Spawn() override;
+	bool KeyValue(KeyValueData* pkvd) override;
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
 
 	// Bmodels don't go across transitions
 	int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+
+	bool m_bHasRotation = false; // SoHL 1.5 - Track if rotation was set via message key
 };
 
 LINK_ENTITY_TO_CLASS(func_wall, CFuncWall);
 
+bool CFuncWall::KeyValue(KeyValueData* pkvd)
+{
+	// SoHL 1.5 - Parse "message" key as rotation vector
+	if (FStrEq(pkvd->szKeyName, "message"))
+	{
+		UTIL_StringToVector((float*)pev->angles, pkvd->szValue);
+		m_bHasRotation = true;
+		return true;
+	}
+
+	return CBaseEntity::KeyValue(pkvd);
+}
+
 void CFuncWall::Spawn()
 {
-	pev->angles = g_vecZero;
+	// SoHL 1.5 - Only zero angles if no rotation was set via message key
+	if (!m_bHasRotation)
+		pev->angles = g_vecZero;
+
 	pev->movetype = MOVETYPE_PUSH; // so it doesn't get pushed by anything
 	pev->solid = SOLID_BSP;
 	SET_MODEL(ENT(pev), STRING(pev->model));
@@ -430,6 +449,13 @@ void CFuncRotating::Spawn()
 
 	UTIL_SetOrigin(pev, pev->origin);
 	SET_MODEL(ENT(pev), STRING(pev->model));
+
+	// SoHL 1.5 - Auto-detect rotation center if no origin brush is set
+	if (pev->origin == g_vecZero)
+	{
+		pev->origin = (pev->mins + pev->maxs) * 0.5;
+		UTIL_SetOrigin(pev, pev->origin);
+	}
 
 	SetUse(&CFuncRotating::RotatingUse);
 	// did level designer forget to assign speed?

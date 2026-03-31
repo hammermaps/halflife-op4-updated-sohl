@@ -823,6 +823,17 @@ void CHalfLifeMultiplay::DeathNotice(CBasePlayer* pVictim, entvars_t* pKiller, e
 	else if (strncmp(killer_weapon_name, "func_", 5) == 0)
 		killer_weapon_name += 5;
 
+	// SoHL 1.5 - Check for custom kill fields on inflictor
+	if (pevInflictor)
+	{
+		CBaseEntity* pInflictorEnt = CBaseEntity::Instance(pevInflictor);
+		if (pInflictorEnt)
+		{
+			if (pInflictorEnt->killname)
+				killer_weapon_name = STRING(pInflictorEnt->killname);
+		}
+	}
+
 	MESSAGE_BEGIN(MSG_ALL, gmsgDeathMsg);
 	WRITE_BYTE(killer_index);				// the killer
 	WRITE_BYTE(ENTINDEX(pVictim->edict())); // the victim

@@ -323,7 +323,7 @@ public:
 
 	virtual Vector GetGunPosition();
 
-	bool TakeHealth(float flHealth, int bitsDamageType) override;
+	float TakeHealth(float flHealth, int bitsDamageType) override;
 	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override;
 	bool DeadTakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType);
 
