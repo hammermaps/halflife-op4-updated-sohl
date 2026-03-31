@@ -3177,6 +3177,7 @@ TYPEDESCRIPTION CTriggerInOut::m_SaveData[] =
 		DEFINE_FIELD(CTriggerInOut, m_iszAltTarget, FIELD_STRING),
 		DEFINE_FIELD(CTriggerInOut, m_iszBothTarget, FIELD_STRING),
 		DEFINE_FIELD(CTriggerInOut, m_cInsideEntities, FIELD_INTEGER),
+		DEFINE_ARRAY(CTriggerInOut, m_hInsideEntities, FIELD_EHANDLE, 16),
 };
 
 IMPLEMENT_SAVERESTORE(CTriggerInOut, CBaseTrigger);
