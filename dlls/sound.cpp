@@ -1067,7 +1067,7 @@ void USENTENCEG_InitLRU(unsigned char* plru, int count)
 int USENTENCEG_PickSequential(int isentenceg, char* szfound, int ipick, bool freset)
 {
 	char* szgroupname;
-	unsigned char count;
+	int count;
 	char sznum[8];
 
 	if (!fSentencesInit)
@@ -1116,10 +1116,10 @@ int USENTENCEG_Pick(int isentenceg, char* szfound)
 {
 	char* szgroupname;
 	unsigned char* plru;
-	unsigned char i;
-	unsigned char count;
+	int i;
+	int count;
 	char sznum[8];
-	unsigned char ipick;
+	int ipick;
 	bool ffound = false;
 
 	if (!fSentencesInit)
