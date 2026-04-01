@@ -57,8 +57,8 @@ pipeline {
                     steps {
                         checkout scm
                         sh '''
-                            sudo apt-get update -qq
-                            sudo apt-get install -y g++-multilib libgl1-mesa-dev
+                            sudo apt-get -o DPkg::Lock::Timeout=60 update -qq
+                            sudo apt-get -o DPkg::Lock::Timeout=60 install -y g++-multilib libgl1-mesa-dev
                         '''
                         sh 'cd linux && make COMPILER=g++ CFG=release -j$(nproc)'
                     }
@@ -79,8 +79,8 @@ pipeline {
                     steps {
                         checkout scm
                         sh '''
-                            sudo apt-get update -qq
-                            sudo apt-get install -y g++-multilib libgl1-mesa-dev
+                            sudo apt-get -o DPkg::Lock::Timeout=60 update -qq
+                            sudo apt-get -o DPkg::Lock::Timeout=60 install -y g++-multilib libgl1-mesa-dev
                         '''
                         sh 'cd linux && make COMPILER=g++ CFG=debug -j$(nproc)'
                     }
