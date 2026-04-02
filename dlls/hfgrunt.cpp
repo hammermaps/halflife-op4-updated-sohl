@@ -218,6 +218,28 @@ const char* CHFGrunt::pGruntSentences[] =
 		"HG_TAUNT",	  // say rude things
 };
 
+static const char* pGruntMGunSounds[] =
+	{
+		"hgrunt/gr_mgun1.wav",
+		"hgrunt/gr_mgun2.wav",
+};
+
+static const char* pGruntDieSounds[] =
+	{
+		"hgrunt/gr_die1.wav",
+		"hgrunt/gr_die2.wav",
+		"hgrunt/gr_die3.wav",
+};
+
+static const char* pGruntPainSounds[] =
+	{
+		"hgrunt/gr_pain1.wav",
+		"hgrunt/gr_pain2.wav",
+		"hgrunt/gr_pain3.wav",
+		"hgrunt/gr_pain4.wav",
+		"hgrunt/gr_pain5.wav",
+};
+
 enum
 {
 	HFGRUNT_SENT_NONE = -1,
@@ -929,14 +951,7 @@ void CHFGrunt::HandleAnimEvent(MonsterEvent_t* pEvent)
 			Shoot();
 
 			// the first round of the three round burst plays the sound and puts a sound in the world sound list.
-			if (RANDOM_LONG(0, 1))
-			{
-				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "hgrunt/gr_mgun1.wav", 1, ATTN_NORM);
-			}
-			else
-			{
-				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "hgrunt/gr_mgun2.wav", 1, ATTN_NORM);
-			}
+			EMIT_SOUND(ENT(pev), CHAN_WEAPON, RANDOM_SOUND_ARRAY(pGruntMGunSounds), 1, ATTN_NORM);
 		}
 		else
 		{
@@ -1063,18 +1078,9 @@ void CHFGrunt::Precache()
 		pev->model = MAKE_STRING("models/hgrunt.mdl");
 	PRECACHE_MODEL(STRING(pev->model));
 
-	PRECACHE_SOUND("hgrunt/gr_mgun1.wav");
-	PRECACHE_SOUND("hgrunt/gr_mgun2.wav");
-
-	PRECACHE_SOUND("hgrunt/gr_die1.wav");
-	PRECACHE_SOUND("hgrunt/gr_die2.wav");
-	PRECACHE_SOUND("hgrunt/gr_die3.wav");
-
-	PRECACHE_SOUND("hgrunt/gr_pain1.wav");
-	PRECACHE_SOUND("hgrunt/gr_pain2.wav");
-	PRECACHE_SOUND("hgrunt/gr_pain3.wav");
-	PRECACHE_SOUND("hgrunt/gr_pain4.wav");
-	PRECACHE_SOUND("hgrunt/gr_pain5.wav");
+	PRECACHE_SOUND_ARRAY(pGruntMGunSounds);
+	PRECACHE_SOUND_ARRAY(pGruntDieSounds);
+	PRECACHE_SOUND_ARRAY(pGruntPainSounds);
 
 	PRECACHE_SOUND("hgrunt/gr_reload1.wav");
 
@@ -1191,24 +1197,7 @@ void CHFGrunt::PainSound()
 			}
 		}
 #endif
-		switch (RANDOM_LONG(0, 6))
-		{
-		case 0:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_pain3.wav", 1, ATTN_NORM);
-			break;
-		case 1:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_pain4.wav", 1, ATTN_NORM);
-			break;
-		case 2:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_pain5.wav", 1, ATTN_NORM);
-			break;
-		case 3:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_pain1.wav", 1, ATTN_NORM);
-			break;
-		case 4:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_pain2.wav", 1, ATTN_NORM);
-			break;
-		}
+		EMIT_SOUND(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pGruntPainSounds), 1, ATTN_NORM);
 
 		m_flNextPainTime = gpGlobals->time + 1;
 	}
@@ -1219,18 +1208,7 @@ void CHFGrunt::PainSound()
 //=========================================================
 void CHFGrunt::DeathSound()
 {
-	switch (RANDOM_LONG(0, 2))
-	{
-	case 0:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_die1.wav", 1, ATTN_IDLE);
-		break;
-	case 1:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_die2.wav", 1, ATTN_IDLE);
-		break;
-	case 2:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_die3.wav", 1, ATTN_IDLE);
-		break;
-	}
+	EMIT_SOUND(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pGruntDieSounds), 1, ATTN_IDLE);
 }
 
 //=========================================================

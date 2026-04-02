@@ -253,6 +253,19 @@ const char* CMOFAssassin::pGruntSentences[] =
 		"HG_TAUNT",	  // say rude things
 };
 
+static const char* pMGunSounds[] =
+	{
+		"hgrunt/gr_mgun1.wav",
+		"hgrunt/gr_mgun2.wav",
+};
+
+static const char* pDieSounds[] =
+	{
+		"hgrunt/gr_die1.wav",
+		"hgrunt/gr_die2.wav",
+		"hgrunt/gr_die3.wav",
+};
+
 enum
 {
 	MASSASSIN_SENT_NONE = -1,
@@ -910,14 +923,7 @@ void CMOFAssassin::HandleAnimEvent(MonsterEvent_t* pEvent)
 		if (FBitSet(pev->weapons, MAssassinWeaponFlag::MP5))
 		{
 			// the first round of the three round burst plays the sound and puts a sound in the world sound list.
-			if (RANDOM_LONG(0, 1))
-			{
-				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "hgrunt/gr_mgun1.wav", 1, ATTN_NORM);
-			}
-			else
-			{
-				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "hgrunt/gr_mgun2.wav", 1, ATTN_NORM);
-			}
+			EMIT_SOUND(ENT(pev), CHAN_WEAPON, RANDOM_SOUND_ARRAY(pMGunSounds), 1, ATTN_NORM);
 		}
 		else
 		{
@@ -1041,12 +1047,8 @@ void CMOFAssassin::Precache()
 		pev->model = MAKE_STRING("models/massn.mdl");
 	PRECACHE_MODEL(STRING(pev->model));
 
-	PRECACHE_SOUND("hgrunt/gr_mgun1.wav");
-	PRECACHE_SOUND("hgrunt/gr_mgun2.wav");
-
-	PRECACHE_SOUND("hgrunt/gr_die1.wav");
-	PRECACHE_SOUND("hgrunt/gr_die2.wav");
-	PRECACHE_SOUND("hgrunt/gr_die3.wav");
+	PRECACHE_SOUND_ARRAY(pMGunSounds);
+	PRECACHE_SOUND_ARRAY(pDieSounds);
 
 	PRECACHE_SOUND("hgrunt/gr_reload1.wav");
 
@@ -1156,18 +1158,7 @@ void CMOFAssassin::PainSound()
 //=========================================================
 void CMOFAssassin::DeathSound()
 {
-	switch (RANDOM_LONG(0, 2))
-	{
-	case 0:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_die1.wav", 1, ATTN_IDLE);
-		break;
-	case 1:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_die2.wav", 1, ATTN_IDLE);
-		break;
-	case 2:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "hgrunt/gr_die3.wav", 1, ATTN_IDLE);
-		break;
-	}
+	EMIT_SOUND(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pDieSounds), 1, ATTN_IDLE);
 }
 
 //=========================================================
