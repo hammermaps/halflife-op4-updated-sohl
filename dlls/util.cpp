@@ -123,7 +123,7 @@ int PrecacheSound(const char* path)
 	}
 
 	// Engine resolves sounds relative to "sound/" directory
-	char fullpath[260];
+	char fullpath[512];
 	snprintf(fullpath, sizeof(fullpath), "sound/%s", path);
 
 	if (UTIL_ResourceExists(fullpath))
