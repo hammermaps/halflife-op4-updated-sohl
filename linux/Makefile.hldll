@@ -72,6 +72,7 @@ HLDLL_OBJS = \
 	$(HLDLL_OBJ_DIR)/baby_voltigore.o \
 	$(HLDLL_OBJ_DIR)/barnacle.o \
 	$(HLDLL_OBJ_DIR)/barney.o \
+	$(HLDLL_OBJ_DIR)/barney_base.o \
 	$(HLDLL_OBJ_DIR)/bigmomma.o \
 	$(HLDLL_OBJ_DIR)/blkop_apache.o \
 	$(HLDLL_OBJ_DIR)/blkop_osprey.o \

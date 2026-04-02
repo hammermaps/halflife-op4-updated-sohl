@@ -124,6 +124,7 @@ cmd /c ""$(ProjectDir)..\..\filecopy.bat" "$(SolutionDir)../../network" "" "delt
     <ClCompile Include="..\..\dlls\baby_voltigore.cpp" />
     <ClCompile Include="..\..\dlls\barnacle.cpp" />
     <ClCompile Include="..\..\dlls\barney.cpp" />
+    <ClCompile Include="..\..\dlls\barney_base.cpp" />
     <ClCompile Include="..\..\dlls\bigmomma.cpp" />
     <ClCompile Include="..\..\dlls\blkop_osprey.cpp" />
     <ClCompile Include="..\..\dlls\blkop_apache.cpp" />
@@ -384,6 +385,7 @@ cmd /c ""$(ProjectDir)..\..\filecopy.bat" "$(SolutionDir)../../network" "" "delt
     <ClInclude Include="..\..\dlls\util.h" />
     <ClInclude Include="..\..\dlls\vector.h" />
     <ClInclude Include="..\..\dlls\weapons.h" />
+    <ClInclude Include="..\..\dlls\barney_base.h" />
     <ClInclude Include="..\..\dlls\zombie_base.h" />
     <ClInclude Include="..\..\dlls\weapons\CGrapple.h" />
     <ClInclude Include="..\..\dlls\weapons\CGrappleTip.h" />
