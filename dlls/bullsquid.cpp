@@ -74,6 +74,12 @@ public:
 
 LINK_ENTITY_TO_CLASS(squidspit, CSquidSpit);
 
+static const char* pSpitHitSounds[] =
+	{
+		"bullchicken/bc_spithit1.wav",
+		"bullchicken/bc_spithit2.wav",
+};
+
 TYPEDESCRIPTION CSquidSpit::m_SaveData[] =
 	{
 		DEFINE_FIELD(CSquidSpit, m_maxFrame, FIELD_INTEGER),
@@ -135,7 +141,7 @@ void CSquidSpit::Touch(CBaseEntity* pOther)
 
 	EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "bullchicken/bc_acid1.wav", 1, ATTN_NORM, 0, iPitch);
 
-	EMIT_SOUND_DYN(ENT(pev), CHAN_WEAPON, RANDOM_SOUND_ARRAY(CBullsquid::pSpitHitSounds), 1, ATTN_NORM, 0, iPitch);
+	EMIT_SOUND_DYN(ENT(pev), CHAN_WEAPON, RANDOM_SOUND_ARRAY(pSpitHitSounds), 1, ATTN_NORM, 0, iPitch);
 
 	if (0 == pOther->pev->takedamage)
 	{
@@ -218,7 +224,6 @@ public:
 	static const char* pPainSounds[];
 	static const char* pAttackGrowlSounds[];
 	static const char* pBiteSounds[];
-	static const char* pSpitHitSounds[];
 
 	bool m_fCanThreatDisplay; // this is so the squid only does the "I see a headcrab!" dance one time.
 
@@ -278,12 +283,6 @@ const char* CBullsquid::pBiteSounds[] =
 	{
 		"bullchicken/bc_bite2.wav",
 		"bullchicken/bc_bite3.wav",
-};
-
-const char* CBullsquid::pSpitHitSounds[] =
-	{
-		"bullchicken/bc_spithit1.wav",
-		"bullchicken/bc_spithit2.wav",
 };
 
 //=========================================================

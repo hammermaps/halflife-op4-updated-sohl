@@ -142,7 +142,6 @@ const char* CHoundeye::pHuntSounds[] =
 
 const char* CHoundeye::pPainSounds[] =
 	{
-		"houndeye/he_pain1.wav",
 		"houndeye/he_pain3.wav",
 		"houndeye/he_pain4.wav",
 		"houndeye/he_pain5.wav",
@@ -425,6 +424,7 @@ void CHoundeye::Precache()
 	PRECACHE_SOUND_ARRAY(pHuntSounds);
 
 	PRECACHE_SOUND_ARRAY(pPainSounds);
+	PRECACHE_SOUND("houndeye/he_pain1.wav"); // used by HOUND_AE_ANGERSOUND2
 
 	PRECACHE_SOUND_ARRAY(pAttackSounds);
 
