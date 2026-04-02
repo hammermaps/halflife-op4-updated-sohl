@@ -196,6 +196,8 @@ public:
 	float m_flLastBlinkInterval;
 
 	static const char* pGruntSentences[];
+	static const char* pDieSounds[];
+	static const char* pPainSounds[];
 };
 
 LINK_ENTITY_TO_CLASS(monster_shocktrooper, CShockTrooper);
@@ -219,6 +221,23 @@ TYPEDESCRIPTION CShockTrooper::m_SaveData[] =
 };
 
 IMPLEMENT_SAVERESTORE(CShockTrooper, CSquadMonster);
+
+const char* CShockTrooper::pDieSounds[] =
+	{
+		"shocktrooper/shock_trooper_die1.wav",
+		"shocktrooper/shock_trooper_die2.wav",
+		"shocktrooper/shock_trooper_die3.wav",
+		"shocktrooper/shock_trooper_die4.wav",
+};
+
+const char* CShockTrooper::pPainSounds[] =
+	{
+		"shocktrooper/shock_trooper_pain1.wav",
+		"shocktrooper/shock_trooper_pain2.wav",
+		"shocktrooper/shock_trooper_pain3.wav",
+		"shocktrooper/shock_trooper_pain4.wav",
+		"shocktrooper/shock_trooper_pain5.wav",
+};
 
 const char* CShockTrooper::pGruntSentences[] =
 	{
@@ -1004,16 +1023,9 @@ void CShockTrooper::Precache()
 	PRECACHE_SOUND("weapons/shock_fire.wav");
 
 	PRECACHE_SOUND("shocktrooper/shock_trooper_attack.wav");
-	PRECACHE_SOUND("shocktrooper/shock_trooper_die1.wav");
-	PRECACHE_SOUND("shocktrooper/shock_trooper_die2.wav");
-	PRECACHE_SOUND("shocktrooper/shock_trooper_die3.wav");
-	PRECACHE_SOUND("shocktrooper/shock_trooper_die4.wav");
+	PRECACHE_SOUND_ARRAY(pDieSounds);
 
-	PRECACHE_SOUND("shocktrooper/shock_trooper_pain1.wav");
-	PRECACHE_SOUND("shocktrooper/shock_trooper_pain2.wav");
-	PRECACHE_SOUND("shocktrooper/shock_trooper_pain3.wav");
-	PRECACHE_SOUND("shocktrooper/shock_trooper_pain4.wav");
-	PRECACHE_SOUND("shocktrooper/shock_trooper_pain5.wav");
+	PRECACHE_SOUND_ARRAY(pPainSounds);
 
 	// get voice pitch
 	if (RANDOM_LONG(0, 1))
@@ -1123,25 +1135,8 @@ void CShockTrooper::PainSound()
 			}
 		}
 #endif
-		switch (RANDOM_LONG(0, 6))
-		{
-		case 0:
-			//TODO: the directory names should be lowercase
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "ShockTrooper/shock_trooper_pain3.wav", 1, ATTN_NORM);
-			break;
-		case 1:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "ShockTrooper/shock_trooper_pain4.wav", 1, ATTN_NORM);
-			break;
-		case 2:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "ShockTrooper/shock_trooper_pain5.wav", 1, ATTN_NORM);
-			break;
-		case 3:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "ShockTrooper/shock_trooper_pain1.wav", 1, ATTN_NORM);
-			break;
-		case 4:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "ShockTrooper/shock_trooper_pain2.wav", 1, ATTN_NORM);
-			break;
-		}
+		//TODO: the directory names should be lowercase
+		EMIT_SOUND(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pPainSounds), 1, ATTN_NORM);
 
 		m_flNextPainTime = gpGlobals->time + 1;
 	}
