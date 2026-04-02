@@ -46,6 +46,10 @@ public:
 	bool Restore(CRestore& restore) override;
 	static TYPEDESCRIPTION m_SaveData[];
 
+	static const char* pAttackSounds[];
+	static const char* pPainSounds[];
+	static const char* pDeathSounds[];
+
 	CUSTOM_SCHEDULES;
 
 	int ISoundMask() override;
@@ -101,6 +105,26 @@ public:
 };
 
 LINK_ENTITY_TO_CLASS(monster_drillsergeant, CDrillSergeant);
+
+const char* CDrillSergeant::pAttackSounds[] =
+	{
+		"barney/ba_attack1.wav",
+		"barney/ba_attack2.wav",
+};
+
+const char* CDrillSergeant::pPainSounds[] =
+	{
+		"barney/ba_pain1.wav",
+		"barney/ba_pain2.wav",
+		"barney/ba_pain3.wav",
+};
+
+const char* CDrillSergeant::pDeathSounds[] =
+	{
+		"barney/ba_die1.wav",
+		"barney/ba_die2.wav",
+		"barney/ba_die3.wav",
+};
 
 TYPEDESCRIPTION CDrillSergeant::m_SaveData[] =
 	{
@@ -369,18 +393,7 @@ void CDrillSergeant::TraceAttack(entvars_t* pevAttacker, float flDamage, Vector 
 
 void CDrillSergeant::DeathSound()
 {
-	switch (RANDOM_LONG(0, 2))
-	{
-	case 0:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "barney/ba_die1.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	case 1:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "barney/ba_die2.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	case 2:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "barney/ba_die3.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	}
+	EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pDeathSounds), 1, ATTN_NORM, 0, GetVoicePitch());
 }
 
 void CDrillSergeant::Spawn()
@@ -495,18 +508,7 @@ void CDrillSergeant::PainSound()
 
 	m_painTime = gpGlobals->time + RANDOM_FLOAT(0.5, 0.75);
 
-	switch (RANDOM_LONG(0, 2))
-	{
-	case 0:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "barney/ba_pain1.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	case 1:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "barney/ba_pain2.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	case 2:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "barney/ba_pain3.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	}
+	EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pPainSounds), 1, ATTN_NORM, 0, GetVoicePitch());
 }
 
 bool CDrillSergeant::CheckRangeAttack1(float flDot, float flDist)
@@ -579,16 +581,9 @@ void CDrillSergeant::Precache()
 		pev->model = MAKE_STRING("models/drill.mdl");
 	PRECACHE_MODEL(STRING(pev->model));
 
-	PRECACHE_SOUND("barney/ba_attack1.wav");
-	PRECACHE_SOUND("barney/ba_attack2.wav");
-
-	PRECACHE_SOUND("barney/ba_pain1.wav");
-	PRECACHE_SOUND("barney/ba_pain2.wav");
-	PRECACHE_SOUND("barney/ba_pain3.wav");
-
-	PRECACHE_SOUND("barney/ba_die1.wav");
-	PRECACHE_SOUND("barney/ba_die2.wav");
-	PRECACHE_SOUND("barney/ba_die3.wav");
+	PRECACHE_SOUND_ARRAY(pAttackSounds);
+	PRECACHE_SOUND_ARRAY(pPainSounds);
+	PRECACHE_SOUND_ARRAY(pDeathSounds);
 
 	// every new barney must call this, otherwise
 	// when a level is loaded, nobody will talk (time is reset to 0)
