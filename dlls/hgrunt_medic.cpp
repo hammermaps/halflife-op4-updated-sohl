@@ -64,6 +64,32 @@ extern DLL_GLOBAL int g_iSkillLevel;
 #define MEDIC_SENTENCE_VOLUME (float)0.35			// volume of grunt sentences
 #define TORCH_BEAM_SPRITE "sprites/xbeam3.spr"
 
+static const char* pMedicAllyMGunSounds[] =
+	{
+		"hgrunt/gr_mgun1.wav",
+		"hgrunt/gr_mgun2.wav",
+};
+
+static const char* pMedicAllyDieSounds[] =
+	{
+		"fgrunt/death1.wav",
+		"fgrunt/death2.wav",
+		"fgrunt/death3.wav",
+		"fgrunt/death4.wav",
+		"fgrunt/death5.wav",
+		"fgrunt/death6.wav",
+};
+
+static const char* pMedicAllyPainSounds[] =
+	{
+		"fgrunt/pain1.wav",
+		"fgrunt/pain2.wav",
+		"fgrunt/pain3.wav",
+		"fgrunt/pain4.wav",
+		"fgrunt/pain5.wav",
+		"fgrunt/pain6.wav",
+};
+
 namespace MedicAllyBodygroup
 {
 enum MedicAllyBodygroup
@@ -1229,22 +1255,11 @@ void COFMedicAlly::Precache()
 
 	TalkInit();
 
-	PRECACHE_SOUND("hgrunt/gr_mgun1.wav");
-	PRECACHE_SOUND("hgrunt/gr_mgun2.wav");
+	PRECACHE_SOUND_ARRAY(pMedicAllyMGunSounds);
 
-	PRECACHE_SOUND("fgrunt/death1.wav");
-	PRECACHE_SOUND("fgrunt/death2.wav");
-	PRECACHE_SOUND("fgrunt/death3.wav");
-	PRECACHE_SOUND("fgrunt/death4.wav");
-	PRECACHE_SOUND("fgrunt/death5.wav");
-	PRECACHE_SOUND("fgrunt/death6.wav");
+	PRECACHE_SOUND_ARRAY(pMedicAllyDieSounds);
 
-	PRECACHE_SOUND("fgrunt/pain1.wav");
-	PRECACHE_SOUND("fgrunt/pain2.wav");
-	PRECACHE_SOUND("fgrunt/pain3.wav");
-	PRECACHE_SOUND("fgrunt/pain4.wav");
-	PRECACHE_SOUND("fgrunt/pain5.wav");
-	PRECACHE_SOUND("fgrunt/pain6.wav");
+	PRECACHE_SOUND_ARRAY(pMedicAllyPainSounds);
 
 	PRECACHE_SOUND("hgrunt/gr_reload1.wav");
 
@@ -1473,27 +1488,7 @@ void COFMedicAlly::PainSound()
 			}
 		}
 #endif
-		switch (RANDOM_LONG(0, 7))
-		{
-		case 0:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain3.wav", 1, ATTN_NORM);
-			break;
-		case 1:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain4.wav", 1, ATTN_NORM);
-			break;
-		case 2:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain5.wav", 1, ATTN_NORM);
-			break;
-		case 3:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain1.wav", 1, ATTN_NORM);
-			break;
-		case 4:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain2.wav", 1, ATTN_NORM);
-			break;
-		case 5:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain6.wav", 1, ATTN_NORM);
-			break;
-		}
+		EMIT_SOUND(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pMedicAllyPainSounds), 1, ATTN_NORM);
 
 		m_flNextPainTime = gpGlobals->time + 1;
 	}
@@ -1504,27 +1499,7 @@ void COFMedicAlly::PainSound()
 //=========================================================
 void COFMedicAlly::DeathSound()
 {
-	switch (RANDOM_LONG(0, 5))
-	{
-	case 0:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death1.wav", 1, ATTN_IDLE);
-		break;
-	case 1:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death2.wav", 1, ATTN_IDLE);
-		break;
-	case 2:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death3.wav", 1, ATTN_IDLE);
-		break;
-	case 3:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death4.wav", 1, ATTN_IDLE);
-		break;
-	case 4:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death5.wav", 1, ATTN_IDLE);
-		break;
-	case 5:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death6.wav", 1, ATTN_IDLE);
-		break;
-	}
+	EMIT_SOUND(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pMedicAllyDieSounds), 1, ATTN_IDLE);
 }
 
 //=========================================================

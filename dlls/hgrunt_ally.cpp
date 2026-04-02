@@ -63,6 +63,32 @@ extern DLL_GLOBAL int g_iSkillLevel;
 #define HGRUNT_MINIMUM_HEADSHOT_DAMAGE 15			// must do at least this much damage in one shot to head to score a headshot kill
 #define HGRUNT_SENTENCE_VOLUME (float)0.35			// volume of grunt sentences
 
+static const char* pGruntAllyMGunSounds[] =
+	{
+		"hgrunt/gr_mgun1.wav",
+		"hgrunt/gr_mgun2.wav",
+};
+
+static const char* pGruntAllyDieSounds[] =
+	{
+		"fgrunt/death1.wav",
+		"fgrunt/death2.wav",
+		"fgrunt/death3.wav",
+		"fgrunt/death4.wav",
+		"fgrunt/death5.wav",
+		"fgrunt/death6.wav",
+};
+
+static const char* pGruntAllyPainSounds[] =
+	{
+		"fgrunt/pain1.wav",
+		"fgrunt/pain2.wav",
+		"fgrunt/pain3.wav",
+		"fgrunt/pain4.wav",
+		"fgrunt/pain5.wav",
+		"fgrunt/pain6.wav",
+};
+
 namespace HGruntAllyWeaponFlag
 {
 enum HGruntAllyWeaponFlag
@@ -1079,14 +1105,7 @@ void CHGruntAlly::HandleAnimEvent(MonsterEvent_t* pEvent)
 			Shoot();
 
 			// the first round of the three round burst plays the sound and puts a sound in the world sound list.
-			if (RANDOM_LONG(0, 1))
-			{
-				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "hgrunt/gr_mgun1.wav", 1, ATTN_NORM);
-			}
-			else
-			{
-				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "hgrunt/gr_mgun2.wav", 1, ATTN_NORM);
-			}
+			EMIT_SOUND(ENT(pev), CHAN_WEAPON, RANDOM_SOUND_ARRAY(pGruntAllyMGunSounds), 1, ATTN_NORM);
 		}
 		else if (FBitSet(pev->weapons, HGruntAllyWeaponFlag::Saw))
 		{
@@ -1257,22 +1276,11 @@ void CHGruntAlly::Precache()
 
 	TalkInit();
 
-	PRECACHE_SOUND("hgrunt/gr_mgun1.wav");
-	PRECACHE_SOUND("hgrunt/gr_mgun2.wav");
+	PRECACHE_SOUND_ARRAY(pGruntAllyMGunSounds);
 
-	PRECACHE_SOUND("fgrunt/death1.wav");
-	PRECACHE_SOUND("fgrunt/death2.wav");
-	PRECACHE_SOUND("fgrunt/death3.wav");
-	PRECACHE_SOUND("fgrunt/death4.wav");
-	PRECACHE_SOUND("fgrunt/death5.wav");
-	PRECACHE_SOUND("fgrunt/death6.wav");
+	PRECACHE_SOUND_ARRAY(pGruntAllyDieSounds);
 
-	PRECACHE_SOUND("fgrunt/pain1.wav");
-	PRECACHE_SOUND("fgrunt/pain2.wav");
-	PRECACHE_SOUND("fgrunt/pain3.wav");
-	PRECACHE_SOUND("fgrunt/pain4.wav");
-	PRECACHE_SOUND("fgrunt/pain5.wav");
-	PRECACHE_SOUND("fgrunt/pain6.wav");
+	PRECACHE_SOUND_ARRAY(pGruntAllyPainSounds);
 
 	PRECACHE_SOUND("hgrunt/gr_reload1.wav");
 
@@ -1395,27 +1403,7 @@ void CHGruntAlly::PainSound()
 			}
 		}
 #endif
-		switch (RANDOM_LONG(0, 7))
-		{
-		case 0:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain3.wav", 1, ATTN_NORM);
-			break;
-		case 1:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain4.wav", 1, ATTN_NORM);
-			break;
-		case 2:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain5.wav", 1, ATTN_NORM);
-			break;
-		case 3:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain1.wav", 1, ATTN_NORM);
-			break;
-		case 4:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain2.wav", 1, ATTN_NORM);
-			break;
-		case 5:
-			EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/pain6.wav", 1, ATTN_NORM);
-			break;
-		}
+		EMIT_SOUND(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pGruntAllyPainSounds), 1, ATTN_NORM);
 
 		m_flNextPainTime = gpGlobals->time + 1;
 	}
@@ -1426,27 +1414,7 @@ void CHGruntAlly::PainSound()
 //=========================================================
 void CHGruntAlly::DeathSound()
 {
-	switch (RANDOM_LONG(0, 5))
-	{
-	case 0:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death1.wav", 1, ATTN_IDLE);
-		break;
-	case 1:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death2.wav", 1, ATTN_IDLE);
-		break;
-	case 2:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death3.wav", 1, ATTN_IDLE);
-		break;
-	case 3:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death4.wav", 1, ATTN_IDLE);
-		break;
-	case 4:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death5.wav", 1, ATTN_IDLE);
-		break;
-	case 5:
-		EMIT_SOUND(ENT(pev), CHAN_VOICE, "fgrunt/death6.wav", 1, ATTN_IDLE);
-		break;
-	}
+	EMIT_SOUND(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pGruntAllyDieSounds), 1, ATTN_IDLE);
 }
 
 //=========================================================
