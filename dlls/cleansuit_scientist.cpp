@@ -103,6 +103,8 @@ public:
 	void DeathSound() override;
 	void PainSound() override;
 
+	static const char* pPainSounds[];
+
 	void TalkInit();
 
 	void Killed(entvars_t* pevAttacker, int iGib) override;
@@ -126,6 +128,15 @@ TYPEDESCRIPTION CCleansuitScientist::m_SaveData[] =
 		DEFINE_FIELD(CCleansuitScientist, m_painTime, FIELD_TIME),
 		DEFINE_FIELD(CCleansuitScientist, m_healTime, FIELD_TIME),
 		DEFINE_FIELD(CCleansuitScientist, m_fearTime, FIELD_TIME),
+};
+
+const char* CCleansuitScientist::pPainSounds[] =
+	{
+		"scientist/sci_pain1.wav",
+		"scientist/sci_pain2.wav",
+		"scientist/sci_pain3.wav",
+		"scientist/sci_pain4.wav",
+		"scientist/sci_pain5.wav",
 };
 
 IMPLEMENT_SAVERESTORE(CCleansuitScientist, CTalkMonster);
@@ -682,11 +693,7 @@ void CCleansuitScientist::Precache()
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/cleansuit_scientist.mdl");
 	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_SOUND("scientist/sci_pain1.wav");
-	PRECACHE_SOUND("scientist/sci_pain2.wav");
-	PRECACHE_SOUND("scientist/sci_pain3.wav");
-	PRECACHE_SOUND("scientist/sci_pain4.wav");
-	PRECACHE_SOUND("scientist/sci_pain5.wav");
+	PRECACHE_SOUND_ARRAY(pPainSounds);
 
 	// every new scientist must call this, otherwise
 	// when a level is loaded, nobody will talk (time is reset to 0)
@@ -790,24 +797,7 @@ void CCleansuitScientist::PainSound()
 
 	m_painTime = gpGlobals->time + RANDOM_FLOAT(0.5, 0.75);
 
-	switch (RANDOM_LONG(0, 4))
-	{
-	case 0:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "scientist/sci_pain1.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	case 1:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "scientist/sci_pain2.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	case 2:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "scientist/sci_pain3.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	case 3:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "scientist/sci_pain4.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	case 4:
-		EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "scientist/sci_pain5.wav", 1, ATTN_NORM, 0, GetVoicePitch());
-		break;
-	}
+	EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, RANDOM_SOUND_ARRAY(pPainSounds), 1, ATTN_NORM, 0, GetVoicePitch());
 }
 
 //=========================================================
