@@ -550,6 +550,44 @@ void EMIT_GROUPNAME_SUIT(edict_t* entity, const char* groupname);
 #define PLAYBACK_EVENT(flags, who, index) PLAYBACK_EVENT_FULL(flags, who, index, 0, g_vecZero, g_vecZero, 0.0, 0.0, 0, 0, 0, 0);
 #define PLAYBACK_EVENT_DELAY(flags, who, index, delay) PLAYBACK_EVENT_FULL(flags, who, index, delay, g_vecZero, g_vecZero, 0.0, 0.0, 0, 0, 0, 0);
 
+// Fallback resource paths used when a required file is missing
+#define FALLBACK_MODEL "models/error.mdl"
+#define FALLBACK_SPRITE "sprites/null.spr"
+#define FALLBACK_SOUND "common/null.wav"
+
+/**
+*	@brief Precache fallback resources (error.mdl, null.spr, null.wav).
+*	Must be called early in CWorld::Precache() before any other safe precache calls.
+*/
+void UTIL_PrecacheFallbackResources();
+
+/**
+*	@brief Safe wrapper for PRECACHE_MODEL. Checks if the file exists and falls back
+*	to error.mdl or null.spr if missing, logging a warning instead of crashing.
+*	@return The precache index of the model (or fallback).
+*/
+int PrecacheModel(const char* path);
+
+/**
+*	@brief Safe wrapper for PRECACHE_SOUND. Checks if the file exists and falls back
+*	to common/null.wav if missing, logging a warning instead of crashing.
+*	@return The precache index of the sound (or fallback).
+*/
+int PrecacheSound(const char* path);
+
+/**
+*	@brief Safe wrapper for PRECACHE_EVENT. Checks if the file exists and falls back
+*	to returning 0 if missing, logging a warning instead of crashing.
+*	@return The precache index of the event (or 0 on failure).
+*/
+unsigned short PrecacheEvent(int type, const char* path);
+
+/**
+*	@brief Safe wrapper for SET_MODEL. Checks if the model was precached (file exists)
+*	and falls back to error.mdl or null.spr if missing, logging a warning instead of crashing.
+*/
+void SetModel(edict_t* entity, const char* path);
+
 #define GROUP_OP_AND 0
 #define GROUP_OP_NAND 1
 
