@@ -580,6 +580,9 @@ void CWorld::Precache()
 	PRECACHE_SOUND("common/null.wav"); // clears sound channels
 	PRECACHE_MODEL("sprites/null.spr"); // LRC
 
+	// Precache fallback resources for safe precache/set_model wrappers
+	UTIL_PrecacheFallbackResources();
+
 	PRECACHE_SOUND("items/suitchargeok1.wav"); //!!! temporary sound for respawning weapons.
 	PRECACHE_SOUND("items/gunpickup2.wav");	   // player picks up a gun.
 

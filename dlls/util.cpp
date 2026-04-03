@@ -25,6 +25,7 @@
 #include "cbase.h"
 #include "saverestore.h"
 #include <time.h>
+#include <cstring>
 #include "shake.h"
 #include "decals.h"
 #include "player.h"
@@ -32,6 +33,154 @@
 #include "gamerules.h"
 #include "game.h"
 #include "UserMessages.h"
+#include "filesystem_utils.h"
+
+// ==========================================
+// Safe resource precache / model set wrappers
+// ==========================================
+
+static bool g_FallbackResourcesPrecached = false;
+
+/**
+*	@brief Returns true if a resource file exists on any search path.
+*/
+static bool UTIL_ResourceExists(const char* path)
+{
+	if (!path || *path == '\0')
+		return false;
+
+	if (g_pFileSystem && g_pFileSystem->FileExists(path))
+		return true;
+
+	// Fallback: use engine LOAD_FILE_FOR_ME for compatibility when g_pFileSystem is unavailable
+	if (!g_pFileSystem)
+	{
+		int length = 0;
+		byte* pData = LOAD_FILE_FOR_ME(path, &length);
+		if (pData)
+		{
+			FREE_FILE(pData);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+*	@brief Returns the appropriate fallback path based on file extension.
+*/
+static const char* UTIL_GetModelFallback(const char* path)
+{
+	if (path)
+	{
+		const char* ext = std::strrchr(path, '.');
+		if (ext && (stricmp(ext, ".spr") == 0))
+			return FALLBACK_SPRITE;
+	}
+	return FALLBACK_MODEL;
+}
+
+void UTIL_PrecacheFallbackResources()
+{
+	if (g_FallbackResourcesPrecached)
+		return;
+
+	// Precache fallback model - if even this is missing, the engine handles it
+	PRECACHE_MODEL(FALLBACK_MODEL);
+	// null.spr and null.wav are already precached elsewhere in CWorld::Precache,
+	// but ensure they are also covered here for safety
+	PRECACHE_MODEL(FALLBACK_SPRITE);
+	PRECACHE_SOUND(FALLBACK_SOUND);
+
+	g_FallbackResourcesPrecached = true;
+}
+
+int PrecacheModel(const char* path)
+{
+	if (!path || *path == '\0')
+	{
+		ALERT(at_warning, "PrecacheModel: NULL or empty model path, using fallback\n");
+		return PRECACHE_MODEL(FALLBACK_MODEL);
+	}
+
+	if (UTIL_ResourceExists(path))
+	{
+		return PRECACHE_MODEL(path);
+	}
+
+	const char* fallback = UTIL_GetModelFallback(path);
+	ALERT(at_warning, "PrecacheModel: File \"%s\" not found, using fallback \"%s\"\n", path, fallback);
+	return PRECACHE_MODEL(fallback);
+}
+
+int PrecacheSound(const char* path)
+{
+	if (!path || *path == '\0')
+	{
+		ALERT(at_warning, "PrecacheSound: NULL or empty sound path, using fallback\n");
+		return PRECACHE_SOUND(FALLBACK_SOUND);
+	}
+
+	// Engine resolves sounds relative to "sound/" directory
+	char fullpath[512];
+	snprintf(fullpath, sizeof(fullpath), "sound/%s", path);
+
+	if (UTIL_ResourceExists(fullpath))
+	{
+		return PRECACHE_SOUND(path);
+	}
+
+	ALERT(at_warning, "PrecacheSound: File \"%s\" not found, using fallback \"%s\"\n", path, FALLBACK_SOUND);
+	return PRECACHE_SOUND(FALLBACK_SOUND);
+}
+
+unsigned short PrecacheEvent(int type, const char* path)
+{
+	if (!path || *path == '\0')
+	{
+		ALERT(at_warning, "PrecacheEvent: NULL or empty event path\n");
+		return 0;
+	}
+
+	if (UTIL_ResourceExists(path))
+	{
+		return PRECACHE_EVENT(type, path);
+	}
+
+	ALERT(at_warning, "PrecacheEvent: File \"%s\" not found, event will not fire\n", path);
+	return 0;
+}
+
+void SetModel(edict_t* entity, const char* path)
+{
+	if (!entity)
+	{
+		ALERT(at_warning, "SetModel: NULL entity\n");
+		return;
+	}
+
+	if (!path || *path == '\0')
+	{
+		ALERT(at_warning, "SetModel: NULL or empty model path for entity %d, using fallback\n",
+			ENTINDEX(entity));
+		SET_MODEL(entity, FALLBACK_MODEL);
+		return;
+	}
+
+	if (UTIL_ResourceExists(path))
+	{
+		SET_MODEL(entity, path);
+		return;
+	}
+
+	const char* fallback = UTIL_GetModelFallback(path);
+	ALERT(at_warning, "SetModel: File \"%s\" not found for entity %d, using fallback \"%s\"\n",
+		path, ENTINDEX(entity), fallback);
+	SET_MODEL(entity, fallback);
+}
+
+// ==========================================
 
 float UTIL_WeaponTimeBase()
 {
