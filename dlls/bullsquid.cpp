@@ -96,7 +96,7 @@ void CSquidSpit::Spawn()
 	pev->rendermode = kRenderTransAlpha;
 	pev->renderamt = 255;
 
-	SET_MODEL(ENT(pev), "sprites/bigspit.spr");
+	SetModel(ENT(pev), "sprites/bigspit.spr");
 	pev->frame = 0;
 	pev->scale = 0.5;
 
@@ -692,9 +692,9 @@ void CBullsquid::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/bullsquid.mdl");
+		SetModel(ENT(pev), "models/bullsquid.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-32, -32, 0), Vector(32, 32, 64));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -718,13 +718,13 @@ void CBullsquid::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/bullsquid.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
-	PRECACHE_MODEL("sprites/bigspit.spr"); // spit projectile.
+	PrecacheModel("sprites/bigspit.spr"); // spit projectile.
 
-	iSquidSpitSprite = PRECACHE_MODEL("sprites/tinyspit.spr"); // client side spittle.
+	iSquidSpitSprite = PrecacheModel("sprites/tinyspit.spr"); // client side spittle.
 
-	PRECACHE_SOUND("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
+	PrecacheSound("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
 
 	PRECACHE_SOUND_ARRAY(pAttackSounds);
 
@@ -736,7 +736,7 @@ void CBullsquid::Precache()
 
 	PRECACHE_SOUND_ARRAY(pAttackGrowlSounds);
 
-	PRECACHE_SOUND("bullchicken/bc_acid1.wav");
+	PrecacheSound("bullchicken/bc_acid1.wav");
 
 	PRECACHE_SOUND_ARRAY(pBiteSounds);
 

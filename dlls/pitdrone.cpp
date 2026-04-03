@@ -90,11 +90,11 @@ IMPLEMENT_SAVERESTORE(CPitdroneSpike, CBaseEntity);
 
 void CPitdroneSpike::Precache()
 {
-	PRECACHE_MODEL("models/pit_drone_spike.mdl");
-	PRECACHE_SOUND("weapons/xbow_hitbod1.wav");
-	PRECACHE_SOUND("weapons/xbow_hit1.wav");
+	PrecacheModel("models/pit_drone_spike.mdl");
+	PrecacheSound("weapons/xbow_hitbod1.wav");
+	PrecacheSound("weapons/xbow_hit1.wav");
 
-	iSpikeTrail = PRECACHE_MODEL("sprites/spike_trail.spr");
+	iSpikeTrail = PrecacheModel("sprites/spike_trail.spr");
 }
 
 void CPitdroneSpike::Spawn()
@@ -107,7 +107,7 @@ void CPitdroneSpike::Spawn()
 	pev->flags |= FL_MONSTER;
 	pev->health = 1;
 
-	SET_MODEL(ENT(pev), "models/pit_drone_spike.mdl");
+	SetModel(ENT(pev), "models/pit_drone_spike.mdl");
 	pev->frame = 0;
 	pev->scale = 0.5;
 
@@ -705,9 +705,9 @@ void CPitdrone::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/pit_drone.mdl");
+		SetModel(ENT(pev), "models/pit_drone.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-16, -16, 0), Vector(16, 16, 48));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -752,14 +752,14 @@ void CPitdrone::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/pit_drone.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL("models/pit_drone_gibs.mdl");
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel("models/pit_drone_gibs.mdl");
 
 	UTIL_PrecacheOther("pitdronespike");
 
-	iPitdroneSpitSprite = PRECACHE_MODEL("sprites/tinyspit.spr"); // client side spittle.
+	iPitdroneSpitSprite = PrecacheModel("sprites/tinyspit.spr"); // client side spittle.
 
-	PRECACHE_SOUND("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
+	PrecacheSound("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
 
 	PRECACHE_SOUND_ARRAY(pAlertSounds);
 	PRECACHE_SOUND_ARRAY(pAttackSpikeSounds);
@@ -769,7 +769,7 @@ void CPitdrone::Precache()
 	PRECACHE_SOUND_ARRAY(pIdleSounds);
 	PRECACHE_SOUND_ARRAY(pMeleeAttackSounds);
 	PRECACHE_SOUND_ARRAY(pPainSounds);
-	PRECACHE_SOUND("pitdrone/pit_drone_run_on_grate.wav");
+	PrecacheSound("pitdrone/pit_drone_run_on_grate.wav");
 	PRECACHE_SOUND_ARRAY(pBiteSounds);
 }
 

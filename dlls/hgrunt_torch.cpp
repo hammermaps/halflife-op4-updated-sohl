@@ -1141,9 +1141,9 @@ void COFTorchAlly::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/hgrunt_torch.mdl");
+		SetModel(ENT(pev), "models/hgrunt_torch.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -1216,8 +1216,8 @@ void COFTorchAlly::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/hgrunt_torch.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL(TORCH_BEAM_SPRITE);
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel(TORCH_BEAM_SPRITE);
 
 	TalkInit();
 
@@ -1227,14 +1227,14 @@ void COFTorchAlly::Precache()
 
 	PRECACHE_SOUND_ARRAY(pTorchAllyPainSounds);
 
-	PRECACHE_SOUND("weapons/desert_eagle_fire.wav");
-	PRECACHE_SOUND("weapons/desert_eagle_reload.wav");
+	PrecacheSound("weapons/desert_eagle_fire.wav");
+	PrecacheSound("weapons/desert_eagle_reload.wav");
 
-	PRECACHE_SOUND("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
+	PrecacheSound("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
 
-	PRECACHE_SOUND("fgrunt/torch_light.wav");
-	PRECACHE_SOUND("fgrunt/torch_cut_loop.wav");
-	PRECACHE_SOUND("fgrunt/medic.wav");
+	PrecacheSound("fgrunt/torch_light.wav");
+	PrecacheSound("fgrunt/torch_cut_loop.wav");
+	PrecacheSound("fgrunt/medic.wav");
 
 	// get voice pitch
 	m_voicePitch = 95;
@@ -2807,7 +2807,7 @@ void COFTorchAllyRepel::Spawn()
 void COFTorchAllyRepel::Precache()
 {
 	UTIL_PrecacheOther("monster_human_torch_ally");
-	m_iSpriteTexture = PRECACHE_MODEL("sprites/rope.spr");
+	m_iSpriteTexture = PrecacheModel("sprites/rope.spr");
 }
 
 void COFTorchAllyRepel::RepelUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)

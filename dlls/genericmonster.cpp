@@ -105,7 +105,7 @@ void CGenericMonster::Spawn()
 		return;
 	}
 
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	/*
 	if ( FStrEq( STRING(pev->model), "models/player.mdl" ) )
@@ -141,7 +141,7 @@ void CGenericMonster::Spawn()
 void CGenericMonster::Precache()
 {
 	if (!FStringNull(pev->model))
-		PRECACHE_MODEL((char*)STRING(pev->model));
+		PrecacheModel((char*)STRING(pev->model));
 }
 
 //=========================================================

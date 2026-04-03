@@ -53,8 +53,8 @@ void COFSkeleton::Spawn()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/skeleton.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

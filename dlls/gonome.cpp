@@ -88,14 +88,14 @@ void COFGonomeGuts::Spawn()
 	//TODO: probably shouldn't be assinging to x every time
 	if (g_Language == LANGUAGE_GERMAN)
 	{
-		SET_MODEL(edict(), "sprites/bigspit.spr");
+		SetModel(edict(), "sprites/bigspit.spr");
 		pev->rendercolor.x = 0;
 		pev->rendercolor.x = 255;
 		pev->rendercolor.x = 0;
 	}
 	else
 	{
-		SET_MODEL(edict(), "sprites/bigspit.spr");
+		SetModel(edict(), "sprites/bigspit.spr");
 		pev->rendercolor.x = 128;
 		pev->rendercolor.x = 32;
 		pev->rendercolor.x = 128;
@@ -606,9 +606,9 @@ void COFGonome::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/gonome.mdl");
+		SetModel(ENT(pev), "models/gonome.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -636,39 +636,39 @@ void COFGonome::Precache()
 
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/gonome.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL("sprites/bigspit.spr");
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel("sprites/bigspit.spr");
 
 	for (i = 0; i < ARRAYSIZE(pAttackHitSounds); i++)
-		PRECACHE_SOUND((char*)pAttackHitSounds[i]);
+		PrecacheSound((char*)pAttackHitSounds[i]);
 
 	for (i = 0; i < ARRAYSIZE(pAttackMissSounds); i++)
-		PRECACHE_SOUND((char*)pAttackMissSounds[i]);
+		PrecacheSound((char*)pAttackMissSounds[i]);
 
 	for (i = 0; i < ARRAYSIZE(pIdleSounds); i++)
-		PRECACHE_SOUND((char*)pIdleSounds[i]);
+		PrecacheSound((char*)pIdleSounds[i]);
 
 	for (i = 0; i < ARRAYSIZE(pAlertSounds); i++)
-		PRECACHE_SOUND((char*)pAlertSounds[i]);
+		PrecacheSound((char*)pAlertSounds[i]);
 
 	for (i = 0; i < ARRAYSIZE(pPainSounds); i++)
-		PRECACHE_SOUND((char*)pPainSounds[i]);
+		PrecacheSound((char*)pPainSounds[i]);
 
-	PRECACHE_SOUND("gonome/gonome_death2.wav");
-	PRECACHE_SOUND("gonome/gonome_death3.wav");
-	PRECACHE_SOUND("gonome/gonome_death4.wav");
+	PrecacheSound("gonome/gonome_death2.wav");
+	PrecacheSound("gonome/gonome_death3.wav");
+	PrecacheSound("gonome/gonome_death4.wav");
 
-	PRECACHE_SOUND("gonome/gonome_jumpattack.wav");
+	PrecacheSound("gonome/gonome_jumpattack.wav");
 
-	PRECACHE_SOUND("gonome/gonome_melee1.wav");
-	PRECACHE_SOUND("gonome/gonome_melee2.wav");
+	PrecacheSound("gonome/gonome_melee1.wav");
+	PrecacheSound("gonome/gonome_melee2.wav");
 
-	PRECACHE_SOUND("gonome/gonome_run.wav");
-	PRECACHE_SOUND("gonome/gonome_eat.wav");
+	PrecacheSound("gonome/gonome_run.wav");
+	PrecacheSound("gonome/gonome_eat.wav");
 
-	PRECACHE_SOUND("bullchicken/bc_acid1.wav");
-	PRECACHE_SOUND("bullchicken/bc_spithit1.wav");
-	PRECACHE_SOUND("bullchicken/bc_spithit2.wav");
+	PrecacheSound("bullchicken/bc_acid1.wav");
+	PrecacheSound("bullchicken/bc_spithit1.wav");
+	PrecacheSound("bullchicken/bc_spithit2.wav");
 }
 
 //=========================================================
@@ -931,8 +931,8 @@ void CDeadGonome::Spawn()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/gonome.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->sequence = 0;

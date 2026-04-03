@@ -283,9 +283,9 @@ void CNihilanth::Spawn()
 	pev->solid = SOLID_BBOX;
 
 	if (FStringNull(pev->model))
-		SET_MODEL(edict(), "models/nihilanth.mdl");
+		SetModel(edict(), "models/nihilanth.mdl");
 	else
-		SET_MODEL(edict(), STRING(pev->model));
+		SetModel(edict(), STRING(pev->model));
 	// UTIL_SetSize(pev, Vector( -300, -300, 0), Vector(300, 300, 512));
 	UTIL_SetSize(pev, Vector(-32, -32, 0), Vector(32, 32, 64));
 	UTIL_SetOrigin(pev, pev->origin);
@@ -338,8 +338,8 @@ void CNihilanth::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/nihilanth.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL("sprites/lgtning.spr");
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel("sprites/lgtning.spr");
 	UTIL_PrecacheOther("nihilanth_energy_ball");
 	UTIL_PrecacheOther("monster_alien_controller");
 	UTIL_PrecacheOther("monster_alien_slave");
@@ -351,7 +351,7 @@ void CNihilanth::Precache()
 	PRECACHE_SOUND_ARRAY(pLaughSounds);
 	PRECACHE_SOUND_ARRAY(pPainSounds);
 	PRECACHE_SOUND_ARRAY(pDeathSounds);
-	PRECACHE_SOUND("debris/beamstart7.wav");
+	PrecacheSound("debris/beamstart7.wav");
 }
 
 
@@ -1326,16 +1326,16 @@ void CNihilanthHVR::Spawn()
 
 void CNihilanthHVR::Precache()
 {
-	PRECACHE_MODEL("sprites/flare6.spr");
-	PRECACHE_MODEL("sprites/nhth1.spr");
-	PRECACHE_MODEL("sprites/exit1.spr");
-	PRECACHE_MODEL("sprites/tele1.spr");
-	PRECACHE_MODEL("sprites/animglow01.spr");
-	PRECACHE_MODEL("sprites/xspark4.spr");
-	PRECACHE_MODEL("sprites/muzzleflash3.spr");
-	PRECACHE_SOUND("debris/zap4.wav");
-	PRECACHE_SOUND("weapons/electro4.wav");
-	PRECACHE_SOUND("x/x_teleattack1.wav");
+	PrecacheModel("sprites/flare6.spr");
+	PrecacheModel("sprites/nhth1.spr");
+	PrecacheModel("sprites/exit1.spr");
+	PrecacheModel("sprites/tele1.spr");
+	PrecacheModel("sprites/animglow01.spr");
+	PrecacheModel("sprites/xspark4.spr");
+	PrecacheModel("sprites/muzzleflash3.spr");
+	PrecacheSound("debris/zap4.wav");
+	PrecacheSound("weapons/electro4.wav");
+	PrecacheSound("x/x_teleattack1.wav");
 }
 
 
@@ -1345,10 +1345,10 @@ void CNihilanthHVR::CircleInit(CBaseEntity* pTarget)
 	pev->movetype = MOVETYPE_NOCLIP;
 	pev->solid = SOLID_NOT;
 
-	// SET_MODEL(edict(), "sprites/flare6.spr");
+	// SetModel(edict(), "sprites/flare6.spr");
 	// pev->scale = 3.0;
-	// SET_MODEL(edict(), "sprites/xspark4.spr");
-	SET_MODEL(edict(), "sprites/muzzleflash3.spr");
+	// SetModel(edict(), "sprites/xspark4.spr");
+	SetModel(edict(), "sprites/muzzleflash3.spr");
 	pev->rendercolor.x = 255;
 	pev->rendercolor.y = 224;
 	pev->rendercolor.z = 192;
@@ -1452,7 +1452,7 @@ void CNihilanthHVR::ZapInit(CBaseEntity* pEnemy)
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(edict(), "sprites/nhth1.spr");
+	SetModel(edict(), "sprites/nhth1.spr");
 
 	pev->rendercolor.x = 255;
 	pev->rendercolor.y = 255;
@@ -1581,7 +1581,7 @@ void CNihilanthHVR::TeleportInit(CNihilanth* pOwner, CBaseEntity* pEnemy, CBaseE
 	pev->rendercolor.z = 255;
 	pev->velocity.z *= 0.2;
 
-	SET_MODEL(edict(), "sprites/exit1.spr");
+	SetModel(edict(), "sprites/exit1.spr");
 
 	m_pNihilanth = pOwner;
 	m_hEnemy = pEnemy;
@@ -1606,7 +1606,7 @@ void CNihilanthHVR::GreenBallInit()
 	pev->rendercolor.z = 255;
 	pev->scale = 1.0;
 
-	SET_MODEL(edict(), "sprites/exit1.spr");
+	SetModel(edict(), "sprites/exit1.spr");
 
 	SetTouch(&CNihilanthHVR::RemoveTouch);
 }

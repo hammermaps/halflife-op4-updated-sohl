@@ -768,9 +768,9 @@ void CGargantua::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/garg.mdl");
+		SetModel(ENT(pev), "models/garg.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-40, -40, 0), Vector(40, 40, 214));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -799,13 +799,13 @@ void CGargantua::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/garg.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL(GARG_EYE_SPRITE_NAME);
-	PRECACHE_MODEL(GARG_BEAM_SPRITE_NAME);
-	PRECACHE_MODEL(GARG_BEAM_SPRITE2);
-	gStompSprite = PRECACHE_MODEL(GARG_STOMP_SPRITE_NAME);
-	gGargGibModel = PRECACHE_MODEL(GARG_GIB_MODEL);
-	PRECACHE_SOUND(GARG_STOMP_BUZZ_SOUND);
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel(GARG_EYE_SPRITE_NAME);
+	PrecacheModel(GARG_BEAM_SPRITE_NAME);
+	PrecacheModel(GARG_BEAM_SPRITE2);
+	gStompSprite = PrecacheModel(GARG_STOMP_SPRITE_NAME);
+	gGargGibModel = PrecacheModel(GARG_GIB_MODEL);
+	PrecacheSound(GARG_STOMP_BUZZ_SOUND);
 
 	PRECACHE_SOUND_ARRAY(pAttackHitSounds);
 	PRECACHE_SOUND_ARRAY(pBeamAttackSounds);

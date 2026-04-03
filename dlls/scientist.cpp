@@ -680,9 +680,9 @@ void CScientist::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), GetScientistModel());
+		SetModel(ENT(pev), GetScientistModel());
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -715,7 +715,7 @@ void CScientist::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING(GetScientistModel());
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 	PRECACHE_SOUND_ARRAY(pPainSounds);
 
 	// every new scientist must call this, otherwise
@@ -1194,8 +1194,8 @@ LINK_ENTITY_TO_CLASS(monster_scientist_dead, CDeadScientist);
 //
 void CDeadScientist::Spawn()
 {
-	PRECACHE_MODEL(GetScientistModel());
-	SET_MODEL(ENT(pev), GetScientistModel());
+	PrecacheModel(GetScientistModel());
+	SetModel(ENT(pev), GetScientistModel());
 
 	pev->effects = 0;
 	pev->sequence = 0;
@@ -1278,8 +1278,8 @@ void CSittingScientist::Spawn()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING(GetScientistModel());
-	PRECACHE_MODEL(STRING(pev->model));
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 	Precache();
 	InitBoneControllers();
 

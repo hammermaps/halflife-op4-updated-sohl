@@ -469,9 +469,9 @@ void COtis::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/otis.mdl");
+		SetModel(ENT(pev), "models/otis.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -511,11 +511,11 @@ void COtis::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/otis.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
 	PRECACHE_SOUND_ARRAY(pAttackSounds);
 
-	PRECACHE_SOUND("weapons/de_shot1.wav");
+	PrecacheSound("weapons/de_shot1.wav");
 
 	PRECACHE_SOUND_ARRAY(pPainSounds);
 	PRECACHE_SOUND_ARRAY(pDeathSounds);
@@ -890,8 +890,8 @@ void CDeadOtis::Spawn()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/otis.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

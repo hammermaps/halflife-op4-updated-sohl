@@ -271,18 +271,18 @@ void CBaseTurret::Spawn()
 
 void CBaseTurret::Precache()
 {
-	PRECACHE_SOUND("turret/tu_fire1.wav");
-	PRECACHE_SOUND("turret/tu_ping.wav");
-	PRECACHE_SOUND("turret/tu_active2.wav");
-	PRECACHE_SOUND("turret/tu_die.wav");
-	PRECACHE_SOUND("turret/tu_die2.wav");
-	PRECACHE_SOUND("turret/tu_die3.wav");
+	PrecacheSound("turret/tu_fire1.wav");
+	PrecacheSound("turret/tu_ping.wav");
+	PrecacheSound("turret/tu_active2.wav");
+	PrecacheSound("turret/tu_die.wav");
+	PrecacheSound("turret/tu_die2.wav");
+	PrecacheSound("turret/tu_die3.wav");
 	// PRECACHE_SOUND ("turret/tu_retract.wav"); // just use deploy sound to save memory
-	PRECACHE_SOUND("turret/tu_deploy.wav");
-	PRECACHE_SOUND("turret/tu_spinup.wav");
-	PRECACHE_SOUND("turret/tu_spindown.wav");
-	PRECACHE_SOUND("turret/tu_search.wav");
-	PRECACHE_SOUND("turret/tu_alert.wav");
+	PrecacheSound("turret/tu_deploy.wav");
+	PrecacheSound("turret/tu_spinup.wav");
+	PrecacheSound("turret/tu_spindown.wav");
+	PrecacheSound("turret/tu_search.wav");
+	PrecacheSound("turret/tu_alert.wav");
 }
 
 #define TURRET_GLOW_SPRITE "sprites/flare3.spr"
@@ -291,9 +291,9 @@ void CTurret::Spawn()
 {
 	Precache();
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/turret.mdl");
+		SetModel(ENT(pev), "models/turret.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	pev->health = gSkillData.turretHealth;
 	m_HackedGunPos = Vector(0, 0, 12.75);
 	m_flMaxSpin = TURRET_MAXSPIN;
@@ -321,17 +321,17 @@ void CTurret::Precache()
 	CBaseTurret::Precache();
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/turret.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL(TURRET_GLOW_SPRITE);
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel(TURRET_GLOW_SPRITE);
 }
 
 void CMiniTurret::Spawn()
 {
 	Precache();
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/miniturret.mdl");
+		SetModel(ENT(pev), "models/miniturret.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	pev->health = gSkillData.miniturretHealth;
 	m_HackedGunPos = Vector(0, 0, 12.75);
 	m_flMaxSpin = 0;
@@ -353,10 +353,10 @@ void CMiniTurret::Precache()
 	CBaseTurret::Precache();
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/miniturret.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_SOUND("weapons/hks1.wav");
-	PRECACHE_SOUND("weapons/hks2.wav");
-	PRECACHE_SOUND("weapons/hks3.wav");
+	PrecacheModel(STRING(pev->model));
+	PrecacheSound("weapons/hks1.wav");
+	PrecacheSound("weapons/hks2.wav");
+	PrecacheSound("weapons/hks3.wav");
 }
 
 void CBaseTurret::Initialize()
@@ -1182,16 +1182,16 @@ void CSentry::Precache()
 	CBaseTurret::Precache();
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/sentry.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 }
 
 void CSentry::Spawn()
 {
 	Precache();
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/sentry.mdl");
+		SetModel(ENT(pev), "models/sentry.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	pev->health = gSkillData.sentryHealth;
 	m_HackedGunPos = Vector(0, 0, 48);
 	pev->view_ofs.z = 48;

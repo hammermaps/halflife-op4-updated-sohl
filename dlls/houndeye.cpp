@@ -386,9 +386,9 @@ void CHoundeye::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/houndeye.mdl");
+		SetModel(ENT(pev), "models/houndeye.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-16, -16, 0), Vector(16, 16, 36));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -413,7 +413,7 @@ void CHoundeye::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/houndeye.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
 	PRECACHE_SOUND_ARRAY(pAlertSounds);
 
@@ -424,13 +424,13 @@ void CHoundeye::Precache()
 	PRECACHE_SOUND_ARRAY(pHuntSounds);
 
 	PRECACHE_SOUND_ARRAY(pPainSounds);
-	PRECACHE_SOUND("houndeye/he_pain1.wav"); // used by HOUND_AE_ANGERSOUND2
+	PrecacheSound("houndeye/he_pain1.wav"); // used by HOUND_AE_ANGERSOUND2
 
 	PRECACHE_SOUND_ARRAY(pAttackSounds);
 
 	PRECACHE_SOUND_ARRAY(pBlastSounds);
 
-	m_iSpriteTexture = PRECACHE_MODEL("sprites/shockwave.spr");
+	m_iSpriteTexture = PrecacheModel("sprites/shockwave.spr");
 }
 
 //=========================================================
@@ -1301,8 +1301,8 @@ LINK_ENTITY_TO_CLASS(monster_houndeye_dead, CDeadHoundeye);
 //=========================================================
 void CDeadHoundeye::Spawn()
 {
-	PRECACHE_MODEL("models/houndeye_dead.mdl");
-	SET_MODEL(ENT(pev), "models/houndeye_dead.mdl");
+	PrecacheModel("models/houndeye_dead.mdl");
+	SetModel(ENT(pev), "models/houndeye_dead.mdl");
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

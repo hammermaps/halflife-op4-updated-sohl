@@ -86,7 +86,7 @@ void CFuncWall::Spawn()
 
 	pev->movetype = MOVETYPE_PUSH; // so it doesn't get pushed by anything
 	pev->solid = SOLID_BSP;
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	// If it can't move/go away, it's really part of the world
 	pev->flags |= FL_WORLDBRUSH;
@@ -255,7 +255,7 @@ void CFuncIllusionary::Spawn()
 	pev->angles = g_vecZero;
 	pev->movetype = MOVETYPE_NONE;
 	pev->solid = SOLID_NOT; // always solid_not
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	// I'd rather eat the network bandwidth of this than figure out how to save/restore
 	// these entities after they have been moved to the client, or respawn them ala Quake
@@ -448,7 +448,7 @@ void CFuncRotating::Spawn()
 	}
 
 	UTIL_SetOrigin(pev, pev->origin);
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	// SoHL 1.5 - Auto-detect rotation center if no origin brush is set
 	if (pev->origin == g_vecZero)
@@ -499,7 +499,7 @@ void CFuncRotating::Precache()
 	{
 		// if a path is set for a wave, use it
 
-		PRECACHE_SOUND(szSoundFile);
+		PrecacheSound(szSoundFile);
 
 		pev->noiseRunning = ALLOC_STRING(szSoundFile);
 	}
@@ -509,23 +509,23 @@ void CFuncRotating::Precache()
 		switch (m_sounds)
 		{
 		case 1:
-			PRECACHE_SOUND("fans/fan1.wav");
+			PrecacheSound("fans/fan1.wav");
 			pev->noiseRunning = ALLOC_STRING("fans/fan1.wav");
 			break;
 		case 2:
-			PRECACHE_SOUND("fans/fan2.wav");
+			PrecacheSound("fans/fan2.wav");
 			pev->noiseRunning = ALLOC_STRING("fans/fan2.wav");
 			break;
 		case 3:
-			PRECACHE_SOUND("fans/fan3.wav");
+			PrecacheSound("fans/fan3.wav");
 			pev->noiseRunning = ALLOC_STRING("fans/fan3.wav");
 			break;
 		case 4:
-			PRECACHE_SOUND("fans/fan4.wav");
+			PrecacheSound("fans/fan4.wav");
 			pev->noiseRunning = ALLOC_STRING("fans/fan4.wav");
 			break;
 		case 5:
-			PRECACHE_SOUND("fans/fan5.wav");
+			PrecacheSound("fans/fan5.wav");
 			pev->noiseRunning = ALLOC_STRING("fans/fan5.wav");
 			break;
 
@@ -533,7 +533,7 @@ void CFuncRotating::Precache()
 		default:
 			if (!FStringNull(pev->message) && strlen(szSoundFile) > 0)
 			{
-				PRECACHE_SOUND(szSoundFile);
+				PrecacheSound(szSoundFile);
 
 				pev->noiseRunning = ALLOC_STRING(szSoundFile);
 				break;
@@ -821,7 +821,7 @@ void CPendulum::Spawn()
 		pev->solid = SOLID_BSP;
 	pev->movetype = MOVETYPE_PUSH;
 	UTIL_SetOrigin(pev, pev->origin);
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	if (m_distance == 0)
 		return;
@@ -995,7 +995,7 @@ LINK_ENTITY_TO_CLASS(func_shine, CShine);
 void CShine::Spawn()
 {
 	pev->solid = SOLID_NOT;
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 	pev->movetype = MOVETYPE_NONE;
 	pev->effects |= EF_NODRAW;
 }

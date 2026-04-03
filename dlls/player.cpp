@@ -202,7 +202,7 @@ static void ThrowGib(entvars_t *pev, char *szGibModel, float flDamage)   \
 	entvars_t *pevNew = VARS(pentNew);                                   \
 																	   \ \
 	pevNew->origin = pev->origin;                                        \
-	SET_MODEL(ENT(pevNew), szGibModel);                                  \
+	SetModel(ENT(pevNew), szGibModel);                                  \
 	UTIL_SetSize(pevNew, g_vecZero, g_vecZero);                          \
 																	   \ \
 	pevNew->velocity		= VecVelocityForDamage(flDamage);                  \
@@ -221,7 +221,7 @@ static void ThrowGib(entvars_t *pev, char *szGibModel, float flDamage)   \
 																	   \ \
 static void ThrowHead(entvars_t *pev, char *szGibModel, floatflDamage)   \
 {                                                                        \
-	SET_MODEL(ENT(pev), szGibModel);                                     \
+	SetModel(ENT(pev), szGibModel);                                     \
 	pev->frame			= 0;                                                    \
 	DontThink();                                                          \
 	pev->movetype		= MOVETYPE_BOUNCE;                                    \
@@ -3195,7 +3195,7 @@ void CBasePlayer::Spawn()
 
 	g_pGameRules->GetPlayerSpawnSpot(this);
 
-	SET_MODEL(ENT(pev), "models/player.mdl");
+	SetModel(ENT(pev), "models/player.mdl");
 	g_ulModelIndexPlayer = pev->modelindex;
 	pev->sequence = LookupActivity(ACT_IDLE);
 
@@ -5575,8 +5575,8 @@ LINK_ENTITY_TO_CLASS(monster_hevsuit_dead, CDeadHEV);
 //=========================================================
 void CDeadHEV::Spawn()
 {
-	PRECACHE_MODEL("models/deadhaz.mdl");
-	SET_MODEL(ENT(pev), "models/deadhaz.mdl");
+	PrecacheModel("models/deadhaz.mdl");
+	SetModel(ENT(pev), "models/deadhaz.mdl");
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

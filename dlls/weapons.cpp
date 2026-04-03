@@ -365,42 +365,42 @@ void W_Precache()
 
 	UTIL_PrecacheOtherWeapon("weapon_penguin");
 
-	PRECACHE_SOUND("weapons/spore_hit1.wav");
-	PRECACHE_SOUND("weapons/spore_hit2.wav");
-	PRECACHE_SOUND("weapons/spore_hit3.wav");
+	PrecacheSound("weapons/spore_hit1.wav");
+	PrecacheSound("weapons/spore_hit2.wav");
+	PrecacheSound("weapons/spore_hit3.wav");
 
 	if (g_pGameRules->IsDeathmatch())
 	{
 		UTIL_PrecacheOther("weaponbox"); // container for dropped deathmatch weapons
 	}
 
-	g_sModelIndexFireball = PRECACHE_MODEL("sprites/zerogxplode.spr");	// fireball
-	g_sModelIndexWExplosion = PRECACHE_MODEL("sprites/WXplo1.spr");		// underwater fireball
-	g_sModelIndexSmoke = PRECACHE_MODEL("sprites/steam1.spr");			// smoke
-	g_sModelIndexBubbles = PRECACHE_MODEL("sprites/bubble.spr");		//bubbles
-	g_sModelIndexBloodSpray = PRECACHE_MODEL("sprites/bloodspray.spr"); // initial blood
-	g_sModelIndexBloodDrop = PRECACHE_MODEL("sprites/blood.spr");		// splattered blood
+	g_sModelIndexFireball = PrecacheModel("sprites/zerogxplode.spr");	// fireball
+	g_sModelIndexWExplosion = PrecacheModel("sprites/WXplo1.spr");		// underwater fireball
+	g_sModelIndexSmoke = PrecacheModel("sprites/steam1.spr");			// smoke
+	g_sModelIndexBubbles = PrecacheModel("sprites/bubble.spr");		//bubbles
+	g_sModelIndexBloodSpray = PrecacheModel("sprites/bloodspray.spr"); // initial blood
+	g_sModelIndexBloodDrop = PrecacheModel("sprites/blood.spr");		// splattered blood
 
-	g_sModelIndexLaser = PRECACHE_MODEL((char*)g_pModelNameLaser);
-	g_sModelIndexLaserDot = PRECACHE_MODEL("sprites/laserdot.spr");
+	g_sModelIndexLaser = PrecacheModel((char*)g_pModelNameLaser);
+	g_sModelIndexLaserDot = PrecacheModel("sprites/laserdot.spr");
 
 
 	// used by explosions
-	PRECACHE_MODEL("models/grenade.mdl");
-	PRECACHE_MODEL("sprites/explode1.spr");
+	PrecacheModel("models/grenade.mdl");
+	PrecacheModel("sprites/explode1.spr");
 
-	PRECACHE_SOUND("weapons/debris1.wav"); // explosion aftermaths
-	PRECACHE_SOUND("weapons/debris2.wav"); // explosion aftermaths
-	PRECACHE_SOUND("weapons/debris3.wav"); // explosion aftermaths
+	PrecacheSound("weapons/debris1.wav"); // explosion aftermaths
+	PrecacheSound("weapons/debris2.wav"); // explosion aftermaths
+	PrecacheSound("weapons/debris3.wav"); // explosion aftermaths
 
-	PRECACHE_SOUND("weapons/grenade_hit1.wav"); //grenade
-	PRECACHE_SOUND("weapons/grenade_hit2.wav"); //grenade
-	PRECACHE_SOUND("weapons/grenade_hit3.wav"); //grenade
+	PrecacheSound("weapons/grenade_hit1.wav"); //grenade
+	PrecacheSound("weapons/grenade_hit2.wav"); //grenade
+	PrecacheSound("weapons/grenade_hit3.wav"); //grenade
 
-	PRECACHE_SOUND("weapons/bullet_hit1.wav"); // hit by bullet
-	PRECACHE_SOUND("weapons/bullet_hit2.wav"); // hit by bullet
+	PrecacheSound("weapons/bullet_hit1.wav"); // hit by bullet
+	PrecacheSound("weapons/bullet_hit2.wav"); // hit by bullet
 
-	PRECACHE_SOUND("items/weapondrop1.wav"); // weapon falls to the ground
+	PrecacheSound("items/weapondrop1.wav"); // weapon falls to the ground
 }
 
 
@@ -1118,7 +1118,7 @@ IMPLEMENT_SAVERESTORE(CWeaponBox, CBaseEntity);
 //=========================================================
 void CWeaponBox::Precache()
 {
-	PRECACHE_MODEL("models/w_weaponbox.mdl");
+	PrecacheModel("models/w_weaponbox.mdl");
 }
 
 //=========================================================
@@ -1152,7 +1152,7 @@ void CWeaponBox::Spawn()
 
 	UTIL_SetSize(pev, g_vecZero, g_vecZero);
 
-	SET_MODEL(ENT(pev), "models/w_weaponbox.mdl");
+	SetModel(ENT(pev), "models/w_weaponbox.mdl");
 }
 
 //=========================================================

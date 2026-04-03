@@ -239,7 +239,7 @@ void CAmbientGeneric::Precache()
 	if (!FStringNull(pev->message) && strlen(szSoundFile) > 1)
 	{
 		if (*szSoundFile != '!')
-			PRECACHE_SOUND(szSoundFile);
+			PrecacheSound(szSoundFile);
 	}
 	// init all dynamic modulation parms
 	InitModulationParms();
