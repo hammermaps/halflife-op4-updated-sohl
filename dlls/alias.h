@@ -19,6 +19,9 @@
 #pragma once
 
 class CBaseEntity;
+class CInfoGroup;
+
+#define MAX_ALIAS_TARGETS 16
 
 //=========================================================
 // CBaseAlias
@@ -28,6 +31,8 @@ class CBaseEntity;
 class CBaseAlias : public CPointEntity
 {
 public:
+	bool IsAlias() override { return true; }  // LRC - marks this as an alias entity
+
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
 
@@ -37,6 +42,14 @@ public:
 	virtual CBaseEntity* FollowAlias(CBaseEntity* pFrom) { return nullptr; }
 	// Flush any cached values (called after targets fire)
 	virtual void FlushChanges() {}
+
+	// LRC - change the alias value to a string
+	virtual void ChangeValue(string_t iszValue)
+	{
+		ALERT(at_error, "%s entities cannot change value!\n", STRING(pev->classname));
+	}
+	// LRC - change the alias value using another entity's targetname
+	virtual void ChangeValue(CBaseEntity* pValue) { ChangeValue(pValue->pev->targetname); }
 
 	// Linked list of all alias entities
 	CBaseAlias* m_pNextAlias;
@@ -53,6 +66,7 @@ public:
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
 	CBaseEntity* FollowAlias(CBaseEntity* pFrom) override;
 	void FlushChanges() override;
+	void ChangeValue(string_t iszValue) override;
 
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
@@ -60,10 +74,37 @@ public:
 	static TYPEDESCRIPTION m_SaveData[];
 
 	int m_cTargets;
-	int m_iszTargets[16];
+	int m_iszTargets[MAX_ALIAS_TARGETS];
 	int m_iCurrentTarget;
 	CBaseEntity* m_pCachedEntity;
 	bool m_bDirty;
+};
+
+//=========================================================
+// info_group
+// LRC - A group entity that maps member names to string values.
+// When triggered, changes the target alias to point to this group,
+// so that locus-based lookups can resolve member values.
+//=========================================================
+#define SF_GROUP_DEBUG 2
+
+class CInfoGroup : public CPointEntity
+{
+public:
+	bool KeyValue(KeyValueData* pkvd) override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+	// Returns the string_t value of the named member, or iDefault if not found
+	string_t GetMember(const char* szMemberName);
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	int m_cMembers;
+	int m_iszMemberName[MAX_ALIAS_TARGETS];
+	int m_iszMemberValue[MAX_ALIAS_TARGETS];
+	int m_iszDefaultMember;  // prefix appended to member name when not found
 };
 
 //=========================================================

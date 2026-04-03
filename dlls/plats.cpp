@@ -29,6 +29,9 @@
 
 static void PlatSpawnInsideTrigger(entvars_t* pevPlatform);
 
+// LRC - forward declaration for scripted_trainsequence
+class CTrainSequence;
+
 #define SF_PLAT_TOGGLE 0x0001
 
 class CBasePlatTrain : public CBaseToggle
@@ -647,16 +650,21 @@ public:
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
 	bool KeyValue(KeyValueData* pkvd) override;
 
-
 	void EXPORT Wait();
 	void EXPORT Next();
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
 	static TYPEDESCRIPTION m_SaveData[];
 
+	// LRC - scripted_trainsequence support
+	void StartSequence(CTrainSequence* pSequence);
+	void StopSequence();
+	void ArrivalNotify();
+
 	entvars_t* m_pevCurrentTarget;
 	int m_sounds;
 	bool m_soundPlaying = false; // SoHL 1.5 - Track sound state
+	CTrainSequence* m_pSequence = nullptr;  // LRC - controlling sequence (if any)
 	// LRC - m_activated is now part of CBaseEntity
 };
 
@@ -666,6 +674,7 @@ TYPEDESCRIPTION CFuncTrain::m_SaveData[] =
 		DEFINE_FIELD(CFuncTrain, m_sounds, FIELD_INTEGER),
 		DEFINE_FIELD(CFuncTrain, m_pevCurrentTarget, FIELD_EVARS),
 		DEFINE_FIELD(CFuncTrain, m_soundPlaying, FIELD_BOOLEAN),
+		DEFINE_FIELD(CFuncTrain, m_pSequence, FIELD_CLASSPTR),
 };
 
 IMPLEMENT_SAVERESTORE(CFuncTrain, CBasePlatTrain);
@@ -730,6 +739,10 @@ void CFuncTrain::Wait()
 		if (FBitSet(m_pevCurrentTarget->spawnflags, SF_CORNER_FIREONCE))
 			m_pevCurrentTarget->message = 0;
 	}
+
+	// LRC - notify scripted sequence that we arrived at a corner
+	if (m_pSequence)
+		ArrivalNotify();
 
 	// need pointer to LAST target.
 	if (FBitSet(m_pevCurrentTarget->spawnflags, SF_TRAIN_WAIT_RETRIGGER) || (pev->spawnflags & SF_TRAIN_WAIT_RETRIGGER) != 0)
@@ -2756,4 +2769,248 @@ void CGunTarget::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE use
 		pev->health = pev->max_health;
 		Next();
 	}
+}
+
+//=========================================================
+// scripted_trainsequence
+// LRC - Takes control of a func_train and moves it to a destination.
+// m_iszEntity      = targetname of the train to control
+// m_iszDestination = targetname of the path_corner destination
+// m_iszTerminate   = target fired when the sequence ends (any reason)
+// target           = target fired when destination is reached
+// netname          = target fired when the sequence times out
+// m_iDirection     = direction: 0=auto, 1=forwards, 2=backwards, 3=stop
+// m_fDuration      = maximum time before sequence times out (0=no limit)
+// spawnflags:
+//   SF_TRAINSEQ_REMOVE  (2) = remove after ending
+//   SF_TRAINSEQ_DIRECT  (4) = send train directly to destination path corner
+//   SF_TRAINSEQ_DEBUG   (8) = debug output
+//=========================================================
+#define DIRECTION_NONE        0
+#define DIRECTION_FORWARDS    1
+#define DIRECTION_BACKWARDS   2
+#define DIRECTION_STOP        3
+#define DIRECTION_DESTINATION 4
+
+#define SF_TRAINSEQ_REMOVE  2
+#define SF_TRAINSEQ_DIRECT  4
+#define SF_TRAINSEQ_DEBUG   8
+
+class CTrainSequence : public CBaseEntity
+{
+public:
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+void EXPORT EndThink();
+void EXPORT TimeOutThink();
+bool KeyValue(KeyValueData* pkvd) override;
+STATE GetState() override { return (m_pTrain != nullptr) ? STATE_ON : STATE_OFF; }
+int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+
+void StopSequence();
+void ArrivalNotify();
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+string_t m_iszEntity;
+string_t m_iszDestination;
+string_t m_iszTerminate;
+int m_iDirection;
+int m_iPostDirection;
+float m_fDuration;
+CFuncTrain* m_pTrain;
+CBaseEntity* m_pDestination;
+};
+
+LINK_ENTITY_TO_CLASS(scripted_trainsequence, CTrainSequence);
+
+TYPEDESCRIPTION CTrainSequence::m_SaveData[] =
+{
+DEFINE_FIELD(CTrainSequence, m_iszEntity, FIELD_STRING),
+DEFINE_FIELD(CTrainSequence, m_iszDestination, FIELD_STRING),
+DEFINE_FIELD(CTrainSequence, m_iszTerminate, FIELD_STRING),
+DEFINE_FIELD(CTrainSequence, m_iDirection, FIELD_INTEGER),
+DEFINE_FIELD(CTrainSequence, m_iPostDirection, FIELD_INTEGER),
+DEFINE_FIELD(CTrainSequence, m_fDuration, FIELD_FLOAT),
+DEFINE_FIELD(CTrainSequence, m_pTrain, FIELD_CLASSPTR),
+DEFINE_FIELD(CTrainSequence, m_pDestination, FIELD_CLASSPTR),
+};
+
+IMPLEMENT_SAVERESTORE(CTrainSequence, CBaseEntity);
+
+bool CTrainSequence::KeyValue(KeyValueData* pkvd)
+{
+if (FStrEq(pkvd->szKeyName, "m_iDirection"))
+{
+m_iDirection = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iPostDirection"))
+{
+m_iPostDirection = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iszEntity"))
+{
+m_iszEntity = ALLOC_STRING(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iszDestination"))
+{
+m_iszDestination = ALLOC_STRING(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_fDuration"))
+{
+m_fDuration = atof(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iszTerminate"))
+{
+m_iszTerminate = ALLOC_STRING(pkvd->szValue);
+return true;
+}
+return CBaseEntity::KeyValue(pkvd);
+}
+
+void CTrainSequence::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+if (!ShouldToggle(useType))
+return;
+
+if (GetState() == STATE_OFF)
+{
+// start the sequence - take control of the train
+CBaseEntity* pEnt = UTIL_FindEntityByTargetname(nullptr, STRING(m_iszEntity));
+if (!pEnt)
+{
+ALERT(at_error, "scripted_trainsequence \"%s\": missing train \"%s\"!\n",
+STRING(pev->targetname), STRING(m_iszEntity));
+return;
+}
+
+if (!FClassnameIs(pEnt->pev, "func_train"))
+{
+ALERT(at_error, "scripted_trainsequence \"%s\": \"%s\" is not a func_train!\n",
+STRING(pev->targetname), STRING(m_iszEntity));
+return;
+}
+
+CFuncTrain* pTrain = static_cast<CFuncTrain*>(pEnt);
+if (pTrain->m_pSequence)
+return; // already controlled by another sequence
+
+m_pDestination = UTIL_FindEntityByTargetname(nullptr, STRING(m_iszDestination));
+
+if (pev->spawnflags & SF_TRAINSEQ_DIRECT)
+{
+// directly send the train to the destination path corner
+if (m_pDestination)
+pTrain->pev->target = m_pDestination->pev->targetname;
+pTrain->StartSequence(this);
+m_pTrain = pTrain;
+pTrain->Next();
+}
+else
+{
+pTrain->StartSequence(this);
+m_pTrain = pTrain;
+
+// Use the simplest direction - just set target to the current next target
+// and let the train move forward. More complex direction logic omitted.
+if (m_iDirection == DIRECTION_STOP)
+{
+// Stop immediately
+SetNextThink(0.1);
+SetThink(&CTrainSequence::EndThink);
+return;
+}
+// Default: keep going forwards
+pTrain->pev->target = pTrain->pev->message;
+pTrain->Next();
+}
+
+// Set up timeout if specified
+if (m_fDuration > 0)
+{
+SetThink(&CTrainSequence::TimeOutThink);
+SetNextThink(m_fDuration);
+}
+}
+else
+{
+// prematurely end the sequence
+DontThink();
+StopSequence();
+}
+}
+
+void CTrainSequence::ArrivalNotify()
+{
+if (!m_pTrain)
+{
+ALERT(at_error, "scripted_trainsequence: ArrivalNotify without a train!?\n");
+return;
+}
+
+// check whether the current corner is our destination
+if (m_pDestination && m_pTrain->m_pevCurrentTarget == m_pDestination->pev)
+{
+if (pev->spawnflags & SF_TRAINSEQ_DEBUG)
+ALERT(at_debug, "DEBUG: scripted_trainsequence \"%s\" reached destination.\n",
+STRING(pev->targetname));
+EndThink();
+}
+}
+
+void CTrainSequence::EndThink()
+{
+StopSequence();
+FireTargets(STRING(pev->target), this, this, USE_TOGGLE, 0);
+}
+
+void CTrainSequence::TimeOutThink()
+{
+StopSequence();
+FireTargets(STRING(pev->netname), this, this, USE_TOGGLE, 0);
+}
+
+void CTrainSequence::StopSequence()
+{
+if (m_pTrain)
+{
+m_pTrain->StopSequence();
+m_pTrain = nullptr;
+
+if (FBitSet(pev->spawnflags, SF_TRAINSEQ_REMOVE))
+UTIL_Remove(this);
+}
+else
+{
+ALERT(at_error, "scripted_trainsequence: StopSequence without a train!?\n");
+return;
+}
+FireTargets(STRING(m_iszTerminate), this, this, USE_TOGGLE, 0);
+}
+
+//=========================================================
+// CFuncTrain - scripted_trainsequence interface
+//=========================================================
+void CFuncTrain::StartSequence(CTrainSequence* pSequence)
+{
+m_pSequence = pSequence;
+// Stop any current wait and take direct control
+DontThink();
+}
+
+void CFuncTrain::StopSequence()
+{
+m_pSequence = nullptr;
+}
+
+void CFuncTrain::ArrivalNotify()
+{
+if (m_pSequence)
+m_pSequence->ArrivalNotify();
 }

@@ -3005,6 +3005,7 @@ public:
 };
 
 LINK_ENTITY_TO_CLASS(multi_watcher, CMultiWatcher);
+LINK_ENTITY_TO_CLASS(watcher, CMultiWatcher);  // LRC - alias for multi_watcher
 
 TYPEDESCRIPTION CMultiWatcher::m_SaveData[] =
 	{
@@ -3688,4 +3689,322 @@ void CRenderFxFader::FadeThink()
 
 	m_hTarget->pev->renderamt = m_flStartAmt + (m_flTargetAmt - m_flStartAmt) * fFraction;
 	SetNextThink(0);
+}
+//=========================================================
+// env_customize
+// LRC - Modifies entity properties (model, visibility, solidity,
+// framerate, body, skin, class, blood color, voice pitch)
+// when triggered or on spawn.
+//=========================================================
+#include "talkmonster.h"
+#include "animation.h"
+
+#define SF_CUSTOM_AFFECTDEAD 1  // also affect dead monsters
+#define SF_CUSTOM_ONCE       2  // remove after firing
+#define SF_CUSTOM_DEBUG      4  // debug output
+
+#define CUSTOM_FLAG_NOCHANGE  0
+#define CUSTOM_FLAG_ON        1
+#define CUSTOM_FLAG_OFF       2
+#define CUSTOM_FLAG_TOGGLE    3
+#define CUSTOM_FLAG_USETYPE   4
+#define CUSTOM_FLAG_INVUSETYPE 5
+
+class CEnvCustomize : public CBaseEntity
+{
+public:
+void Spawn() override;
+void Precache() override;
+void PostSpawn() override;
+void DesiredAction() override;
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+void Affect(CBaseEntity* pTarget, USE_TYPE useType);
+int GetActionFor(int iField, bool bActive, USE_TYPE useType);
+
+int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+
+bool KeyValue(KeyValueData* pkvd) override;
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+int m_iszModel = iStringNull;
+int m_iClass = 0;         // 0 = no change
+int m_iPlayerReact = -1;  // -1 = no change
+int m_iVisible = CUSTOM_FLAG_NOCHANGE;
+int m_iSolid = CUSTOM_FLAG_NOCHANGE;
+int m_voicePitch = 0;     // 0 = no change
+int m_iBloodColor = 0;    // 0 = no change
+float m_fFramerate = -1;  // -1 = no change
+float m_fController0 = -1;
+float m_fController1 = -1;
+float m_fController2 = -1;
+float m_fController3 = -1;
+};
+
+LINK_ENTITY_TO_CLASS(env_customize, CEnvCustomize);
+
+TYPEDESCRIPTION CEnvCustomize::m_SaveData[] =
+{
+DEFINE_FIELD(CEnvCustomize, m_iszModel, FIELD_STRING),
+DEFINE_FIELD(CEnvCustomize, m_iClass, FIELD_INTEGER),
+DEFINE_FIELD(CEnvCustomize, m_iPlayerReact, FIELD_INTEGER),
+DEFINE_FIELD(CEnvCustomize, m_iVisible, FIELD_INTEGER),
+DEFINE_FIELD(CEnvCustomize, m_iSolid, FIELD_INTEGER),
+DEFINE_FIELD(CEnvCustomize, m_voicePitch, FIELD_INTEGER),
+DEFINE_FIELD(CEnvCustomize, m_iBloodColor, FIELD_INTEGER),
+DEFINE_FIELD(CEnvCustomize, m_fFramerate, FIELD_FLOAT),
+DEFINE_FIELD(CEnvCustomize, m_fController0, FIELD_FLOAT),
+DEFINE_FIELD(CEnvCustomize, m_fController1, FIELD_FLOAT),
+DEFINE_FIELD(CEnvCustomize, m_fController2, FIELD_FLOAT),
+DEFINE_FIELD(CEnvCustomize, m_fController3, FIELD_FLOAT),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvCustomize, CBaseEntity);
+
+bool CEnvCustomize::KeyValue(KeyValueData* pkvd)
+{
+if (FStrEq(pkvd->szKeyName, "m_iVisible"))
+{
+m_iVisible = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iSolid"))
+{
+m_iSolid = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iszModel"))
+{
+m_iszModel = ALLOC_STRING(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_voicePitch"))
+{
+m_voicePitch = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iClass"))
+{
+m_iClass = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iPlayerReact"))
+{
+m_iPlayerReact = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_bloodColor") || FStrEq(pkvd->szKeyName, "m_iBloodColor"))
+{
+m_iBloodColor = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_fFramerate"))
+{
+m_fFramerate = atof(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_fController0"))
+{
+m_fController0 = atof(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_fController1"))
+{
+m_fController1 = atof(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_fController2"))
+{
+m_fController2 = atof(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_fController3"))
+{
+m_fController3 = atof(pkvd->szValue);
+return true;
+}
+return CBaseEntity::KeyValue(pkvd);
+}
+
+void CEnvCustomize::Spawn()
+{
+	Precache();
+}
+
+void CEnvCustomize::Precache()
+{
+if (m_iszModel)
+PRECACHE_MODEL((char*)STRING(m_iszModel));
+}
+
+void CEnvCustomize::PostSpawn()
+{
+if (!pev->targetname)
+{
+// no name - auto-apply when spawned
+UTIL_DesiredAction(this);
+}
+}
+
+void CEnvCustomize::DesiredAction()
+{
+Use(this, this, USE_TOGGLE, 0);
+}
+
+void CEnvCustomize::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+if (FStringNull(pev->target))
+{
+if (pActivator && pActivator != this)
+Affect(pActivator, useType);
+else if (pev->spawnflags & SF_CUSTOM_DEBUG)
+ALERT(at_debug, "DEBUG: env_customize \"%s\" was fired without a locus!\n", STRING(pev->targetname));
+}
+else
+{
+bool bFound = false;
+// Try targetname first
+CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+while (pTarget)
+{
+Affect(pTarget, useType);
+bFound = true;
+pTarget = UTIL_FindEntityByTargetname(pTarget, STRING(pev->target));
+}
+// Then try classname
+pTarget = UTIL_FindEntityByClassname(nullptr, STRING(pev->target));
+while (pTarget)
+{
+Affect(pTarget, useType);
+bFound = true;
+pTarget = UTIL_FindEntityByClassname(pTarget, STRING(pev->target));
+}
+if (!bFound && (pev->spawnflags & SF_CUSTOM_DEBUG))
+ALERT(at_debug, "DEBUG: env_customize \"%s\" does nothing; can't find entity \"%s\".\n",
+STRING(pev->targetname), STRING(pev->target));
+}
+
+if (pev->spawnflags & SF_CUSTOM_ONCE)
+UTIL_Remove(this);
+}
+
+int CEnvCustomize::GetActionFor(int iField, bool bActive, USE_TYPE useType)
+{
+switch (iField)
+{
+case CUSTOM_FLAG_NOCHANGE:
+return CUSTOM_FLAG_NOCHANGE;
+case CUSTOM_FLAG_ON:
+return bActive ? CUSTOM_FLAG_NOCHANGE : CUSTOM_FLAG_ON;
+case CUSTOM_FLAG_OFF:
+return bActive ? CUSTOM_FLAG_OFF : CUSTOM_FLAG_NOCHANGE;
+case CUSTOM_FLAG_TOGGLE:
+return bActive ? CUSTOM_FLAG_OFF : CUSTOM_FLAG_ON;
+case CUSTOM_FLAG_USETYPE:
+if (useType == USE_ON)
+return bActive ? CUSTOM_FLAG_NOCHANGE : CUSTOM_FLAG_ON;
+else if (useType == USE_OFF)
+return bActive ? CUSTOM_FLAG_OFF : CUSTOM_FLAG_NOCHANGE;
+else // toggle
+return bActive ? CUSTOM_FLAG_OFF : CUSTOM_FLAG_ON;
+case CUSTOM_FLAG_INVUSETYPE:
+if (useType == USE_OFF)
+return bActive ? CUSTOM_FLAG_NOCHANGE : CUSTOM_FLAG_ON;
+else if (useType == USE_ON)
+return bActive ? CUSTOM_FLAG_OFF : CUSTOM_FLAG_NOCHANGE;
+else
+return bActive ? CUSTOM_FLAG_OFF : CUSTOM_FLAG_ON;
+}
+return CUSTOM_FLAG_NOCHANGE;
+}
+
+void CEnvCustomize::Affect(CBaseEntity* pTarget, USE_TYPE useType)
+{
+CBaseMonster* pMonster = pTarget->MyMonsterPointer();
+if (!FBitSet(pev->spawnflags, SF_CUSTOM_AFFECTDEAD) && pMonster
+&& pMonster->m_MonsterState == MONSTERSTATE_DEAD)
+return;
+
+if (m_iszModel)
+{
+Vector vecMins = pTarget->pev->mins;
+Vector vecMaxs = pTarget->pev->maxs;
+SET_MODEL(pTarget->edict(), STRING(m_iszModel));
+UTIL_SetSize(pTarget->pev, vecMins, vecMaxs);
+}
+
+// Apply bone controllers if model provides them
+if (m_fController0 >= 0)
+SetController(GET_MODEL_PTR(pTarget->edict()), pTarget->pev, 0, m_fController0);
+if (m_fController1 >= 0)
+SetController(GET_MODEL_PTR(pTarget->edict()), pTarget->pev, 1, m_fController1);
+if (m_fController2 >= 0)
+SetController(GET_MODEL_PTR(pTarget->edict()), pTarget->pev, 2, m_fController2);
+if (m_fController3 >= 0)
+SetController(GET_MODEL_PTR(pTarget->edict()), pTarget->pev, 3, m_fController3);
+
+if (m_fFramerate >= 0)
+pTarget->pev->framerate = m_fFramerate;
+
+if (pev->body != -1)
+pTarget->pev->body = pev->body;
+
+if (pev->skin != -1)
+{
+if (pev->skin == -2)
+pTarget->pev->skin = (pTarget->pev->skin != 0) ? 0 : 1;
+else
+pTarget->pev->skin = pev->skin;
+}
+
+switch (GetActionFor(m_iVisible, !(pTarget->pev->effects & EF_NODRAW), useType))
+{
+case CUSTOM_FLAG_ON:
+pTarget->pev->effects &= ~EF_NODRAW;
+break;
+case CUSTOM_FLAG_OFF:
+pTarget->pev->effects |= EF_NODRAW;
+break;
+}
+
+switch (GetActionFor(m_iSolid, pTarget->pev->solid != SOLID_NOT, useType))
+{
+case CUSTOM_FLAG_ON:
+if (*(STRING(pTarget->pev->model)) == '*')
+pTarget->pev->solid = SOLID_BSP;
+else
+pTarget->pev->solid = SOLID_SLIDEBOX;
+break;
+case CUSTOM_FLAG_OFF:
+pTarget->pev->solid = SOLID_NOT;
+break;
+}
+
+if (!pMonster)
+return;
+
+if (m_iBloodColor != 0)
+pMonster->m_bloodColor = m_iBloodColor;
+
+if (m_voicePitch > 0)
+{
+CTalkMonster* pTalk = dynamic_cast<CTalkMonster*>(pTarget);
+if (pTalk)
+pTalk->m_voicePitch = m_voicePitch;
+}
+
+if (m_iClass != 0)
+{
+pMonster->m_iClass = m_iClass;
+if (pMonster->m_hEnemy)
+{
+pMonster->m_hEnemy = nullptr;
+pMonster->SetConditions(bits_COND_NEW_ENEMY);
+}
+}
+
+if (m_iPlayerReact >= 0)
+pMonster->m_iPlayerReact = m_iPlayerReact;
 }
