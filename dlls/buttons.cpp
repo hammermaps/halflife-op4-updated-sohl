@@ -310,6 +310,7 @@ void CEnvState::Think()
 			ALERT(at_debug, "DEBUG: env_state \"%s\" turned itself on.\n", STRING(pev->targetname));
 		FireTargets(STRING(pev->target), this, this, USE_ON, 0);
 		FireTargets(STRING(pev->noise1), this, this, USE_TOGGLE, 0);
+		DontThink();
 	}
 	else if (m_iState == STATE_TURN_OFF)
 	{
@@ -318,6 +319,7 @@ void CEnvState::Think()
 			ALERT(at_debug, "DEBUG: env_state \"%s\" turned itself off.\n", STRING(pev->targetname));
 		FireTargets(STRING(pev->target), this, this, USE_OFF, 0);
 		FireTargets(STRING(pev->noise2), this, this, USE_TOGGLE, 0);
+		DontThink();
 	}
 }
 

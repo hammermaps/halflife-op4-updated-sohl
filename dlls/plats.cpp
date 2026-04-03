@@ -2921,10 +2921,12 @@ m_pTrain = pTrain;
 // and let the train move forward. More complex direction logic omitted.
 if (m_iDirection == DIRECTION_STOP)
 {
-// Stop immediately
-SetNextThink(0.1);
-SetThink(&CTrainSequence::EndThink);
-return;
+	// Stop the train immediately and end the sequence
+	pTrain->pev->velocity = g_vecZero;
+	pTrain->DontThink();
+	SetNextThink(0.1);
+	SetThink(&CTrainSequence::EndThink);
+	return;
 }
 // Default: keep going forwards
 pTrain->pev->target = pTrain->pev->message;
@@ -2966,14 +2968,16 @@ EndThink();
 
 void CTrainSequence::EndThink()
 {
-StopSequence();
-FireTargets(STRING(pev->target), this, this, USE_TOGGLE, 0);
+	DontThink();
+	StopSequence();
+	FireTargets(STRING(pev->target), this, this, USE_TOGGLE, 0);
 }
 
 void CTrainSequence::TimeOutThink()
 {
-StopSequence();
-FireTargets(STRING(pev->netname), this, this, USE_TOGGLE, 0);
+	DontThink();
+	StopSequence();
+	FireTargets(STRING(pev->netname), this, this, USE_TOGGLE, 0);
 }
 
 void CTrainSequence::StopSequence()

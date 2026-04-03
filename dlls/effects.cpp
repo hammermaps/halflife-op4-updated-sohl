@@ -2680,6 +2680,7 @@ SetNextThink(0.5);
 
 void CEnvWarpBall::Think()
 {
-EMIT_SOUND(edict(), CHAN_ITEM, "debris/beamstart7.wav", 1, ATTN_NORM);
-SUB_UseTargets(this, USE_TOGGLE, 0);
+	EMIT_SOUND(edict(), CHAN_ITEM, "debris/beamstart7.wav", 1, ATTN_NORM);
+	SUB_UseTargets(this, USE_TOGGLE, 0);
+	DontThink();
 }

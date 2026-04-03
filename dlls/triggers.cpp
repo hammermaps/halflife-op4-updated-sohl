@@ -3830,6 +3830,9 @@ return CBaseEntity::KeyValue(pkvd);
 
 void CEnvCustomize::Spawn()
 {
+	// Initialize body/skin to -1 so unspecified fields mean "no change"
+	pev->body = -1;
+	pev->skin = -1;
 	Precache();
 }
 

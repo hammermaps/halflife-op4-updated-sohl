@@ -232,7 +232,7 @@ string_t CInfoGroup::GetMember(const char* szMemberName)
 	{
 		static char szBuffer[128];
 		snprintf(szBuffer, sizeof(szBuffer), "%s%s", STRING(m_iszDefaultMember), szMemberName);
-		return MAKE_STRING(szBuffer);
+		return ALLOC_STRING(szBuffer);
 	}
 
 	ALERT(at_debug, "info_group \"%s\" has no member called \"%s\".\n",
