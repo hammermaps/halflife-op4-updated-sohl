@@ -185,7 +185,7 @@ void CBreakable::Spawn()
 		pev->playerclass = 1;
 	}
 
-	SET_MODEL(ENT(pev), STRING(pev->model)); //set size and link into world.
+	SetModel(ENT(pev), STRING(pev->model)); //set size and link into world.
 
 	SetTouch(&CBreakable::BreakTouch);
 	if (FBitSet(pev->spawnflags, SF_BREAK_TRIGGER_ONLY)) // Only break on trigger
@@ -288,7 +288,7 @@ void CBreakable::MaterialSoundPrecache(Materials precacheMaterial)
 
 	for (i = 0; i < soundCount; i++)
 	{
-		PRECACHE_SOUND((char*)pSoundList[i]);
+		PrecacheSound((char*)pSoundList[i]);
 	}
 }
 
@@ -314,60 +314,60 @@ void CBreakable::Precache()
 	case matWood:
 		pGibName = "models/woodgibs.mdl";
 
-		PRECACHE_SOUND("debris/bustcrate1.wav");
-		PRECACHE_SOUND("debris/bustcrate2.wav");
+		PrecacheSound("debris/bustcrate1.wav");
+		PrecacheSound("debris/bustcrate2.wav");
 		break;
 	case matFlesh:
 		pGibName = "models/fleshgibs.mdl";
 
-		PRECACHE_SOUND("debris/bustflesh1.wav");
-		PRECACHE_SOUND("debris/bustflesh2.wav");
+		PrecacheSound("debris/bustflesh1.wav");
+		PrecacheSound("debris/bustflesh2.wav");
 		break;
 	case matComputer:
-		PRECACHE_SOUND("buttons/spark5.wav");
-		PRECACHE_SOUND("buttons/spark6.wav");
+		PrecacheSound("buttons/spark5.wav");
+		PrecacheSound("buttons/spark6.wav");
 		pGibName = "models/computergibs.mdl";
 
-		PRECACHE_SOUND("debris/bustmetal1.wav");
-		PRECACHE_SOUND("debris/bustmetal2.wav");
+		PrecacheSound("debris/bustmetal1.wav");
+		PrecacheSound("debris/bustmetal2.wav");
 		break;
 
 	case matUnbreakableGlass:
 	case matGlass:
 		pGibName = "models/glassgibs.mdl";
 
-		PRECACHE_SOUND("debris/bustglass1.wav");
-		PRECACHE_SOUND("debris/bustglass2.wav");
+		PrecacheSound("debris/bustglass1.wav");
+		PrecacheSound("debris/bustglass2.wav");
 		break;
 	case matMetal:
 		pGibName = "models/metalplategibs.mdl";
 
-		PRECACHE_SOUND("debris/bustmetal1.wav");
-		PRECACHE_SOUND("debris/bustmetal2.wav");
+		PrecacheSound("debris/bustmetal1.wav");
+		PrecacheSound("debris/bustmetal2.wav");
 		break;
 	case matCinderBlock:
 		pGibName = "models/cindergibs.mdl";
 
-		PRECACHE_SOUND("debris/bustconcrete1.wav");
-		PRECACHE_SOUND("debris/bustconcrete2.wav");
+		PrecacheSound("debris/bustconcrete1.wav");
+		PrecacheSound("debris/bustconcrete2.wav");
 		break;
 	case matRocks:
 		pGibName = "models/rockgibs.mdl";
 
-		PRECACHE_SOUND("debris/bustconcrete1.wav");
-		PRECACHE_SOUND("debris/bustconcrete2.wav");
+		PrecacheSound("debris/bustconcrete1.wav");
+		PrecacheSound("debris/bustconcrete2.wav");
 		break;
 	case matCeilingTile:
 		pGibName = "models/ceilinggibs.mdl";
 
-		PRECACHE_SOUND("debris/bustceiling.wav");
+		PrecacheSound("debris/bustceiling.wav");
 		break;
 	}
 	MaterialSoundPrecache(m_Material);
 	if (!FStringNull(m_iszGibModel))
 		pGibName = STRING(m_iszGibModel);
 
-	m_idShard = PRECACHE_MODEL((char*)pGibName);
+	m_idShard = PrecacheModel((char*)pGibName);
 
 	// Precache the spawn item's data
 	if (!FStringNull(m_iszSpawnObject))
@@ -896,7 +896,7 @@ void CPushable::Spawn()
 
 	pev->movetype = MOVETYPE_PUSHSTEP;
 	pev->solid = SOLID_BBOX;
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	if (pev->friction > 399)
 		pev->friction = 399;
@@ -917,7 +917,7 @@ void CPushable::Spawn()
 void CPushable::Precache()
 {
 	for (int i = 0; i < 3; i++)
-		PRECACHE_SOUND(m_soundNames[i]);
+		PrecacheSound(m_soundNames[i]);
 
 	if ((pev->spawnflags & SF_PUSH_BREAKABLE) != 0)
 		CBreakable::Precache();

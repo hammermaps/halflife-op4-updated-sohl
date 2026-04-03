@@ -150,9 +150,9 @@ void COsprey::Spawn()
 	pev->solid = SOLID_BBOX;
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/osprey.mdl");
+		SetModel(ENT(pev), "models/osprey.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-400, -400, -100), Vector(400, 400, 32));
 	UTIL_SetOrigin(pev, pev->origin);
 
@@ -195,18 +195,18 @@ void COsprey::Precache()
 
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/osprey.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL("models/HVR.mdl");
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel("models/HVR.mdl");
 
-	PRECACHE_SOUND("apache/ap_rotor4.wav");
-	PRECACHE_SOUND("weapons/mortarhit.wav");
+	PrecacheSound("apache/ap_rotor4.wav");
+	PrecacheSound("weapons/mortarhit.wav");
 
-	m_iSpriteTexture = PRECACHE_MODEL("sprites/rope.spr");
+	m_iSpriteTexture = PrecacheModel("sprites/rope.spr");
 
-	m_iExplode = PRECACHE_MODEL("sprites/fexplo.spr");
-	m_iTailGibs = PRECACHE_MODEL("models/osprey_tailgibs.mdl");
-	m_iBodyGibs = PRECACHE_MODEL("models/osprey_bodygibs.mdl");
-	m_iEngineGibs = PRECACHE_MODEL("models/osprey_enginegibs.mdl");
+	m_iExplode = PrecacheModel("sprites/fexplo.spr");
+	m_iTailGibs = PrecacheModel("models/osprey_tailgibs.mdl");
+	m_iBodyGibs = PrecacheModel("models/osprey_bodygibs.mdl");
+	m_iEngineGibs = PrecacheModel("models/osprey_enginegibs.mdl");
 }
 
 void COsprey::CommandUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)

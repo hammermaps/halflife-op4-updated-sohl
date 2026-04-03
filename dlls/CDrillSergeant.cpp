@@ -401,9 +401,9 @@ void CDrillSergeant::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/drill.mdl");
+		SetModel(ENT(pev), "models/drill.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -579,7 +579,7 @@ void CDrillSergeant::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/drill.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
 	PRECACHE_SOUND_ARRAY(pAttackSounds);
 	PRECACHE_SOUND_ARRAY(pPainSounds);

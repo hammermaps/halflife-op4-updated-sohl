@@ -121,9 +121,9 @@ void CRoach::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/roach.mdl");
+		SetModel(ENT(pev), "models/roach.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-1, -1, 0), Vector(1, 1, 2));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -152,11 +152,11 @@ void CRoach::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/roach.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
-	PRECACHE_SOUND("roach/rch_die.wav");
-	PRECACHE_SOUND("roach/rch_walk.wav");
-	PRECACHE_SOUND("roach/rch_smash.wav");
+	PrecacheSound("roach/rch_die.wav");
+	PrecacheSound("roach/rch_walk.wav");
+	PrecacheSound("roach/rch_smash.wav");
 }
 
 

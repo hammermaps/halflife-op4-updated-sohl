@@ -115,7 +115,7 @@ private:
 
 void CRuleBrushEntity::Spawn()
 {
-	SET_MODEL(edict(), STRING(pev->model));
+	SetModel(edict(), STRING(pev->model));
 	CRuleEntity::Spawn();
 }
 

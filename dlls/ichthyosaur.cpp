@@ -475,9 +475,9 @@ void CIchthyosaur::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/icky.mdl");
+		SetModel(ENT(pev), "models/icky.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-32, -32, -32), Vector(32, 32, 32));
 
 	pev->solid = SOLID_BBOX;
@@ -516,7 +516,7 @@ void CIchthyosaur::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/icky.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
 	PRECACHE_SOUND_ARRAY(pIdleSounds);
 	PRECACHE_SOUND_ARRAY(pAlertSounds);

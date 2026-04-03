@@ -82,7 +82,7 @@ LINK_ENTITY_TO_CLASS(env_genewormcloud, COFGeneWormCloud);
 
 void COFGeneWormCloud::Precache()
 {
-	PRECACHE_MODEL("sprites/ballsmoke.spr");
+	PrecacheModel("sprites/ballsmoke.spr");
 }
 
 void COFGeneWormCloud::Spawn()
@@ -94,7 +94,7 @@ void COFGeneWormCloud::Spawn()
 	pev->effects = 0;
 	pev->frame = 0;
 
-	SET_MODEL(edict(), "sprites/ballsmoke.spr");
+	SetModel(edict(), "sprites/ballsmoke.spr");
 
 	UTIL_SetOrigin(pev, pev->origin);
 
@@ -282,9 +282,9 @@ LINK_ENTITY_TO_CLASS(env_genewormspawn, COFGeneWormSpawn);
 
 void COFGeneWormSpawn::Precache()
 {
-	PRECACHE_MODEL("sprites/tele1.spr");
-	PRECACHE_MODEL("sprites/lgtning.spr");
-	PRECACHE_MODEL("sprites/boss_glow.spr");
+	PrecacheModel("sprites/tele1.spr");
+	PrecacheModel("sprites/lgtning.spr");
+	PrecacheModel("sprites/boss_glow.spr");
 }
 
 void COFGeneWormSpawn::Spawn()
@@ -296,7 +296,7 @@ void COFGeneWormSpawn::Spawn()
 
 	Precache();
 
-	SET_MODEL(edict(), "sprites/boss_glow.spr");
+	SetModel(edict(), "sprites/boss_glow.spr");
 
 	UTIL_SetOrigin(pev, pev->origin);
 
@@ -481,7 +481,7 @@ void COFGeneWormSpawn::LaunchSpawn(const Vector& origin, const Vector& aim, int 
 	pev->aiment = nullptr;
 	pev->movetype = MOVETYPE_FLY;
 
-	SET_MODEL(edict(), "sprites/tele1.spr");
+	SetModel(edict(), "sprites/tele1.spr");
 
 	m_maxFrame = MODEL_FRAMES(pev->modelindex) - 1;
 
@@ -706,46 +706,46 @@ void COFGeneWorm::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/geneworm.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL("sprites/lgtning.spr");
-	PRECACHE_MODEL("sprites/tele1.spr");
-	PRECACHE_MODEL("sprites/bigspit.spr");
-	PRECACHE_MODEL("sprites/boss_glow.spr");
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel("sprites/lgtning.spr");
+	PrecacheModel("sprites/tele1.spr");
+	PrecacheModel("sprites/bigspit.spr");
+	PrecacheModel("sprites/boss_glow.spr");
 
-	iGeneWormSpitSprite = PRECACHE_MODEL("sprites/tinyspit.spr");
+	iGeneWormSpitSprite = PrecacheModel("sprites/tinyspit.spr");
 
-	PRECACHE_MODEL("sprites/xbeam3.spr");
+	PrecacheModel("sprites/xbeam3.spr");
 
 	UTIL_PrecacheOther("monster_shocktrooper");
 
-	PRECACHE_SOUND("bullchicken/bc_acid1.wav");
-	PRECACHE_SOUND("bullchicken/bc_spithit1.wav");
-	PRECACHE_SOUND("bullchicken/bc_spithit2.wav");
+	PrecacheSound("bullchicken/bc_acid1.wav");
+	PrecacheSound("bullchicken/bc_spithit1.wav");
+	PrecacheSound("bullchicken/bc_spithit2.wav");
 
 	PRECACHE_SOUND_ARRAY(pIdleSounds);
 	PRECACHE_SOUND_ARRAY(pSpawnSounds);
 
-	PRECACHE_SOUND("debris/beamstart7.wav");
-	PRECACHE_SOUND("debris/beamstart2.wav");
+	PrecacheSound("debris/beamstart7.wav");
+	PrecacheSound("debris/beamstart2.wav");
 
-	PRECACHE_MODEL("sprites/xspark4.spr");
-	PRECACHE_MODEL("sprites/ballsmoke.spr");
+	PrecacheModel("sprites/xspark4.spr");
+	PrecacheModel("sprites/ballsmoke.spr");
 
-	PRECACHE_SOUND("geneworm/geneworm_attack_mounted_gun.wav");
-	PRECACHE_SOUND("geneworm/geneworm_attack_mounted_rocket.wav");
+	PrecacheSound("geneworm/geneworm_attack_mounted_gun.wav");
+	PrecacheSound("geneworm/geneworm_attack_mounted_rocket.wav");
 
-	PRECACHE_SOUND("geneworm/geneworm_beam_attack.wav");
-	PRECACHE_SOUND("geneworm/geneworm_big_attack_forward.wav");
+	PrecacheSound("geneworm/geneworm_beam_attack.wav");
+	PrecacheSound("geneworm/geneworm_big_attack_forward.wav");
 
-	PRECACHE_SOUND("geneworm/geneworm_death.wav");
+	PrecacheSound("geneworm/geneworm_death.wav");
 
-	PRECACHE_SOUND("geneworm/geneworm_final_pain1.wav");
-	PRECACHE_SOUND("geneworm/geneworm_final_pain2.wav");
-	PRECACHE_SOUND("geneworm/geneworm_final_pain3.wav");
-	PRECACHE_SOUND("geneworm/geneworm_final_pain4.wav");
-	PRECACHE_SOUND("geneworm/geneworm_shot_in_eye.wav");
+	PrecacheSound("geneworm/geneworm_final_pain1.wav");
+	PrecacheSound("geneworm/geneworm_final_pain2.wav");
+	PrecacheSound("geneworm/geneworm_final_pain3.wav");
+	PrecacheSound("geneworm/geneworm_final_pain4.wav");
+	PrecacheSound("geneworm/geneworm_shot_in_eye.wav");
 
-	PRECACHE_SOUND("geneworm/geneworm_entry.wav");
+	PrecacheSound("geneworm/geneworm_entry.wav");
 }
 
 void COFGeneWorm::Spawn()
@@ -756,9 +756,9 @@ void COFGeneWorm::Spawn()
 	pev->solid = SOLID_NOT;
 
 	if (FStringNull(pev->model))
-		SET_MODEL(edict(), "models/geneworm.mdl");
+		SetModel(edict(), "models/geneworm.mdl");
 	else
-		SET_MODEL(edict(), STRING(pev->model));
+		SetModel(edict(), STRING(pev->model));
 
 	UTIL_SetSize(pev, {-436.67, -720.49, -331.74}, {425.29, 164.85, 355.68});
 

@@ -528,9 +528,9 @@ void CISlave::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/islave.mdl");
+		SetModel(ENT(pev), "models/islave.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -555,15 +555,15 @@ void CISlave::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/islave.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL("sprites/lgtning.spr");
-	PRECACHE_SOUND("debris/zap1.wav");
-	PRECACHE_SOUND("debris/zap4.wav");
-	PRECACHE_SOUND("weapons/electro4.wav");
-	PRECACHE_SOUND("hassault/hw_shoot1.wav");
-	PRECACHE_SOUND("zombie/zo_pain2.wav");
-	PRECACHE_SOUND("headcrab/hc_headbite.wav");
-	PRECACHE_SOUND("weapons/cbar_miss1.wav");
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel("sprites/lgtning.spr");
+	PrecacheSound("debris/zap1.wav");
+	PrecacheSound("debris/zap4.wav");
+	PrecacheSound("weapons/electro4.wav");
+	PrecacheSound("hassault/hw_shoot1.wav");
+	PrecacheSound("zombie/zo_pain2.wav");
+	PrecacheSound("headcrab/hc_headbite.wav");
+	PrecacheSound("weapons/cbar_miss1.wav");
 
 	PRECACHE_SOUND_ARRAY(pAttackHitSounds);
 	PRECACHE_SOUND_ARRAY(pAttackMissSounds);
@@ -904,8 +904,8 @@ LINK_ENTITY_TO_CLASS(monster_alien_slave_dead, CDeadISlave);
 //=========================================================
 void CDeadISlave::Spawn()
 {
-	PRECACHE_MODEL("models/islave.mdl");
-	SET_MODEL(ENT(pev), "models/islave.mdl");
+	PrecacheModel("models/islave.mdl");
+	SetModel(ENT(pev), "models/islave.mdl");
 
 	pev->effects = 0;
 	pev->sequence = 0;

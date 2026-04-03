@@ -194,9 +194,9 @@ inline void CZombieBase::ZombieSpawnHelper()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), GetDefaultModel());
+		SetModel(ENT(pev), GetDefaultModel());
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -214,7 +214,7 @@ inline void CZombieBase::ZombiePrecacheHelper()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING(GetDefaultModel());
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
 	PRECACHE_SOUND_ARRAY(g_pZombieAttackHitSounds);
 	PRECACHE_SOUND_ARRAY(g_pZombieAttackMissSounds);

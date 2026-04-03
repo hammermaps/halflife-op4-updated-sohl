@@ -52,9 +52,9 @@ void COFLoader::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/loader.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_SOUND("ambience/loader_step1.wav");
-	PRECACHE_SOUND("ambience/loader_hydra1.wav");
+	PrecacheModel(STRING(pev->model));
+	PrecacheSound("ambience/loader_step1.wav");
+	PrecacheSound("ambience/loader_hydra1.wav");
 }
 
 void COFLoader::Spawn()
@@ -62,9 +62,9 @@ void COFLoader::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(edict(), "models/loader.mdl");
+		SetModel(edict(), "models/loader.mdl");
 	else
-		SET_MODEL(edict(), STRING(pev->model));
+		SetModel(edict(), STRING(pev->model));
 
 	if (FStrEq(STRING(pev->model), "models/player.mdl") || FStrEq(STRING(pev->model), "models/holo.mdl"))
 	{

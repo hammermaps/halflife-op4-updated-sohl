@@ -366,7 +366,7 @@ void CGrenade::Spawn()
 
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(ENT(pev), "models/grenade.mdl");
+	SetModel(ENT(pev), "models/grenade.mdl");
 	UTIL_SetSize(pev, Vector(0, 0, 0), Vector(0, 0, 0));
 
 	pev->dmg = 100;
@@ -425,7 +425,7 @@ CGrenade* CGrenade::ShootTimed(entvars_t* pevOwner, Vector vecStart, Vector vecV
 		pGrenade->pev->velocity = Vector(0, 0, 0);
 	}
 
-	SET_MODEL(ENT(pGrenade->pev), "models/w_grenade.mdl");
+	SetModel(ENT(pGrenade->pev), "models/w_grenade.mdl");
 	pGrenade->pev->sequence = RANDOM_LONG(3, 6);
 	pGrenade->pev->framerate = 1.0;
 	pGrenade->ResetSequenceInfo();
@@ -450,7 +450,7 @@ CGrenade* CGrenade::ShootSatchelCharge(entvars_t* pevOwner, Vector vecStart, Vec
 
 	pGrenade->pev->solid = SOLID_BBOX;
 
-	SET_MODEL(ENT(pGrenade->pev), "models/grenade.mdl"); // Change this to satchel charge model
+	SetModel(ENT(pGrenade->pev), "models/grenade.mdl"); // Change this to satchel charge model
 
 	UTIL_SetSize(pGrenade->pev, Vector(0, 0, 0), Vector(0, 0, 0));
 

@@ -105,9 +105,9 @@ void CBarnacle::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/barnacle.mdl");
+		SetModel(ENT(pev), "models/barnacle.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-16, -16, -32), Vector(16, 16, 0));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -399,15 +399,15 @@ void CBarnacle::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/barnacle.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
-	PRECACHE_SOUND("barnacle/bcl_alert2.wav"); //happy, lifting food up
-	PRECACHE_SOUND("barnacle/bcl_bite3.wav");  //just got food to mouth
-	PRECACHE_SOUND("barnacle/bcl_chew1.wav");
-	PRECACHE_SOUND("barnacle/bcl_chew2.wav");
-	PRECACHE_SOUND("barnacle/bcl_chew3.wav");
-	PRECACHE_SOUND("barnacle/bcl_die1.wav");
-	PRECACHE_SOUND("barnacle/bcl_die3.wav");
+	PrecacheSound("barnacle/bcl_alert2.wav"); //happy, lifting food up
+	PrecacheSound("barnacle/bcl_bite3.wav");  //just got food to mouth
+	PrecacheSound("barnacle/bcl_chew1.wav");
+	PrecacheSound("barnacle/bcl_chew2.wav");
+	PrecacheSound("barnacle/bcl_chew3.wav");
+	PrecacheSound("barnacle/bcl_die1.wav");
+	PrecacheSound("barnacle/bcl_die3.wav");
 }
 
 //=========================================================

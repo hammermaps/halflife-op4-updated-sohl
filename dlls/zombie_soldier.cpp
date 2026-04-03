@@ -94,8 +94,8 @@ LINK_ENTITY_TO_CLASS(monster_zombie_soldier_dead, CDeadZombieSoldier);
 //=========================================================
 void CDeadZombieSoldier::Spawn()
 {
-	PRECACHE_MODEL("models/zombie_soldier.mdl");
-	SET_MODEL(ENT(pev), "models/zombie_soldier.mdl");
+	PrecacheModel("models/zombie_soldier.mdl");
+	SetModel(ENT(pev), "models/zombie_soldier.mdl");
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

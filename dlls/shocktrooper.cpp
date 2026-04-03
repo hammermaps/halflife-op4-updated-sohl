@@ -969,9 +969,9 @@ void CShockTrooper::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/strooper.mdl");
+		SetModel(ENT(pev), "models/strooper.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-24, -24, 0), Vector(24, 24, 72));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -1017,12 +1017,12 @@ void CShockTrooper::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/strooper.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	PRECACHE_MODEL("models/strooper_gibs.mdl");
+	PrecacheModel(STRING(pev->model));
+	PrecacheModel("models/strooper_gibs.mdl");
 
-	PRECACHE_SOUND("weapons/shock_fire.wav");
+	PrecacheSound("weapons/shock_fire.wav");
 
-	PRECACHE_SOUND("shocktrooper/shock_trooper_attack.wav");
+	PrecacheSound("shocktrooper/shock_trooper_attack.wav");
 	PRECACHE_SOUND_ARRAY(pDieSounds);
 
 	PRECACHE_SOUND_ARRAY(pPainSounds);
@@ -1035,7 +1035,7 @@ void CShockTrooper::Precache()
 
 	UTIL_PrecacheOther("monster_shockroach");
 
-	iShockTrooperMuzzleFlash = PRECACHE_MODEL("sprites/muzzle_shock.spr");
+	iShockTrooperMuzzleFlash = PrecacheModel("sprites/muzzle_shock.spr");
 }
 
 //=========================================================
@@ -2290,7 +2290,7 @@ void CShockTrooperRepel::Spawn()
 void CShockTrooperRepel::Precache()
 {
 	UTIL_PrecacheOther("monster_shocktrooper");
-	m_iSpriteTexture = PRECACHE_MODEL("sprites/rope.spr");
+	m_iSpriteTexture = PrecacheModel("sprites/rope.spr");
 }
 
 void CShockTrooperRepel::RepelUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
@@ -2359,8 +2359,8 @@ void CDeadShockTrooper::Spawn()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/strooper.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 
 	pev->effects = 0;
 	pev->yaw_speed = 8;

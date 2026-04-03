@@ -652,9 +652,9 @@ void CCleansuitScientist::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/cleansuit_scientist.mdl");
+		SetModel(ENT(pev), "models/cleansuit_scientist.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -692,7 +692,7 @@ void CCleansuitScientist::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/cleansuit_scientist.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 	PRECACHE_SOUND_ARRAY(pPainSounds);
 
 	// every new scientist must call this, otherwise
@@ -1124,8 +1124,8 @@ LINK_ENTITY_TO_CLASS(monster_cleansuit_scientist_dead, CDeadCleansuitScientist);
 //
 void CDeadCleansuitScientist::Spawn()
 {
-	PRECACHE_MODEL("models/cleansuit_scientist.mdl");
-	SET_MODEL(ENT(pev), "models/cleansuit_scientist.mdl");
+	PrecacheModel("models/cleansuit_scientist.mdl");
+	SetModel(ENT(pev), "models/cleansuit_scientist.mdl");
 
 	pev->effects = 0;
 	pev->sequence = 0;
@@ -1208,8 +1208,8 @@ void CSittingCleansuitScientist::Spawn()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/cleansuit_scientist.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
-	SET_MODEL(ENT(pev), STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
+	SetModel(ENT(pev), STRING(pev->model));
 	Precache();
 	InitBoneControllers();
 

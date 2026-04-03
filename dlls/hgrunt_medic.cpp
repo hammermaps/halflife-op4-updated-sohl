@@ -1151,9 +1151,9 @@ void COFMedicAlly::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/hgrunt_medic.mdl");
+		SetModel(ENT(pev), "models/hgrunt_medic.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -1251,7 +1251,7 @@ void COFMedicAlly::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/hgrunt_medic.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
 	TalkInit();
 
@@ -1261,21 +1261,21 @@ void COFMedicAlly::Precache()
 
 	PRECACHE_SOUND_ARRAY(pMedicAllyPainSounds);
 
-	PRECACHE_SOUND("hgrunt/gr_reload1.wav");
+	PrecacheSound("hgrunt/gr_reload1.wav");
 
-	PRECACHE_SOUND("weapons/desert_eagle_fire.wav");
-	PRECACHE_SOUND("weapons/desert_eagle_reload.wav");
-	PRECACHE_SOUND("weapons/sbarrel1.wav");
+	PrecacheSound("weapons/desert_eagle_fire.wav");
+	PrecacheSound("weapons/desert_eagle_reload.wav");
+	PrecacheSound("weapons/sbarrel1.wav");
 
-	PRECACHE_SOUND("fgrunt/medic_give_shot.wav");
-	PRECACHE_SOUND("fgrunt/medical.wav");
+	PrecacheSound("fgrunt/medic_give_shot.wav");
+	PrecacheSound("fgrunt/medical.wav");
 
-	PRECACHE_SOUND("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
+	PrecacheSound("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
 
 	// get voice pitch
 	m_voicePitch = 105;
 
-	m_iBrassShell = PRECACHE_MODEL("models/shell.mdl");
+	m_iBrassShell = PrecacheModel("models/shell.mdl");
 
 	COFSquadTalkMonster::Precache();
 }
@@ -3235,7 +3235,7 @@ void COFMedicAllyRepel::Spawn()
 void COFMedicAllyRepel::Precache()
 {
 	UTIL_PrecacheOther("monster_human_medic_ally");
-	m_iSpriteTexture = PRECACHE_MODEL("sprites/rope.spr");
+	m_iSpriteTexture = PrecacheModel("sprites/rope.spr");
 }
 
 void COFMedicAllyRepel::RepelUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)

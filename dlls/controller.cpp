@@ -360,9 +360,9 @@ void CController::Spawn()
 	Precache();
 
 	if (FStringNull(pev->model))
-		SET_MODEL(ENT(pev), "models/controller.mdl");
+		SetModel(ENT(pev), "models/controller.mdl");
 	else
-		SET_MODEL(ENT(pev), STRING(pev->model));
+		SetModel(ENT(pev), STRING(pev->model));
 	UTIL_SetSize(pev, Vector(-32, -32, 0), Vector(32, 32, 64));
 
 	pev->solid = SOLID_SLIDEBOX;
@@ -384,7 +384,7 @@ void CController::Precache()
 {
 	if (FStringNull(pev->model))
 		pev->model = MAKE_STRING("models/controller.mdl");
-	PRECACHE_MODEL(STRING(pev->model));
+	PrecacheModel(STRING(pev->model));
 
 	PRECACHE_SOUND_ARRAY(pAttackSounds);
 	PRECACHE_SOUND_ARRAY(pIdleSounds);
@@ -392,7 +392,7 @@ void CController::Precache()
 	PRECACHE_SOUND_ARRAY(pPainSounds);
 	PRECACHE_SOUND_ARRAY(pDeathSounds);
 
-	PRECACHE_MODEL("sprites/xspark4.spr");
+	PrecacheModel("sprites/xspark4.spr");
 
 	UTIL_PrecacheOther("controller_energy_ball");
 	UTIL_PrecacheOther("controller_head_ball");
@@ -1155,7 +1155,7 @@ void CControllerHeadBall::Spawn()
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(ENT(pev), "sprites/xspark4.spr");
+	SetModel(ENT(pev), "sprites/xspark4.spr");
 	pev->rendermode = kRenderTransAdd;
 	pev->rendercolor.x = 255;
 	pev->rendercolor.y = 255;
@@ -1180,9 +1180,9 @@ void CControllerHeadBall::Spawn()
 
 void CControllerHeadBall::Precache()
 {
-	PRECACHE_MODEL("sprites/xspark1.spr");
-	PRECACHE_SOUND("debris/zap4.wav");
-	PRECACHE_SOUND("weapons/electro4.wav");
+	PrecacheModel("sprites/xspark1.spr");
+	PrecacheSound("debris/zap4.wav");
+	PrecacheSound("weapons/electro4.wav");
 }
 
 
@@ -1349,7 +1349,7 @@ void CControllerZapBall::Spawn()
 	pev->movetype = MOVETYPE_FLY;
 	pev->solid = SOLID_BBOX;
 
-	SET_MODEL(ENT(pev), "sprites/xspark4.spr");
+	SetModel(ENT(pev), "sprites/xspark4.spr");
 	pev->rendermode = kRenderTransAdd;
 	pev->rendercolor.x = 255;
 	pev->rendercolor.y = 255;
@@ -1371,9 +1371,9 @@ void CControllerZapBall::Spawn()
 
 void CControllerZapBall::Precache()
 {
-	PRECACHE_MODEL("sprites/xspark4.spr");
-	// PRECACHE_SOUND("debris/zap4.wav");
-	// PRECACHE_SOUND("weapons/electro4.wav");
+	PrecacheModel("sprites/xspark4.spr");
+	// PrecacheSound("debris/zap4.wav");
+	// PrecacheSound("weapons/electro4.wav");
 }
 
 
