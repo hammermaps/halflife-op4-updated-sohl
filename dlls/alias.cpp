@@ -41,7 +41,7 @@ LINK_ENTITY_TO_CLASS(info_alias, CInfoAlias);
 TYPEDESCRIPTION CInfoAlias::m_SaveData[] =
 	{
 		DEFINE_FIELD(CInfoAlias, m_cTargets, FIELD_INTEGER),
-		DEFINE_ARRAY(CInfoAlias, m_iszTargets, FIELD_STRING, 16),
+		DEFINE_ARRAY(CInfoAlias, m_iszTargets, FIELD_STRING, MAX_ALIAS_TARGETS),
 		DEFINE_FIELD(CInfoAlias, m_iCurrentTarget, FIELD_INTEGER),
 };
 
@@ -100,6 +100,16 @@ void CInfoAlias::FlushChanges()
 	m_bDirty = true;
 }
 
+void CInfoAlias::ChangeValue(string_t iszValue)
+{
+	// Update to point to a single new target
+	m_cTargets = 1;
+	m_iszTargets[0] = iszValue;
+	m_iCurrentTarget = 0;
+	m_pCachedEntity = nullptr;
+	m_bDirty = true;
+}
+
 //=========================================================
 // CTriggerChangeAlias - Changes which entity an alias points to
 //=========================================================
@@ -135,16 +145,99 @@ void CTriggerChangeAlias::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE
 		return;
 	}
 
-	// For info_alias, update the target
-	CInfoAlias* pInfoAlias = dynamic_cast<CInfoAlias*>(pAlias);
-	if (pInfoAlias && !FStringNull(m_iszNewTarget))
+	if (!pAlias->IsAlias())
 	{
-		pInfoAlias->m_cTargets = 1;
-		pInfoAlias->m_iszTargets[0] = m_iszNewTarget;
-		pInfoAlias->m_iCurrentTarget = 0;
-		pInfoAlias->m_pCachedEntity = nullptr;
-		pInfoAlias->m_bDirty = true;
+		ALERT(at_error, "trigger_changealias \"%s\": target \"%s\" is not an alias!\n",
+			STRING(pev->targetname), STRING(pev->target));
+		return;
 	}
+
+	if (!FStringNull(m_iszNewTarget))
+		static_cast<CBaseAlias*>(pAlias)->ChangeValue(m_iszNewTarget);
+}
+
+//=========================================================
+// CInfoGroup
+// LRC - A group entity that provides a map of member name -> value.
+// When triggered, updates the target alias to reference this group.
+//=========================================================
+LINK_ENTITY_TO_CLASS(info_group, CInfoGroup);
+
+TYPEDESCRIPTION CInfoGroup::m_SaveData[] =
+	{
+		DEFINE_FIELD(CInfoGroup, m_cMembers, FIELD_INTEGER),
+		DEFINE_ARRAY(CInfoGroup, m_iszMemberName, FIELD_STRING, MAX_ALIAS_TARGETS),
+		DEFINE_ARRAY(CInfoGroup, m_iszMemberValue, FIELD_STRING, MAX_ALIAS_TARGETS),
+		DEFINE_FIELD(CInfoGroup, m_iszDefaultMember, FIELD_STRING),
+};
+
+IMPLEMENT_SAVERESTORE(CInfoGroup, CPointEntity);
+
+bool CInfoGroup::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "defaultmember"))
+	{
+		m_iszDefaultMember = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (m_cMembers < MAX_ALIAS_TARGETS)
+	{
+		char tmp[128];
+		UTIL_StripToken(pkvd->szKeyName, tmp, sizeof(tmp));
+		m_iszMemberName[m_cMembers] = ALLOC_STRING(tmp);
+		m_iszMemberValue[m_cMembers] = ALLOC_STRING(pkvd->szValue);
+		m_cMembers++;
+		return true;
+	}
+	else
+	{
+		ALERT(at_error, "Too many members for info_group \"%s\" (limit is %d)\n",
+			STRING(pev->targetname), MAX_ALIAS_TARGETS);
+	}
+	return CPointEntity::KeyValue(pkvd);
+}
+
+void CInfoGroup::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (FStringNull(pev->target))
+		return;
+
+	CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+	if (pTarget && pTarget->IsAlias())
+	{
+		if (pev->spawnflags & SF_GROUP_DEBUG)
+			ALERT(at_debug, "DEBUG: info_group \"%s\" changes alias \"%s\"\n",
+				STRING(pev->targetname), STRING(pTarget->pev->targetname));
+		static_cast<CBaseAlias*>(pTarget)->ChangeValue(this);
+	}
+	else if (pev->target)
+	{
+		ALERT(at_error, "info_group \"%s\": alias \"%s\" was not found or not an alias!\n",
+			STRING(pev->targetname), STRING(pev->target));
+	}
+}
+
+string_t CInfoGroup::GetMember(const char* szMemberName)
+{
+	if (!szMemberName)
+		return iStringNull;
+
+	for (int i = 0; i < m_cMembers; i++)
+	{
+		if (FStrEq(szMemberName, STRING(m_iszMemberName[i])))
+			return m_iszMemberValue[i];
+	}
+
+	if (!FStringNull(m_iszDefaultMember))
+	{
+		static char szBuffer[128];
+		snprintf(szBuffer, sizeof(szBuffer), "%s%s", STRING(m_iszDefaultMember), szMemberName);
+		return ALLOC_STRING(szBuffer);
+	}
+
+	ALERT(at_debug, "info_group \"%s\" has no member called \"%s\".\n",
+		STRING(pev->targetname), szMemberName);
+	return iStringNull;
 }
 
 //=========================================================

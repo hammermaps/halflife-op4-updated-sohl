@@ -2597,3 +2597,90 @@ void CEnvParticle::SendParticle(int iActive)
 	WRITE_STRING(STRING(pev->message));
 	MESSAGE_END();
 }
+
+//=========================================================
+// env_warpball
+// LRC - Xen warp-in effect. Creates lightning beams from the
+// origin outward and plays a warp-in sound. After 0.5 seconds,
+// fires targets and plays an arrival sound.
+// pev->frags  = number of beams to create (default 8)
+// pev->health = beam length/radius (default 256)
+//=========================================================
+class CEnvWarpBall : public CBaseEntity
+{
+public:
+void Precache() override;
+void Spawn() override { Precache(); }
+void Think() override;
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+};
+
+LINK_ENTITY_TO_CLASS(env_warpball, CEnvWarpBall);
+
+void CEnvWarpBall::Precache()
+{
+PRECACHE_MODEL("sprites/lgtning.spr");
+PRECACHE_MODEL("sprites/Fexplo1.spr");
+PRECACHE_MODEL("sprites/XFlare1.spr");
+PRECACHE_SOUND("debris/beamstart2.wav");
+PRECACHE_SOUND("debris/beamstart7.wav");
+}
+
+void CEnvWarpBall::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+int iNumBeams = (pev->frags > 0) ? (int)pev->frags : 8;
+float flRadius = (pev->health > 0) ? pev->health : 256.0f;
+int iDrawn = 0;
+int iTries = 0;
+TraceResult tr;
+
+while (iDrawn < iNumBeams && iTries < iNumBeams * 3)
+{
+Vector vecDir = Vector(RANDOM_FLOAT(-1, 1), RANDOM_FLOAT(-1, 1), RANDOM_FLOAT(-1, 1)).Normalize();
+Vector vecDest = pev->origin + vecDir * flRadius;
+UTIL_TraceLine(pev->origin, vecDest, ignore_monsters, ENT(pev), &tr);
+if (tr.flFraction != 1.0)
+{
+CBeam* pBeam = CBeam::BeamCreate("sprites/lgtning.spr", 200);
+if (pBeam)
+{
+pBeam->PointsInit(pev->origin, tr.vecEndPos);
+pBeam->SetColor(197, 243, 169);
+pBeam->SetNoise(65);
+pBeam->SetBrightness(150);
+pBeam->SetWidth(18);
+pBeam->SetScrollRate(35);
+pBeam->SetThink(&CBeam::SUB_Remove);
+pBeam->SetNextThink(1);
+iDrawn++;
+}
+}
+iTries++;
+}
+
+EMIT_SOUND(edict(), CHAN_BODY, "debris/beamstart2.wav", 1, ATTN_NORM);
+
+CSprite* pSpr = CSprite::SpriteCreate("sprites/Fexplo1.spr", pev->origin, true);
+if (pSpr)
+{
+pSpr->AnimateAndDie(10);
+pSpr->SetTransparency(kRenderGlow, 77, 210, 130, 255, kRenderFxNoDissipation);
+}
+
+pSpr = CSprite::SpriteCreate("sprites/XFlare1.spr", pev->origin, true);
+if (pSpr)
+{
+pSpr->AnimateAndDie(10);
+pSpr->SetTransparency(kRenderGlow, 184, 250, 214, 255, kRenderFxNoDissipation);
+}
+
+SetNextThink(0.5);
+}
+
+void CEnvWarpBall::Think()
+{
+	EMIT_SOUND(edict(), CHAN_ITEM, "debris/beamstart7.wav", 1, ATTN_NORM);
+	SUB_UseTargets(this, USE_TOGGLE, 0);
+	DontThink();
+}

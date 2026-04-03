@@ -176,6 +176,153 @@ TYPEDESCRIPTION CGameState::m_SaveData[] = {
 	DEFINE_FIELD(CGameState, m_iState, FIELD_INTEGER),
 };
 IMPLEMENT_SAVERESTORE(CGameState, CPointEntity);
+
+//=========================================================
+// env_state
+// LRC - A state entity with optional delayed transitions.
+// Fires different targets when turning on vs. off.
+// pev->target      = target fired on any state change (USE_ON/USE_OFF)
+// pev->noise1      = extra target fired when turning ON  (USE_TOGGLE)
+// pev->noise2      = extra target fired when turning OFF (USE_TOGGLE)
+//=========================================================
+#define SF_ENVSTATE_START_ON 1
+#define SF_ENVSTATE_DEBUG    2
+
+class CEnvState : public CPointEntity
+{
+public:
+	void Spawn() override;
+	void Think() override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+	bool IsLockedByMaster() { return !FStringNull(m_sMaster) && !UTIL_IsMasterTriggered(m_sMaster, nullptr); }
+
+	STATE GetState() override { return m_iState; }
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	STATE m_iState;
+	float m_fTurnOnTime;
+	float m_fTurnOffTime;
+	string_t m_sMaster;
+};
+
+LINK_ENTITY_TO_CLASS(env_state, CEnvState);
+
+TYPEDESCRIPTION CEnvState::m_SaveData[] =
+	{
+		DEFINE_FIELD(CEnvState, m_iState, FIELD_INTEGER),
+		DEFINE_FIELD(CEnvState, m_fTurnOnTime, FIELD_FLOAT),
+		DEFINE_FIELD(CEnvState, m_fTurnOffTime, FIELD_FLOAT),
+		DEFINE_FIELD(CEnvState, m_sMaster, FIELD_STRING),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvState, CPointEntity);
+
+void CEnvState::Spawn()
+{
+	m_iState = (pev->spawnflags & SF_ENVSTATE_START_ON) ? STATE_ON : STATE_OFF;
+}
+
+bool CEnvState::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "turnontime"))
+	{
+		m_fTurnOnTime = atof(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "turnofftime"))
+	{
+		m_fTurnOffTime = atof(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "master"))
+	{
+		m_sMaster = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	return CPointEntity::KeyValue(pkvd);
+}
+
+void CEnvState::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (!ShouldToggle(useType) || IsLockedByMaster())
+	{
+		if (pev->spawnflags & SF_ENVSTATE_DEBUG)
+			ALERT(at_debug, "DEBUG: env_state \"%s\" ignored trigger.\n", STRING(pev->targetname));
+		return;
+	}
+
+	switch (GetState())
+	{
+	case STATE_ON:
+	case STATE_TURN_ON:
+		if (m_fTurnOffTime != 0)
+		{
+			m_iState = STATE_TURN_OFF;
+			if (pev->spawnflags & SF_ENVSTATE_DEBUG)
+				ALERT(at_debug, "DEBUG: env_state \"%s\" will turn off in %f seconds.\n",
+					STRING(pev->targetname), m_fTurnOffTime);
+			SetNextThink(m_fTurnOffTime);
+		}
+		else
+		{
+			m_iState = STATE_OFF;
+			if (pev->spawnflags & SF_ENVSTATE_DEBUG)
+				ALERT(at_debug, "DEBUG: env_state \"%s\" turned off.\n", STRING(pev->targetname));
+			FireTargets(STRING(pev->target), pActivator, this, USE_OFF, 0);
+			FireTargets(STRING(pev->noise2), pActivator, this, USE_TOGGLE, 0);
+			DontThink();
+		}
+		break;
+	case STATE_OFF:
+	case STATE_TURN_OFF:
+		if (m_fTurnOnTime != 0)
+		{
+			m_iState = STATE_TURN_ON;
+			if (pev->spawnflags & SF_ENVSTATE_DEBUG)
+				ALERT(at_debug, "DEBUG: env_state \"%s\" will turn on in %f seconds.\n",
+					STRING(pev->targetname), m_fTurnOnTime);
+			SetNextThink(m_fTurnOnTime);
+		}
+		else
+		{
+			m_iState = STATE_ON;
+			if (pev->spawnflags & SF_ENVSTATE_DEBUG)
+				ALERT(at_debug, "DEBUG: env_state \"%s\" turned on.\n", STRING(pev->targetname));
+			FireTargets(STRING(pev->target), pActivator, this, USE_ON, 0);
+			FireTargets(STRING(pev->noise1), pActivator, this, USE_TOGGLE, 0);
+			DontThink();
+		}
+		break;
+	}
+}
+
+void CEnvState::Think()
+{
+	if (m_iState == STATE_TURN_ON)
+	{
+		m_iState = STATE_ON;
+		if (pev->spawnflags & SF_ENVSTATE_DEBUG)
+			ALERT(at_debug, "DEBUG: env_state \"%s\" turned itself on.\n", STRING(pev->targetname));
+		FireTargets(STRING(pev->target), this, this, USE_ON, 0);
+		FireTargets(STRING(pev->noise1), this, this, USE_TOGGLE, 0);
+		DontThink();
+	}
+	else if (m_iState == STATE_TURN_OFF)
+	{
+		m_iState = STATE_OFF;
+		if (pev->spawnflags & SF_ENVSTATE_DEBUG)
+			ALERT(at_debug, "DEBUG: env_state \"%s\" turned itself off.\n", STRING(pev->targetname));
+		FireTargets(STRING(pev->target), this, this, USE_OFF, 0);
+		FireTargets(STRING(pev->noise2), this, this, USE_TOGGLE, 0);
+		DontThink();
+	}
+}
+
 //
 // Cache user-entity-field values until spawn is called.
 //
