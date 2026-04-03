@@ -561,6 +561,7 @@ void EMIT_GROUPNAME_SUIT(edict_t* entity, const char* groupname);
 */
 void UTIL_PrecacheFallbackResources();
 
+#ifndef CLIENT_DLL
 /**
 *	@brief Safe wrapper for PRECACHE_MODEL. Checks if the file exists and falls back
 *	to error.mdl or null.spr if missing, logging a warning instead of crashing.
@@ -587,6 +588,14 @@ unsigned short PrecacheEvent(int type, const char* path);
 *	and falls back to error.mdl or null.spr if missing, logging a warning instead of crashing.
 */
 void SetModel(edict_t* entity, const char* path);
+#else
+// On the client DLL, weapon prediction code calls these functions but only needs to route
+// through the engine callbacks (which are replaced with stubs during prediction).
+inline int PrecacheModel(const char* path) { return PRECACHE_MODEL(path); }
+inline int PrecacheSound(const char* path) { return PRECACHE_SOUND(path); }
+inline unsigned short PrecacheEvent(int type, const char* path) { return PRECACHE_EVENT(type, path); }
+inline void SetModel(edict_t* entity, const char* path) { SET_MODEL(entity, path); }
+#endif
 
 #define GROUP_OP_AND 0
 #define GROUP_OP_NAND 1
