@@ -63,3 +63,8 @@ void UTIL_AssignOrigin(CBaseEntity* pEnt, const Vector& vecOrigin, bool bInitiat
 void UTIL_SetVelocity(CBaseEntity* pEnt, const Vector& vecSet);
 void UTIL_SetAvelocity(CBaseEntity* pEnt, const Vector& vecSet);
 void UTIL_SetAngles(CBaseEntity* pEnt, const Vector& vecSet);
+
+// MoveWith in-game debugger
+// Dumps full MoveWith hierarchy to client console; draws debug beams when sohl_mw_debug >= 2
+void MoveWith_DebugDump(CBaseEntity* pPlayer);
+void MoveWith_DrawDebugBeams();

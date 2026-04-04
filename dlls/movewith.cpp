@@ -4,6 +4,9 @@
 #include "util.h"
 #include "cbase.h"
 #include "movewith.h"
+#include "debug.h"
+#include "game.h"
+#include "weapons.h"
 
 #include <algorithm>
 #include <vector>
@@ -292,6 +295,9 @@ void MoveWith_ProcessFrameQueues()
 		ALERT(at_warning, "MoveWith Desired queue budget exceeded (%d). Remaining deferred to next frame.\n", MAX_DESIRED_PER_FRAME);
 		s_flLastDesiredWarnTime = gpGlobals->time;
 	}
+
+	// Draw debug beams when sohl_mw_debug >= 2
+	MoveWith_DrawDebugBeams();
 }
 
 
@@ -309,6 +315,10 @@ void UTIL_AssignOrigin(CBaseEntity* pEnt, const Vector& vecOrigin, bool bInitiat
 	if (!pEnt->m_pChildMoveWith)
 		return;
 
+	DEV_LOG(mw_debug, "AssignOrigin: %s (%.1f %.1f %.1f) -> %d children",
+		STRING(pEnt->pev->classname), vecOrigin.x, vecOrigin.y, vecOrigin.z,
+		[&]() { int n = 0; for (auto* c = pEnt->m_pChildMoveWith; c; c = c->m_pSiblingMoveWith) ++n; return n; }());
+
 	int loopbreaker = MAX_MOVEWITH_DEPTH;
 	CBaseEntity* pChild = pEnt->m_pChildMoveWith;
 	while (pChild)
@@ -319,6 +329,10 @@ void UTIL_AssignOrigin(CBaseEntity* pEnt, const Vector& vecOrigin, bool bInitiat
 			break;
 		}
 		Vector vecChildOrigin = vecOrigin + pChild->m_vecMoveWithOffset;
+		DEV_LOG(mw_debug, "  child %s offset (%.1f %.1f %.1f) -> origin (%.1f %.1f %.1f)",
+			STRING(pChild->pev->classname),
+			pChild->m_vecMoveWithOffset.x, pChild->m_vecMoveWithOffset.y, pChild->m_vecMoveWithOffset.z,
+			vecChildOrigin.x, vecChildOrigin.y, vecChildOrigin.z);
 		UTIL_AssignOrigin(pChild, vecChildOrigin, false);
 		pChild = pChild->m_pSiblingMoveWith;
 	}
@@ -335,6 +349,9 @@ void UTIL_SetVelocity(CBaseEntity* pEnt, const Vector& vecSet)
 
 	if (!pEnt->m_pChildMoveWith)
 		return;
+
+	DEV_LOG(mw_debug, "SetVelocity: %s vel (%.1f %.1f %.1f)",
+		STRING(pEnt->pev->classname), vecSet.x, vecSet.y, vecSet.z);
 
 	int loopbreaker = MAX_MOVEWITH_DEPTH;
 	CBaseEntity* pChild = pEnt->m_pChildMoveWith;
@@ -354,12 +371,15 @@ void UTIL_SetVelocity(CBaseEntity* pEnt, const Vector& vecSet)
 			{
 				if (pChild->m_pfnThink == NULL)
 				{
+					DEV_LOG(mw_debug, "  child %s has no think! Setting SUB_DoNothing to enable velocity",
+						STRING(pChild->pev->classname));
 					pChild->SetThink(&CBaseEntity::SUB_DoNothing);
 					pChild->SetNextThink(0.01);
 				}
 			}
 		}
 
+		DEV_LOG(mw_debug, "  propagate vel to child %s", STRING(pChild->pev->classname));
 		UTIL_SetVelocity(pChild, vecSet);
 		pChild = pChild->m_pSiblingMoveWith;
 	}
@@ -377,6 +397,9 @@ void UTIL_SetAvelocity(CBaseEntity* pEnt, const Vector& vecSet)
 	if (!pEnt->m_pChildMoveWith)
 		return;
 
+	DEV_LOG(mw_debug, "SetAvelocity: %s avel (%.1f %.1f %.1f)",
+		STRING(pEnt->pev->classname), vecSet.x, vecSet.y, vecSet.z);
+
 	int loopbreaker = MAX_MOVEWITH_DEPTH;
 	CBaseEntity* pChild = pEnt->m_pChildMoveWith;
 	while (pChild)
@@ -386,6 +409,7 @@ void UTIL_SetAvelocity(CBaseEntity* pEnt, const Vector& vecSet)
 			ALERT(at_error, "MoveWith chain overflow in UTIL_SetAvelocity!\n");
 			break;
 		}
+		DEV_LOG(mw_debug, "  propagate avel to child %s", STRING(pChild->pev->classname));
 		UTIL_SetAvelocity(pChild, vecSet);
 		pChild = pChild->m_pSiblingMoveWith;
 	}
@@ -403,6 +427,9 @@ void UTIL_SetAngles(CBaseEntity* pEnt, const Vector& vecSet)
 	if (!pEnt->m_pChildMoveWith)
 		return;
 
+	DEV_LOG(mw_debug, "SetAngles: %s angles (%.1f %.1f %.1f)",
+		STRING(pEnt->pev->classname), vecSet.x, vecSet.y, vecSet.z);
+
 	int loopbreaker = MAX_MOVEWITH_DEPTH;
 	CBaseEntity* pChild = pEnt->m_pChildMoveWith;
 	while (pChild)
@@ -413,7 +440,224 @@ void UTIL_SetAngles(CBaseEntity* pEnt, const Vector& vecSet)
 			break;
 		}
 		Vector vecChildAngles = vecSet + pChild->m_vecRotWithOffset;
+		DEV_LOG(mw_debug, "  child %s rot-offset (%.1f %.1f %.1f) -> angles (%.1f %.1f %.1f)",
+			STRING(pChild->pev->classname),
+			pChild->m_vecRotWithOffset.x, pChild->m_vecRotWithOffset.y, pChild->m_vecRotWithOffset.z,
+			vecChildAngles.x, vecChildAngles.y, vecChildAngles.z);
 		UTIL_SetAngles(pChild, vecChildAngles);
 		pChild = pChild->m_pSiblingMoveWith;
+	}
+}
+
+
+//=========================================================
+// MoveWith_DebugDump
+// Print the full MoveWith hierarchy to the calling player's
+// console.  Requires sv_cheats 1.
+// Usage in-game: movewith_debug
+//=========================================================
+static void PrintChildTree(edict_t* pClient, CBaseEntity* pEnt, int depth)
+{
+	if (!pEnt || depth > MAX_MOVEWITH_DEPTH)
+		return;
+
+	// indent
+	char indent[128];
+	int i = 0;
+	for (; i < depth * 2 && i < (int)sizeof(indent) - 1; i++)
+		indent[i] = ' ';
+	indent[i] = '\0';
+
+	const char* name = pEnt->pev->targetname ? STRING(pEnt->pev->targetname) : "<no name>";
+	const char* cls  = STRING(pEnt->pev->classname);
+	const char* mdl  = pEnt->pev->model ? STRING(pEnt->pev->model) : "";
+
+	CLIENT_PRINTF(pClient, print_console,
+		UTIL_VarArgs("%s[%s] %s (%s) origin(%.1f %.1f %.1f) vel(%.1f %.1f %.1f) movetype %d\n",
+			indent, cls, name, mdl,
+			pEnt->pev->origin.x, pEnt->pev->origin.y, pEnt->pev->origin.z,
+			pEnt->pev->velocity.x, pEnt->pev->velocity.y, pEnt->pev->velocity.z,
+			pEnt->pev->movetype));
+
+	if (depth > 0)
+	{
+		CLIENT_PRINTF(pClient, print_console,
+			UTIL_VarArgs("%s  offset(%.1f %.1f %.1f) rot-offset(%.1f %.1f %.1f) lflags 0x%x\n",
+				indent,
+				pEnt->m_vecMoveWithOffset.x, pEnt->m_vecMoveWithOffset.y, pEnt->m_vecMoveWithOffset.z,
+				pEnt->m_vecRotWithOffset.x, pEnt->m_vecRotWithOffset.y, pEnt->m_vecRotWithOffset.z,
+				pEnt->m_iLFlags));
+
+		// Check if offset matches actual position difference with parent
+		if (pEnt->m_pMoveWith)
+		{
+			Vector expectedOrigin = pEnt->m_pMoveWith->pev->origin + pEnt->m_vecMoveWithOffset;
+			Vector diff = pEnt->pev->origin - expectedOrigin;
+			float drift = diff.Length();
+			if (drift > 1.0f)
+			{
+				CLIENT_PRINTF(pClient, print_console,
+					UTIL_VarArgs("%s  *** DRIFT %.1f units! expected(%.1f %.1f %.1f) actual(%.1f %.1f %.1f)\n",
+						indent, drift,
+						expectedOrigin.x, expectedOrigin.y, expectedOrigin.z,
+						pEnt->pev->origin.x, pEnt->pev->origin.y, pEnt->pev->origin.z));
+			}
+		}
+	}
+
+	// recurse into children
+	CBaseEntity* pChild = pEnt->m_pChildMoveWith;
+	while (pChild)
+	{
+		PrintChildTree(pClient, pChild, depth + 1);
+		pChild = pChild->m_pSiblingMoveWith;
+	}
+}
+
+void MoveWith_DebugDump(CBaseEntity* pPlayer)
+{
+	if (!pPlayer)
+		return;
+
+	edict_t* pClient = pPlayer->edict();
+	int totalRoots = 0;
+	int totalChildren = 0;
+	int totalOrphans = 0;
+
+	CLIENT_PRINTF(pClient, print_console, "--- MoveWith Hierarchy Dump ---\n");
+
+	// Walk all entities, find roots (have children but no parent)
+	for (int i = 1; i < gpGlobals->maxEntities; i++)
+	{
+		edict_t* pEdict = INDEXENT(i);
+		if (!pEdict || pEdict->free)
+			continue;
+
+		CBaseEntity* pEnt = CBaseEntity::Instance(pEdict);
+		if (!pEnt)
+			continue;
+
+		// Root: has children but no parent
+		if (pEnt->m_pChildMoveWith && !pEnt->m_pMoveWith)
+		{
+			totalRoots++;
+			CLIENT_PRINTF(pClient, print_console, "\n");
+			PrintChildTree(pClient, pEnt, 0);
+		}
+	}
+
+	// Second pass: find orphans (have m_MoveWith set but no resolved m_pMoveWith)
+	for (int i = 1; i < gpGlobals->maxEntities; i++)
+	{
+		edict_t* pEdict = INDEXENT(i);
+		if (!pEdict || pEdict->free)
+			continue;
+
+		CBaseEntity* pEnt = CBaseEntity::Instance(pEdict);
+		if (!pEnt)
+			continue;
+
+		if (pEnt->m_MoveWith && !pEnt->m_pMoveWith)
+		{
+			totalOrphans++;
+			CLIENT_PRINTF(pClient, print_console,
+				UTIL_VarArgs("\n*** ORPHAN: [%s] %s wanted movewith '%s' but parent not found!\n",
+					STRING(pEnt->pev->classname),
+					pEnt->pev->targetname ? STRING(pEnt->pev->targetname) : "<no name>",
+					STRING(pEnt->m_MoveWith)));
+		}
+
+		if (pEnt->m_pMoveWith)
+			totalChildren++;
+	}
+
+	CLIENT_PRINTF(pClient, print_console,
+		UTIL_VarArgs("\n--- Summary: %d root(s), %d child(ren), %d orphan(s) ---\n",
+			totalRoots, totalChildren, totalOrphans));
+
+	// Queue stats
+	CLIENT_PRINTF(pClient, print_console,
+		UTIL_VarArgs("PostAssist queue: cur=%d next=%d | Desired queue: cur=%d next=%d\n",
+			(int)s_PostAssistCur.size(), (int)s_PostAssistNext.size(),
+			(int)s_DesiredCur.size(), (int)s_DesiredNext.size()));
+}
+
+
+//=========================================================
+// MoveWith_DrawDebugBeams
+// When sohl_mw_debug >= 2, draw temporary beams between
+// each parent and its MoveWith children.
+// Call once per server frame from MoveWith_ProcessFrameQueues.
+//=========================================================
+void MoveWith_DrawDebugBeams()
+{
+	if (mw_debug.value < 2)
+		return;
+
+	for (int i = 1; i < gpGlobals->maxEntities; i++)
+	{
+		edict_t* pEdict = INDEXENT(i);
+		if (!pEdict || pEdict->free)
+			continue;
+
+		CBaseEntity* pEnt = CBaseEntity::Instance(pEdict);
+		if (!pEnt || !pEnt->m_pChildMoveWith)
+			continue;
+
+		CBaseEntity* pChild = pEnt->m_pChildMoveWith;
+		while (pChild)
+		{
+			// Green beam from parent to child
+			MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
+			WRITE_BYTE(TE_BEAMPOINTS);
+			WRITE_COORD(pEnt->pev->origin.x);
+			WRITE_COORD(pEnt->pev->origin.y);
+			WRITE_COORD(pEnt->pev->origin.z);
+			WRITE_COORD(pChild->pev->origin.x);
+			WRITE_COORD(pChild->pev->origin.y);
+			WRITE_COORD(pChild->pev->origin.z);
+			WRITE_SHORT(g_sModelIndexLaser);
+			WRITE_BYTE(0);   // frame start
+			WRITE_BYTE(0);   // framerate
+			WRITE_BYTE(1);   // life (0.1s)
+			WRITE_BYTE(4);   // width
+			WRITE_BYTE(0);   // noise
+			WRITE_BYTE(0);   // r
+			WRITE_BYTE(255); // g
+			WRITE_BYTE(0);   // b
+			WRITE_BYTE(200); // brightness
+			WRITE_BYTE(0);   // speed
+			MESSAGE_END();
+
+			// Check for positional drift — red beam if child drifted > 1 unit
+			Vector expectedOrigin = pEnt->pev->origin + pChild->m_vecMoveWithOffset;
+			Vector diff = pChild->pev->origin - expectedOrigin;
+			if (diff.Length() > 1.0f)
+			{
+				// Red beam from expected position to actual position
+				MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
+				WRITE_BYTE(TE_BEAMPOINTS);
+				WRITE_COORD(expectedOrigin.x);
+				WRITE_COORD(expectedOrigin.y);
+				WRITE_COORD(expectedOrigin.z);
+				WRITE_COORD(pChild->pev->origin.x);
+				WRITE_COORD(pChild->pev->origin.y);
+				WRITE_COORD(pChild->pev->origin.z);
+				WRITE_SHORT(g_sModelIndexLaser);
+				WRITE_BYTE(0);   // frame start
+				WRITE_BYTE(0);   // framerate
+				WRITE_BYTE(1);   // life (0.1s)
+				WRITE_BYTE(8);   // width (thicker for errors)
+				WRITE_BYTE(0);   // noise
+				WRITE_BYTE(255); // r
+				WRITE_BYTE(0);   // g
+				WRITE_BYTE(0);   // b
+				WRITE_BYTE(255); // brightness
+				WRITE_BYTE(0);   // speed
+				MESSAGE_END();
+			}
+
+			pChild = pChild->m_pSiblingMoveWith;
+		}
 	}
 }
