@@ -4356,7 +4356,7 @@ initammo(string) : "Initial Ammo" : "6"
 		68 : "Gut shot"
 		69 : "Shot in the back"
 	]
-	//*   <b>Player:</b> 0 = gordon's head, 1 = hooded.
+	//*   <b>Player:</b> 0 = gordon's head, 1 = helmeted.
 	//*   <b>Gina, Gordon, Helmet and Scientist player models:</b> 0 = original design, 1 = updated (better looking) version.
 	//*   <b>Barneys:</b> 0 = holstered gun, 1 = holding gun, 2 = missing gun.
 	//*   <b>Scientists:</b> 0-3 = no syringe, 4-7 = syringe in hand. 4 different heads in each set. (0 = Glasses, 1 = Einstein, 2 = Luther, 3 = Slick)
