@@ -22,6 +22,7 @@ class CBaseEntity;
 class CInfoGroup;
 
 #define MAX_ALIAS_TARGETS 16
+#define MAX_ALIASNAME_LEN 80
 
 //=========================================================
 // CBaseAlias
@@ -140,3 +141,6 @@ public:
 	int m_iszTargets[MAX_ALIAS_TARGETS];
 	int m_fTargetType[MAX_ALIAS_TARGETS]; // 0 = targetname, 1 = classname
 };
+
+// Called after FireTargets to let aliases reflect their new values
+extern void FlushAliases();

@@ -27,6 +27,7 @@
 #include "nodes.h"
 #include "doors.h"
 #include "movewith.h"
+#include "alias.h"
 
 extern bool FEntIsVisible(entvars_t* pev, entvars_t* pevTarget);
 
@@ -225,23 +226,40 @@ void CBaseEntity::SUB_UseTargets(CBaseEntity* pActivator, USE_TYPE useType, floa
 
 void FireTargets(const char* targetName, CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	edict_t* pentTarget = NULL;
 	if (!targetName)
 		return;
 
+	// LRC - handle Spirit-style USE_TYPE prefixes on target names
+	if (targetName[0] == '+')
+	{
+		targetName++;
+		useType = USE_ON;
+	}
+	else if (targetName[0] == '-')
+	{
+		targetName++;
+		useType = USE_OFF;
+	}
+	else if (targetName[0] == '!')
+	{
+		targetName++;
+		useType = USE_KILL;
+	}
+	else if (targetName[0] == '>')
+	{
+		targetName++;
+		useType = USE_SAME;
+	}
+
 	ALERT(at_aiconsole, "Firing: (%s)\n", targetName);
 
-	for (;;)
+	// LRC - use UTIL_FindEntityByTargetname to support *alias and group.member references
+	CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, targetName);
+	while (pTarget)
 	{
-		pentTarget = FIND_ENTITY_BY_TARGETNAME(pentTarget, targetName);
-		if (FNullEnt(pentTarget))
-			break;
-
-		CBaseEntity* pTarget = CBaseEntity::Instance(pentTarget);
-		if (pTarget && (pTarget->pev->flags & FL_KILLME) == 0) // Don't use dying ents
+		if ((pTarget->pev->flags & FL_KILLME) == 0) // Don't use dying ents
 		{
 			ALERT(at_aiconsole, "Found: %s, firing (%s)\n", STRING(pTarget->pev->classname), targetName);
-			// LRC - USE_KILL handling
 			if (useType == USE_KILL)
 			{
 				UTIL_Remove(pTarget);
@@ -251,7 +269,11 @@ void FireTargets(const char* targetName, CBaseEntity* pActivator, CBaseEntity* p
 				pTarget->Use(pActivator, pCaller, useType, value);
 			}
 		}
+		pTarget = UTIL_FindEntityByTargetname(pTarget, targetName);
 	}
+
+	// LRC - allow aliases to reflect their new values after all targets have fired
+	FlushAliases();
 }
 
 LINK_ENTITY_TO_CLASS(DelayedUse, CBaseDelay);

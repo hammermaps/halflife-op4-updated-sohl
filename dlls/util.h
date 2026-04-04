@@ -231,6 +231,11 @@ extern CBaseEntity* UTIL_FindEntityByClassname(CBaseEntity* pStartEntity, const 
 extern CBaseEntity* UTIL_FindEntityByTargetname(CBaseEntity* pStartEntity, const char* szName);
 extern CBaseEntity* UTIL_FindEntityGeneric(const char* szName, Vector& vecSrc, float flRadius);
 
+// LRC - Spirit-style reference resolution
+extern CBaseEntity* UTIL_FollowAliasReference(CBaseEntity* pStartEntity, const char* szValue);
+extern CBaseEntity* UTIL_FollowGroupReference(CBaseEntity* pStartEntity, const char* szGroupName, const char* szMemberName);
+extern CBaseEntity* UTIL_FollowReference(CBaseEntity* pStartEntity, const char* szName);
+
 // LRC - add alias to the global flush list
 class CBaseAlias;
 extern void UTIL_AddToAliasList(CBaseAlias* pAlias);
