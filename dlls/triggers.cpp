@@ -4221,3 +4221,180 @@ FireTargets(STRING(pev->message), this, this, USE_TOGGLE, 0);
 }
 pev->frags = iCount;
 }
+
+//=========================================================
+// motion_thread - LRC 
+// Helper entity for SoHL motion_manager pattern.
+// Continuously adjusts target position/facing each frame.
+//=========================================================
+#define SF_MOTION_DEBUG 1
+
+class CMotionThread : public CPointEntity
+{
+public:
+void Think() override;
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+string_t m_iszPosition;
+int m_iPosMode = 0;
+string_t m_iszFacing;
+int m_iFaceMode = 0;
+EHANDLE m_hLocus;
+EHANDLE m_hTarget;
+};
+
+LINK_ENTITY_TO_CLASS(motion_thread, CPointEntity);
+
+TYPEDESCRIPTION CMotionThread::m_SaveData[] =
+{
+DEFINE_FIELD(CMotionThread, m_iszPosition, FIELD_STRING),
+DEFINE_FIELD(CMotionThread, m_iPosMode, FIELD_INTEGER),
+DEFINE_FIELD(CMotionThread, m_iszFacing, FIELD_STRING),
+DEFINE_FIELD(CMotionThread, m_iFaceMode, FIELD_INTEGER),
+DEFINE_FIELD(CMotionThread, m_hLocus, FIELD_EHANDLE),
+DEFINE_FIELD(CMotionThread, m_hTarget, FIELD_EHANDLE),
+};
+
+IMPLEMENT_SAVERESTORE(CMotionThread, CPointEntity);
+
+void CMotionThread::Think()
+{
+if (m_hLocus == nullptr || m_hTarget == nullptr)
+{
+if (FBitSet(pev->spawnflags, SF_MOTION_DEBUG))
+ALERT(at_debug, "motion_thread expires\n");
+SetThink(&CMotionThread::SUB_Remove);
+SetNextThink(0.1);
+return;
+}
+
+SetNextThink(0); // think every frame
+
+if (FBitSet(pev->spawnflags, SF_MOTION_DEBUG))
+ALERT(at_debug, "motion_thread affects %s \"%s\":\n",
+STRING(m_hTarget->pev->classname), STRING(m_hTarget->pev->targetname));
+
+Vector vecTemp;
+
+if (m_iszPosition)
+{
+switch (m_iPosMode)
+{
+case 0: // set position
+UTIL_AssignOrigin(m_hTarget, CalcLocus_Position(this, m_hLocus, STRING(m_iszPosition)));
+m_hTarget->pev->flags &= ~FL_ONGROUND;
+break;
+case 1: // offset position (= fake velocity)
+UTIL_AssignOrigin(m_hTarget,
+m_hTarget->pev->origin + gpGlobals->frametime * CalcLocus_Velocity(this, m_hLocus, STRING(m_iszPosition)));
+m_hTarget->pev->flags &= ~FL_ONGROUND;
+break;
+case 2: // set velocity
+UTIL_SetVelocity(m_hTarget, CalcLocus_Velocity(this, m_hLocus, STRING(m_iszPosition)));
+break;
+case 3: // accelerate
+UTIL_SetVelocity(m_hTarget,
+m_hTarget->pev->velocity + gpGlobals->frametime * CalcLocus_Velocity(this, m_hLocus, STRING(m_iszPosition)));
+break;
+case 4: // follow position
+UTIL_SetVelocity(m_hTarget,
+CalcLocus_Position(this, m_hLocus, STRING(m_iszPosition)) - m_hTarget->pev->origin);
+break;
+}
+}
+
+if (m_iszFacing)
+{
+switch (m_iFaceMode)
+{
+case 0: // set angles
+vecTemp = CalcLocus_Velocity(this, m_hLocus, STRING(m_iszFacing));
+if (vecTemp != g_vecZero)
+UTIL_SetAngles(m_hTarget, UTIL_VecToAngles(vecTemp));
+break;
+case 1: // offset angles (rotate by velocity direction)
+vecTemp = CalcLocus_Velocity(this, m_hLocus, STRING(m_iszFacing));
+if (vecTemp != g_vecZero)
+UTIL_SetAngles(m_hTarget, m_hTarget->pev->angles + gpGlobals->frametime * UTIL_VecToAngles(vecTemp));
+break;
+case 2: // rotate by raw angles
+UTIL_StringToRandomVector((float*)vecTemp, STRING(m_iszFacing));
+UTIL_SetAngles(m_hTarget, m_hTarget->pev->angles + gpGlobals->frametime * vecTemp);
+break;
+case 3: // set avelocity
+UTIL_StringToRandomVector((float*)vecTemp, STRING(m_iszFacing));
+UTIL_SetAvelocity(m_hTarget, vecTemp);
+break;
+}
+}
+}
+
+//=========================================================
+// trigger_rottest - LRC debugging entity for rotation testing
+//=========================================================
+class CTriggerRotTest : public CBaseDelay
+{
+public:
+void PostSpawn() override;
+void Think() override;
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+private:
+CBaseEntity* m_pMarker = nullptr;
+CBaseEntity* m_pReference = nullptr;
+CBaseEntity* m_pBridge = nullptr;
+CBaseEntity* m_pHinge = nullptr;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_rottest, CTriggerRotTest);
+
+TYPEDESCRIPTION CTriggerRotTest::m_SaveData[] =
+{
+DEFINE_FIELD(CTriggerRotTest, m_pMarker, FIELD_CLASSPTR),
+DEFINE_FIELD(CTriggerRotTest, m_pReference, FIELD_CLASSPTR),
+DEFINE_FIELD(CTriggerRotTest, m_pBridge, FIELD_CLASSPTR),
+DEFINE_FIELD(CTriggerRotTest, m_pHinge, FIELD_CLASSPTR),
+};
+
+IMPLEMENT_SAVERESTORE(CTriggerRotTest, CBaseDelay);
+
+void CTriggerRotTest::PostSpawn()
+{
+m_pMarker = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+m_pReference = UTIL_FindEntityByTargetname(nullptr, STRING(pev->netname));
+m_pBridge = UTIL_FindEntityByTargetname(nullptr, STRING(pev->noise1));
+m_pHinge = UTIL_FindEntityByTargetname(nullptr, STRING(pev->message));
+pev->armorvalue = 0; // initial angle
+if (pev->armortype == 0)
+pev->armortype = 30;
+SetNextThink(1);
+}
+
+void CTriggerRotTest::Think()
+{
+if (m_pReference)
+{
+m_pReference->pev->origin = pev->origin;
+m_pReference->pev->origin.x = m_pReference->pev->origin.x + pev->health;
+}
+if (m_pMarker && m_pHinge)
+{
+Vector vecTemp = UTIL_AxisRotationToVec((m_pHinge->pev->origin - pev->origin).Normalize(), pev->armorvalue);
+m_pMarker->pev->origin = pev->origin + pev->health * vecTemp;
+}
+if (m_pBridge && m_pMarker && m_pReference)
+{
+Vector vecTemp = UTIL_AxisRotationToVec(
+(m_pHinge->pev->origin - pev->origin).Normalize(), pev->armorvalue / 2);
+m_pBridge->pev->origin = pev->origin + pev->health * vecTemp;
+}
+
+pev->armorvalue += pev->armortype;
+SetNextThink(0.05);
+}

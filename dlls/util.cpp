@@ -34,6 +34,8 @@
 #include "game.h"
 #include "UserMessages.h"
 #include "filesystem_utils.h"
+#include "alias.h"
+#include "movewith.h"
 
 // ==========================================
 // Safe resource precache / model set wrappers
@@ -854,6 +856,40 @@ CBaseEntity* UTIL_FindEntityByClassname(CBaseEntity* pStartEntity, const char* s
 CBaseEntity* UTIL_FindEntityByTargetname(CBaseEntity* pStartEntity, const char* szName)
 {
 	return UTIL_FindEntityByString(pStartEntity, "targetname", szName);
+}
+
+// LRC - add an alias entity to the global flush list in CWorld
+void UTIL_AddToAliasList(CBaseAlias* pAlias)
+{
+	if (!CWorld::World)
+	{
+		ALERT(at_debug, "UTIL_AddToAliasList: no World!\n");
+		return;
+	}
+
+	pAlias->m_iLFlags |= LF_ALIASLIST;
+
+	if (CWorld::World->m_pFirstAlias == nullptr)
+	{
+		CWorld::World->m_pFirstAlias = pAlias;
+		pAlias->m_pNextAlias = nullptr;
+	}
+	else if (CWorld::World->m_pFirstAlias == pAlias)
+	{
+		return; // already in list
+	}
+	else
+	{
+		CBaseAlias* pCurrent = CWorld::World->m_pFirstAlias;
+		while (pCurrent->m_pNextAlias != nullptr)
+		{
+			if (pCurrent->m_pNextAlias == pAlias)
+				return; // already in list
+			pCurrent = pCurrent->m_pNextAlias;
+		}
+		pCurrent->m_pNextAlias = pAlias;
+		pAlias->m_pNextAlias = nullptr;
+	}
 }
 
 

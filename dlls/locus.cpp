@@ -22,6 +22,8 @@
 #include "cbase.h"
 #include "locus.h"
 #include "effects.h"
+#include "alias.h"
+#include "movewith.h"
 
 //=========================================================
 // CalcLocus_Position
@@ -786,4 +788,61 @@ void CLocusVariable::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE
 
 		FireTargets(STRING(m_iszFireOnSpawn), this, this, USE_TOGGLE, 0);
 	}
+}
+
+//=========================================================
+// locus_alias - An alias entity that refers to the activator.
+// When triggered, sets its value to the activator entity.
+// LRC - ported from SoHL 1.2
+//=========================================================
+class CLocusAlias : public CBaseAlias
+{
+public:
+void PostSpawn() override;
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+CBaseEntity* FollowAlias(CBaseEntity* pFrom) override;
+void FlushChanges() override;
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+EHANDLE m_hValue;
+EHANDLE m_hChangeTo;
+};
+
+TYPEDESCRIPTION CLocusAlias::m_SaveData[] =
+{
+DEFINE_FIELD(CLocusAlias, m_hValue, FIELD_EHANDLE),
+DEFINE_FIELD(CLocusAlias, m_hChangeTo, FIELD_EHANDLE),
+};
+
+LINK_ENTITY_TO_CLASS(locus_alias, CLocusAlias);
+IMPLEMENT_SAVERESTORE(CLocusAlias, CBaseAlias);
+
+void CLocusAlias::PostSpawn()
+{
+m_hValue = UTIL_FindEntityByTargetname(nullptr, STRING(pev->netname));
+}
+
+void CLocusAlias::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+m_hChangeTo = pActivator;
+UTIL_AddToAliasList(this);
+}
+
+void CLocusAlias::FlushChanges()
+{
+m_hValue = m_hChangeTo;
+m_hChangeTo = nullptr;
+}
+
+CBaseEntity* CLocusAlias::FollowAlias(CBaseEntity* pFrom)
+{
+if (m_hValue == nullptr)
+return nullptr;
+else if (pFrom == nullptr || (OFFSET(m_hValue->pev) > OFFSET(pFrom->pev)))
+return m_hValue;
+else
+return nullptr;
 }
