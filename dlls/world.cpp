@@ -515,7 +515,8 @@ void CWorld::Spawn()
 		ResetTeamScores();
 	}
 
-	// LRC - set up the world's MoveWith assist list
+	// LRC - reset the MoveWith FIFO queues for the new level
+	MoveWith_ResetQueues();
 	m_pAssistLink = NULL;
 }
 

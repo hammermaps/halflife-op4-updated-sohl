@@ -117,31 +117,13 @@ void CBaseEntity::SUB_Remove()
 		ALERT(at_aiconsole, "SUB_Remove called on entity with health > 0\n");
 	}
 
-	// LRC - remove from the assist list to prevent dangling pointers
-	if (m_iLFlags & LF_DOASSIST)
-	{
-		CBaseEntity* pWorld = CWorld::World;
-		if (pWorld)
-		{
-			CBaseEntity* pPrev = NULL;
-			CBaseEntity* pCur = pWorld->m_pAssistLink;
-			while (pCur != NULL)
-			{
-				if (pCur == this)
-				{
-					if (pPrev)
-						pPrev->m_pAssistLink = m_pAssistLink;
-					else
-						pWorld->m_pAssistLink = m_pAssistLink;
-					break;
-				}
-				pPrev = pCur;
-				pCur = pCur->m_pAssistLink;
-			}
-		}
-		m_iLFlags &= ~LF_DOASSIST;
-		m_pAssistLink = NULL;
-	}
+	// LRC - clear queue flags to prevent processing of removed entities.
+	// The FIFO queues use "skip on remove" (FL_KILLME check) during processing,
+	// so we just clear the membership flags here. No list-walk needed.
+	ClearBits(m_iLFlags, LF_IN_POSTASSIST_QUEUE | LF_IN_DESIRED_QUEUE | LF_DOASSIST | LF_DODESIRED);
+	m_pAssistLink = NULL;
+	m_pPostAssistNext = nullptr;
+	m_pDesiredNext = nullptr;
 
 	// LRC - remove from parent's MoveWith child list
 	if (m_pMoveWith)

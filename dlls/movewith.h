@@ -30,19 +30,31 @@
 #define LF_DESIRED_INFO (1 << 10)
 #define LF_DESIRED_ACTION (1 << 11)
 #define LF_ALIASLIST (1 << 12)
+#define LF_IN_POSTASSIST_QUEUE (1 << 13)
+#define LF_IN_DESIRED_QUEUE (1 << 14)
 
 // Arbitrary limit to detect infinite loops in MoveWith chains
 #define MAX_MOVEWITH_DEPTH 100
 
+// Budget limits per frame for queue processing
+#define MAX_POSTASSIST_PER_FRAME 512
+#define MAX_DESIRED_PER_FRAME 512
+
 class CBaseEntity;
 
-// MoveWith assist/desired list processing
-void CheckDesiredList();
-void CheckAssistList();
+// MoveWith FIFO queue processing (replaces old CheckAssistList/CheckDesiredList)
+void MoveWith_ProcessFrameQueues();
+
+// Reset all queue state (call on level start)
+void MoveWith_ResetQueues();
 
 // Schedule deferred actions/thinks for an entity
 void UTIL_DesiredAction(CBaseEntity* pEnt);
 void UTIL_DesiredThink(CBaseEntity* pEnt);
+
+// Schedule post-assist velocity/angular velocity for an entity
+void UTIL_PostAssistVelocity(CBaseEntity* pEnt, const Vector& vel);
+void UTIL_PostAssistAVelocity(CBaseEntity* pEnt, const Vector& avel);
 
 // MoveWith utility functions
 void UTIL_AssignOrigin(CBaseEntity* pEnt, const Vector& vecOrigin, bool bInitiator = true);

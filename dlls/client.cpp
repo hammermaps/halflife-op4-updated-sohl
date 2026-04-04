@@ -990,8 +990,8 @@ void StartFrame()
 	gpGlobals->teamplay = teamplay.value;
 	g_ulFrameCount++;
 
-	// LRC - process the MoveWith assist list
-	CheckAssistList();
+	// LRC - process the MoveWith FIFO queues (PostAssist + Desired)
+	MoveWith_ProcessFrameQueues();
 
 	const bool allowBunnyHopping = sv_allowbunnyhopping.value != 0;
 

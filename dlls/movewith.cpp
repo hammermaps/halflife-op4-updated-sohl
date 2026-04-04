@@ -19,27 +19,273 @@
 #include "cbase.h"
 #include "movewith.h"
 
+//=========================================================
+// FIFO Queue state — two-batch (current + next) for both
+// PostAssist and Desired queues.
+// Static in this TU; not saved/restored (rebuilt each frame).
+//=========================================================
+
+// PostAssist queue
+static CBaseEntity* s_pPostAssistHeadCur = nullptr;
+static CBaseEntity* s_pPostAssistTailCur = nullptr;
+static CBaseEntity* s_pPostAssistHeadNext = nullptr;
+static CBaseEntity* s_pPostAssistTailNext = nullptr;
+
+// Desired queue
+static CBaseEntity* s_pDesiredHeadCur = nullptr;
+static CBaseEntity* s_pDesiredTailCur = nullptr;
+static CBaseEntity* s_pDesiredHeadNext = nullptr;
+static CBaseEntity* s_pDesiredTailNext = nullptr;
+
+// Rate-limit budget warnings
+static float s_flLastPostAssistWarnTime = 0;
+static float s_flLastDesiredWarnTime = 0;
+
+// True while processing the Desired queue (for reentrancy detection)
 bool g_doingDesired = false;
 
-//=========================================================
-// CheckDesiredList
-// Process all entities that have requested a deferred think/action
-//=========================================================
-void CheckDesiredList()
-{
-	g_doingDesired = true;
 
-	CBaseEntity* pWorld = CWorld::World;
-	if (!pWorld)
+//=========================================================
+// MoveWith_ResetQueues
+// Clear all queue state — call on level start (CWorld::Spawn)
+//=========================================================
+void MoveWith_ResetQueues()
+{
+	s_pPostAssistHeadCur = nullptr;
+	s_pPostAssistTailCur = nullptr;
+	s_pPostAssistHeadNext = nullptr;
+	s_pPostAssistTailNext = nullptr;
+
+	s_pDesiredHeadCur = nullptr;
+	s_pDesiredTailCur = nullptr;
+	s_pDesiredHeadNext = nullptr;
+	s_pDesiredTailNext = nullptr;
+
+	s_flLastPostAssistWarnTime = 0;
+	s_flLastDesiredWarnTime = 0;
+
+	g_doingDesired = false;
+}
+
+
+//=========================================================
+// Internal: enqueue helpers (always append to tail = FIFO)
+//=========================================================
+static void EnqueuePostAssistNext(CBaseEntity* pEnt)
+{
+	if (FBitSet(pEnt->m_iLFlags, LF_IN_POSTASSIST_QUEUE))
+		return; // duplicate guard
+
+	SetBits(pEnt->m_iLFlags, LF_IN_POSTASSIST_QUEUE);
+	pEnt->m_pPostAssistNext = nullptr;
+
+	if (s_pPostAssistTailNext)
 	{
-		g_doingDesired = false;
+		s_pPostAssistTailNext->m_pPostAssistNext = pEnt;
+		s_pPostAssistTailNext = pEnt;
+	}
+	else
+	{
+		s_pPostAssistHeadNext = pEnt;
+		s_pPostAssistTailNext = pEnt;
+	}
+}
+
+static void EnqueueDesiredNext(CBaseEntity* pEnt)
+{
+	if (FBitSet(pEnt->m_iLFlags, LF_IN_DESIRED_QUEUE))
+		return; // duplicate guard
+
+	SetBits(pEnt->m_iLFlags, LF_IN_DESIRED_QUEUE);
+	pEnt->m_pDesiredNext = nullptr;
+
+	if (s_pDesiredTailNext)
+	{
+		s_pDesiredTailNext->m_pDesiredNext = pEnt;
+		s_pDesiredTailNext = pEnt;
+	}
+	else
+	{
+		s_pDesiredHeadNext = pEnt;
+		s_pDesiredTailNext = pEnt;
+	}
+}
+
+
+//=========================================================
+// UTIL_PostAssistVelocity
+// Schedule post-assist velocity application for an entity
+//=========================================================
+void UTIL_PostAssistVelocity(CBaseEntity* pEnt, const Vector& vel)
+{
+	if (!pEnt)
 		return;
+
+	pEnt->m_vecPostAssistVel = vel;
+	SetBits(pEnt->m_iLFlags, LF_POSTASSISTVEL);
+	EnqueuePostAssistNext(pEnt);
+}
+
+
+//=========================================================
+// UTIL_PostAssistAVelocity
+// Schedule post-assist angular velocity application
+//=========================================================
+void UTIL_PostAssistAVelocity(CBaseEntity* pEnt, const Vector& avel)
+{
+	if (!pEnt)
+		return;
+
+	pEnt->m_vecPostAssistAVel = avel;
+	SetBits(pEnt->m_iLFlags, LF_POSTASSISTAVEL);
+	EnqueuePostAssistNext(pEnt);
+}
+
+
+//=========================================================
+// UTIL_DesiredAction
+// Schedule a deferred DesiredAction call for an entity
+//=========================================================
+void UTIL_DesiredAction(CBaseEntity* pEnt)
+{
+	if (!pEnt)
+		return;
+
+	SetBits(pEnt->m_iLFlags, LF_DODESIRED | LF_DESIRED_ACTION);
+	EnqueueDesiredNext(pEnt);
+}
+
+
+//=========================================================
+// UTIL_DesiredThink
+// Schedule a deferred Think call for an entity
+//=========================================================
+void UTIL_DesiredThink(CBaseEntity* pEnt)
+{
+	if (!pEnt)
+		return;
+
+	SetBits(pEnt->m_iLFlags, LF_DODESIRED | LF_DESIRED_THINK);
+	EnqueueDesiredNext(pEnt);
+}
+
+
+//=========================================================
+// Helper: check if entity is still valid for queue processing
+//=========================================================
+static bool IsEntityValidForQueue(CBaseEntity* pEnt)
+{
+	if (!pEnt)
+		return false;
+	if (!pEnt->pev)
+		return false;
+	if (pEnt->pev->flags & FL_KILLME)
+		return false;
+	return true;
+}
+
+
+//=========================================================
+// MoveWith_ProcessFrameQueues
+// Called once per server frame (replaces CheckAssistList + CheckDesiredList)
+//
+// Two-phase approach:
+//   1) Swap: Cur = Next, Next = empty
+//   2) Process Cur (FIFO), new requests go into Next → next frame
+//=========================================================
+void MoveWith_ProcessFrameQueues()
+{
+	// ---- Phase 1: Swap PostAssist batches ----
+	// If there are leftover entries in Cur (from budget cap last frame),
+	// prepend them before Next to preserve FIFO across frames.
+	if (s_pPostAssistHeadCur)
+	{
+		// Leftover Cur exists — append Next to the end of Cur
+		if (s_pPostAssistHeadNext)
+		{
+			s_pPostAssistTailCur->m_pPostAssistNext = s_pPostAssistHeadNext;
+			s_pPostAssistTailCur = s_pPostAssistTailNext;
+		}
+		// Cur stays as is (now Cur + old Next merged)
+	}
+	else
+	{
+		// No leftover — just promote Next to Cur
+		s_pPostAssistHeadCur = s_pPostAssistHeadNext;
+		s_pPostAssistTailCur = s_pPostAssistTailNext;
+	}
+	s_pPostAssistHeadNext = nullptr;
+	s_pPostAssistTailNext = nullptr;
+
+	// ---- Phase 2: Process PostAssist Cur (FIFO with budget) ----
+	int postAssistCount = 0;
+	while (s_pPostAssistHeadCur && postAssistCount < MAX_POSTASSIST_PER_FRAME)
+	{
+		CBaseEntity* pCurrent = s_pPostAssistHeadCur;
+		s_pPostAssistHeadCur = pCurrent->m_pPostAssistNext;
+		if (!s_pPostAssistHeadCur)
+			s_pPostAssistTailCur = nullptr;
+
+		pCurrent->m_pPostAssistNext = nullptr;
+		ClearBits(pCurrent->m_iLFlags, LF_IN_POSTASSIST_QUEUE);
+
+		if (!IsEntityValidForQueue(pCurrent))
+			continue;
+
+		if (FBitSet(pCurrent->m_iLFlags, LF_POSTASSISTVEL))
+		{
+			ClearBits(pCurrent->m_iLFlags, LF_POSTASSISTVEL);
+			pCurrent->pev->velocity = pCurrent->m_vecPostAssistVel;
+		}
+
+		if (FBitSet(pCurrent->m_iLFlags, LF_POSTASSISTAVEL))
+		{
+			ClearBits(pCurrent->m_iLFlags, LF_POSTASSISTAVEL);
+			pCurrent->pev->avelocity = pCurrent->m_vecPostAssistAVel;
+		}
+
+		postAssistCount++;
 	}
 
-	CBaseEntity* pCurrent = pWorld->m_pAssistLink;
-	while (pCurrent)
+	// Budget warning (rate-limited)
+	if (s_pPostAssistHeadCur && gpGlobals->time - s_flLastPostAssistWarnTime > 5.0f)
 	{
-		CBaseEntity* pNext = pCurrent->m_pAssistLink;
+		ALERT(at_warning, "MoveWith PostAssist queue budget exceeded (%d). Remaining deferred to next frame.\n", MAX_POSTASSIST_PER_FRAME);
+		s_flLastPostAssistWarnTime = gpGlobals->time;
+	}
+
+	// ---- Phase 3: Swap Desired batches ----
+	if (s_pDesiredHeadCur)
+	{
+		if (s_pDesiredHeadNext)
+		{
+			s_pDesiredTailCur->m_pDesiredNext = s_pDesiredHeadNext;
+			s_pDesiredTailCur = s_pDesiredTailNext;
+		}
+	}
+	else
+	{
+		s_pDesiredHeadCur = s_pDesiredHeadNext;
+		s_pDesiredTailCur = s_pDesiredTailNext;
+	}
+	s_pDesiredHeadNext = nullptr;
+	s_pDesiredTailNext = nullptr;
+
+	// ---- Phase 4: Process Desired Cur (FIFO with budget) ----
+	g_doingDesired = true;
+	int desiredCount = 0;
+	while (s_pDesiredHeadCur && desiredCount < MAX_DESIRED_PER_FRAME)
+	{
+		CBaseEntity* pCurrent = s_pDesiredHeadCur;
+		s_pDesiredHeadCur = pCurrent->m_pDesiredNext;
+		if (!s_pDesiredHeadCur)
+			s_pDesiredTailCur = nullptr;
+
+		pCurrent->m_pDesiredNext = nullptr;
+		ClearBits(pCurrent->m_iLFlags, LF_IN_DESIRED_QUEUE);
+
+		if (!IsEntityValidForQueue(pCurrent))
+			continue;
 
 		if (FBitSet(pCurrent->m_iLFlags, LF_DODESIRED))
 		{
@@ -58,86 +304,15 @@ void CheckDesiredList()
 			}
 		}
 
-		pCurrent = pNext;
+		desiredCount++;
 	}
-
 	g_doingDesired = false;
-}
 
-
-//=========================================================
-// CheckAssistList
-// Process all entities in the assist list each frame
-// Applies pending post-assist velocities
-//=========================================================
-void CheckAssistList()
-{
-	CBaseEntity* pWorld = CWorld::World;
-	if (!pWorld)
-		return;
-
-	CBaseEntity* pCurrent = pWorld->m_pAssistLink;
-	while (pCurrent)
+	// Budget warning (rate-limited)
+	if (s_pDesiredHeadCur && gpGlobals->time - s_flLastDesiredWarnTime > 5.0f)
 	{
-		CBaseEntity* pNext = pCurrent->m_pAssistLink;  // save next before processing
-
-		if (FBitSet(pCurrent->m_iLFlags, LF_POSTASSISTVEL))
-		{
-			ClearBits(pCurrent->m_iLFlags, LF_POSTASSISTVEL);
-			pCurrent->pev->velocity = pCurrent->m_vecPostAssistVel;
-		}
-
-		if (FBitSet(pCurrent->m_iLFlags, LF_POSTASSISTAVEL))
-		{
-			ClearBits(pCurrent->m_iLFlags, LF_POSTASSISTAVEL);
-			pCurrent->pev->avelocity = pCurrent->m_vecPostAssistAVel;
-		}
-
-		pCurrent = pNext;
-	}
-
-	CheckDesiredList();
-}
-
-
-//=========================================================
-// UTIL_DesiredAction
-// Schedule a deferred DesiredAction call for an entity
-//=========================================================
-void UTIL_DesiredAction(CBaseEntity* pEnt)
-{
-	pEnt->m_iLFlags |= LF_DODESIRED | LF_DESIRED_ACTION;
-
-	// add to assist list if not already there
-	if (!(pEnt->m_iLFlags & LF_DOASSIST))
-	{
-		pEnt->m_iLFlags |= LF_DOASSIST;
-		if (CWorld::World)
-		{
-			pEnt->m_pAssistLink = CWorld::World->m_pAssistLink;
-			CWorld::World->m_pAssistLink = pEnt;
-		}
-	}
-}
-
-
-//=========================================================
-// UTIL_DesiredThink
-// Schedule a deferred Think call for an entity
-//=========================================================
-void UTIL_DesiredThink(CBaseEntity* pEnt)
-{
-	pEnt->m_iLFlags |= LF_DODESIRED | LF_DESIRED_THINK;
-
-	// add to assist list if not already there
-	if (!(pEnt->m_iLFlags & LF_DOASSIST))
-	{
-		pEnt->m_iLFlags |= LF_DOASSIST;
-		if (CWorld::World)
-		{
-			pEnt->m_pAssistLink = CWorld::World->m_pAssistLink;
-			CWorld::World->m_pAssistLink = pEnt;
-		}
+		ALERT(at_warning, "MoveWith Desired queue budget exceeded (%d). Remaining deferred to next frame.\n", MAX_DESIRED_PER_FRAME);
+		s_flLastDesiredWarnTime = gpGlobals->time;
 	}
 }
 

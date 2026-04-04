@@ -191,9 +191,13 @@ public:
 	CBaseEntity* m_pSiblingMoveWith;  // linked list: another entity moving with the same parent
 	Vector m_vecMoveWithOffset;		  // position offset relative to parent's origin
 	Vector m_vecRotWithOffset;		  // angle offset relative to parent's angles
-	CBaseEntity* m_pAssistLink;		  // link to next entity in the AssistList
+	CBaseEntity* m_pAssistLink;		  // link to next entity in the AssistList (legacy, kept for MoveWith parent list)
 	Vector m_vecPostAssistVel;		  // velocity to apply after assist processing
 	Vector m_vecPostAssistAVel;		  // angular velocity to apply after assist processing
+
+	// FIFO queue pointers (intrusive, not saved/restored)
+	CBaseEntity* m_pPostAssistNext;	 // next in PostAssist FIFO queue
+	CBaseEntity* m_pDesiredNext;	 // next in Desired FIFO queue
 
 	// LRC - Think/NextThink system
 	float m_fNextThink;		  // when a think will be performed (may differ from pev->nextthink)
