@@ -2943,10 +2943,20 @@ LINK_ENTITY_TO_CLASS(env_beamtrail, CEnvBeamTrail);
 
 void CEnvBeamTrail::Precache()
 {
+	m_iSprite = 0;
+
 	if (pev->target)
 		PrecacheModel("sprites/null.spr");
-	if (pev->netname)
+
+	if (!FStringNull(pev->netname))
 		m_iSprite = PrecacheModel((char*)STRING(pev->netname));
+
+	if (m_iSprite == 0)
+	{
+		ALERT(at_error, "env_beamtrail \"%s\" has no sprite configured in netname; removing\n", STRING(pev->targetname));
+		UTIL_Remove(this);
+		return;
+	}
 }
 
 STATE CEnvBeamTrail::GetState()
@@ -2996,7 +3006,16 @@ void CEnvBeamTrail::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 
 void CEnvBeamTrail::Affect(CBaseEntity* pTarget, USE_TYPE useType)
 {
-	if (useType == USE_ON || (pev->spawnflags & SF_BEAMTRAIL_OFF))
+	bool bTurnOn;
+
+	if (useType == USE_ON)
+		bTurnOn = true;
+	else if (useType == USE_OFF)
+		bTurnOn = false;
+	else // USE_TOGGLE
+		bTurnOn = (pev->spawnflags & SF_BEAMTRAIL_OFF) != 0;
+
+	if (bTurnOn)
 	{
 		MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
 		WRITE_BYTE(TE_BEAMFOLLOW);
@@ -3060,13 +3079,20 @@ void CEnvFootsteps::Spawn()
 
 void CEnvFootsteps::PrecacheNoise(const char* szNoise)
 {
-	static char szBuf[128];
+	static char szBuf[256];
 	int i = 0, j = 0;
+	size_t len = strlen(szNoise);
+	if (len >= sizeof(szBuf))
+	{
+		ALERT(at_error, "env_footsteps: noise string too long (max %d): %s\n", (int)(sizeof(szBuf) - 1), szNoise);
+		return;
+	}
 	for (i = 0; szNoise[i]; i++)
 	{
 		if (szNoise[i] == '?')
 		{
-			strcpy(szBuf, szNoise);
+			strncpy(szBuf, szNoise, sizeof(szBuf) - 1);
+			szBuf[sizeof(szBuf) - 1] = '\0';
 			for (j = 0; j < 4; j++)
 			{
 				szBuf[i] = j + '1';
@@ -3124,8 +3150,8 @@ void CEnvFootsteps::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 			pev->impulse |= playerMask;
 			if (pev->frags)
 			{
-				char sTemp[4];
-				sprintf(sTemp, "%d", (int)pev->frags);
+				char sTemp[16];
+				snprintf(sTemp, sizeof(sTemp), "%d", (int)pev->frags);
 				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "stype", sTemp);
 			}
 			else if (pev->noise)
@@ -3379,18 +3405,64 @@ void CEnvRain::Think()
 
 	UTIL_MakeVectors(pev->angles);
 	Vector vecOffs = gpGlobals->v_forward;
+	float flScale = 0;
+	bool bHaveScale = false;
 	switch (m_axis)
 	{
 	case RAIN_AXIS_X:
-		vecOffs = vecOffs * (pev->size.x / vecOffs.x);
+		if (vecOffs.x != 0)
+		{
+			flScale = pev->size.x / vecOffs.x;
+			bHaveScale = true;
+		}
+		else if (vecOffs.y != 0)
+		{
+			flScale = pev->size.y / vecOffs.y;
+			bHaveScale = true;
+		}
+		else if (vecOffs.z != 0)
+		{
+			flScale = pev->size.z / vecOffs.z;
+			bHaveScale = true;
+		}
 		break;
 	case RAIN_AXIS_Y:
-		vecOffs = vecOffs * (pev->size.y / vecOffs.y);
+		if (vecOffs.y != 0)
+		{
+			flScale = pev->size.y / vecOffs.y;
+			bHaveScale = true;
+		}
+		else if (vecOffs.x != 0)
+		{
+			flScale = pev->size.x / vecOffs.x;
+			bHaveScale = true;
+		}
+		else if (vecOffs.z != 0)
+		{
+			flScale = pev->size.z / vecOffs.z;
+			bHaveScale = true;
+		}
 		break;
 	case RAIN_AXIS_Z:
-		vecOffs = vecOffs * (pev->size.z / vecOffs.z);
+		if (vecOffs.z != 0)
+		{
+			flScale = pev->size.z / vecOffs.z;
+			bHaveScale = true;
+		}
+		else if (vecOffs.x != 0)
+		{
+			flScale = pev->size.x / vecOffs.x;
+			bHaveScale = true;
+		}
+		else if (vecOffs.y != 0)
+		{
+			flScale = pev->size.y / vecOffs.y;
+			bHaveScale = true;
+		}
 		break;
 	}
+	if (bHaveScale)
+		vecOffs = vecOffs * flScale;
 
 	int repeats;
 	if (!m_fLifeTime && !m_flUpdateTime && !m_flMaxUpdateTime)
@@ -3481,7 +3553,7 @@ void CEnvRain::Think()
 		FireTargets(STRING(pev->target), this, this, USE_TOGGLE, 0);
 
 	if (m_flMaxUpdateTime)
-		SetNextThink(RANDOM_FLOAT(m_flMaxUpdateTime, m_flUpdateTime));
+		SetNextThink(RANDOM_FLOAT(m_flUpdateTime, m_flMaxUpdateTime));
 	else if (m_flUpdateTime)
 		SetNextThink(m_flUpdateTime);
 }
@@ -3714,12 +3786,9 @@ void CEnvELight::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE use
 		m_hAttach = this;
 	}
 
-	// Resolve position
-	Vector vecPos;
+	// Resolve position and store it for SendLight
 	if (pev->message)
-		vecPos = CalcLocus_Position(this, pActivator, STRING(pev->message));
-	else
-		vecPos = pev->origin;
+		pev->origin = CalcLocus_Position(this, pActivator, STRING(pev->message));
 
 	// Turn on
 	m_iState = STATE_ON;
@@ -3741,18 +3810,12 @@ void CEnvELight::SendLight(bool bActive)
 	if (m_hAttach == nullptr)
 		return;
 
-	Vector vecPos;
-	if (pev->message)
-		vecPos = CalcLocus_Position(this, nullptr, STRING(pev->message));
-	else
-		vecPos = pev->origin;
-
 	MESSAGE_BEGIN(MSG_PVS, SVC_TEMPENTITY, pev->origin);
 	WRITE_BYTE(TE_ELIGHT);
 	WRITE_SHORT(m_hAttach->entindex() + 0x1000 * pev->impulse); // entity + attachment
-	WRITE_COORD(vecPos.x);
-	WRITE_COORD(vecPos.y);
-	WRITE_COORD(vecPos.z);
+	WRITE_COORD(pev->origin.x);
+	WRITE_COORD(pev->origin.y);
+	WRITE_COORD(pev->origin.z);
 	WRITE_COORD(bActive ? pev->renderamt : 0); // radius
 	WRITE_BYTE(pev->rendercolor.x);            // r
 	WRITE_BYTE(pev->rendercolor.y);            // g

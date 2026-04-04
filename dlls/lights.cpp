@@ -375,6 +375,7 @@ TYPEDESCRIPTION CLightFading::m_SaveData[] =
 {
 DEFINE_FIELD(CLightFading, m_iLightMode, FIELD_INTEGER),
 DEFINE_FIELD(CLightFading, m_fLightUpdateTime, FIELD_FLOAT),
+DEFINE_ARRAY(CLightFading, m_szLightIntensity, FIELD_CHARACTER, 2),
 };
 
 IMPLEMENT_SAVERESTORE(CLightFading, CLight);
@@ -405,7 +406,11 @@ bool CLightFading::KeyValue(KeyValueData* pkvd)
 {
 if (FStrEq(pkvd->szKeyName, "lightFrequency"))
 {
-m_fLightUpdateTime = 1.0f / (atof(pkvd->szValue));
+float freq = atof(pkvd->szValue);
+if (freq > 0)
+	m_fLightUpdateTime = 1.0f / freq;
+else
+	m_fLightUpdateTime = 0;
 return true;
 }
 return CLight::KeyValue(pkvd);
@@ -430,6 +435,16 @@ m_szLightIntensity[0]--;
 }
 
 LIGHT_STYLE(m_iStyle, m_szLightIntensity);
+
+const bool bReachedTerminal =
+(m_iLightMode == Light_On && m_szLightIntensity[0] >= 'z') ||
+(m_iLightMode == Light_Off && m_szLightIntensity[0] <= 'a');
+
+if (bReachedTerminal || m_fLightUpdateTime <= 0)
+{
+DontThink();
+return;
+}
 
 SetNextThink(m_fLightUpdateTime);
 }
@@ -477,6 +492,13 @@ IMPLEMENT_SAVERESTORE(CLightFader, CPointEntity);
 
 void CLightFader::FadeThink()
 {
+if (!m_pLight)
+{
+SetThink(&CLightFader::SUB_Remove);
+SetNextThink(0.1);
+return;
+}
+
 if (m_fEndTime > gpGlobals->time)
 {
 m_szCurStyle[0] = m_cTo + (char)((m_cFrom - m_cTo) * (m_fEndTime - gpGlobals->time) * m_fStep);
@@ -503,6 +525,13 @@ SetNextThink(0.1);
 
 void CLightFader::WaitThink()
 {
+if (!m_pLight)
+{
+SetThink(&CLightFader::SUB_Remove);
+SetNextThink(0.1);
+return;
+}
+
 // Revert the light and remove the fader
 m_pLight->SetStyle(0);
 SetThink(&CLightFader::SUB_Remove);

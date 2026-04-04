@@ -32,6 +32,13 @@
 //=========================================================
 Vector CalcLocus_Position(CBaseEntity* pEntity, CBaseEntity* pLocus, const char* szText)
 {
+	if (szText == nullptr || szText[0] == '\0')
+	{
+		if (pLocus)
+			return pLocus->pev->origin;
+		return g_vecZero;
+	}
+
 	if ((*szText >= '0' && *szText <= '9') || *szText == '-')
 	{
 		Vector tmp;
@@ -58,6 +65,13 @@ Vector CalcLocus_Position(CBaseEntity* pEntity, CBaseEntity* pLocus, const char*
 //=========================================================
 Vector CalcLocus_Velocity(CBaseEntity* pEntity, CBaseEntity* pLocus, const char* szText)
 {
+	if (szText == nullptr || szText[0] == '\0')
+	{
+		if (pLocus)
+			return pLocus->pev->velocity;
+		return g_vecZero;
+	}
+
 	if ((*szText >= '0' && *szText <= '9') || *szText == '-')
 	{
 		Vector tmp;
@@ -82,9 +96,16 @@ Vector CalcLocus_Velocity(CBaseEntity* pEntity, CBaseEntity* pLocus, const char*
 //=========================================================
 float CalcLocus_Ratio(CBaseEntity* pLocus, const char* szText)
 {
+	if (szText == nullptr || szText[0] == '\0')
+		return 0;
+
 	if ((*szText >= '0' && *szText <= '9') || *szText == '-')
 	{
-		return atof(szText);
+		char* pEnd = nullptr;
+		float fResult = strtof(szText, &pEnd);
+		if (pEnd != szText && (*pEnd == '\0' || *pEnd == ' '))
+			return fResult;
+		// Fall through to entity lookup if not a clean numeric parse
 	}
 
 	CBaseEntity* pCalc = UTIL_FindEntityByTargetname(nullptr, szText);
@@ -220,7 +241,20 @@ bool CLocusBeam::KeyValue(KeyValueData* pkvd)
 
 void CLocusBeam::Precache()
 {
-	PRECACHE_MODEL(STRING(m_iszSprite));
+	if (!m_iszSprite)
+	{
+		ALERT(at_error, "locus_beam with no sprite specified\n");
+		return;
+	}
+
+	const char* pszSprite = STRING(m_iszSprite);
+	if (pszSprite == nullptr || pszSprite[0] == '\0')
+	{
+		ALERT(at_error, "locus_beam with empty sprite specified\n");
+		return;
+	}
+
+	PRECACHE_MODEL(pszSprite);
 }
 
 void CLocusBeam::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
@@ -822,7 +856,12 @@ IMPLEMENT_SAVERESTORE(CLocusAlias, CBaseAlias);
 
 void CLocusAlias::PostSpawn()
 {
-m_hValue = UTIL_FindEntityByTargetname(nullptr, STRING(pev->netname));
+	m_hValue = nullptr;
+
+	if (!FStringNull(pev->netname))
+	{
+		m_hValue = UTIL_FindEntityByTargetname(nullptr, STRING(pev->netname));
+	}
 }
 
 void CLocusAlias::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)

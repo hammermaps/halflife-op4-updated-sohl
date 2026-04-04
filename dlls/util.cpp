@@ -858,9 +858,17 @@ CBaseEntity* UTIL_FindEntityByTargetname(CBaseEntity* pStartEntity, const char* 
 	return UTIL_FindEntityByString(pStartEntity, "targetname", szName);
 }
 
-// LRC - add an alias entity to the global flush list in CWorld
+// LRC - mark an alias entity as needing a flush/update.
+// Only sets the LF_ALIASLIST flag. Does not repurpose CBaseAlias::m_pNextAlias
+// which is owned by the global alias list in alias.cpp.
 void UTIL_AddToAliasList(CBaseAlias* pAlias)
 {
+	if (!pAlias)
+	{
+		ALERT(at_debug, "UTIL_AddToAliasList: null alias!\n");
+		return;
+	}
+
 	if (!CWorld::World)
 	{
 		ALERT(at_debug, "UTIL_AddToAliasList: no World!\n");
@@ -868,28 +876,6 @@ void UTIL_AddToAliasList(CBaseAlias* pAlias)
 	}
 
 	pAlias->m_iLFlags |= LF_ALIASLIST;
-
-	if (CWorld::World->m_pFirstAlias == nullptr)
-	{
-		CWorld::World->m_pFirstAlias = pAlias;
-		pAlias->m_pNextAlias = nullptr;
-	}
-	else if (CWorld::World->m_pFirstAlias == pAlias)
-	{
-		return; // already in list
-	}
-	else
-	{
-		CBaseAlias* pCurrent = CWorld::World->m_pFirstAlias;
-		while (pCurrent->m_pNextAlias != nullptr)
-		{
-			if (pCurrent->m_pNextAlias == pAlias)
-				return; // already in list
-			pCurrent = pCurrent->m_pNextAlias;
-		}
-		pCurrent->m_pNextAlias = pAlias;
-		pAlias->m_pNextAlias = nullptr;
-	}
 }
 
 

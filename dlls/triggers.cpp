@@ -4056,16 +4056,28 @@ return CBaseDelay::KeyValue(pkvd);
 
 void CTriggerChangeValue::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+	if (FStringNull(pev->target))
+	{
+		ALERT(at_error, "trigger_changevalue with no target set\n");
+		return;
+	}
 
-if (pTarget)
-{
-KeyValueData mypkvd;
-mypkvd.szKeyName = (char*)STRING(pev->netname);
-mypkvd.szValue = (char*)STRING(m_iszNewValue);
+	if (FStringNull(pev->netname))
+	{
+		ALERT(at_error, "trigger_changevalue with no key name (netname) set\n");
+		return;
+	}
+
+	CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+
+	if (pTarget)
+	{
+		KeyValueData mypkvd;
+		mypkvd.szKeyName = (char*)STRING(pev->netname);
+		mypkvd.szValue = (char*)STRING(m_iszNewValue);
 		mypkvd.fHandled = 0;
-pTarget->KeyValue(&mypkvd);
-}
+		pTarget->KeyValue(&mypkvd);
+	}
 }
 
 //=========================================================
@@ -4184,6 +4196,13 @@ void CWatcherCount::Think()
 {
 SetNextThink(0.1);
 int iCount = 0;
+
+if (FStringNull(pev->noise))
+{
+pev->frags = 0;
+return;
+}
+
 CBaseEntity* pCurrent = nullptr;
 
 pCurrent = UTIL_FindEntityByTargetname(nullptr, STRING(pev->noise));
@@ -4246,7 +4265,7 @@ EHANDLE m_hLocus;
 EHANDLE m_hTarget;
 };
 
-LINK_ENTITY_TO_CLASS(motion_thread, CPointEntity);
+LINK_ENTITY_TO_CLASS(motion_thread, CMotionThread);
 
 TYPEDESCRIPTION CMotionThread::m_SaveData[] =
 {
@@ -4388,7 +4407,7 @@ if (m_pMarker && m_pHinge)
 Vector vecTemp = UTIL_AxisRotationToVec((m_pHinge->pev->origin - pev->origin).Normalize(), pev->armorvalue);
 m_pMarker->pev->origin = pev->origin + pev->health * vecTemp;
 }
-if (m_pBridge && m_pMarker && m_pReference)
+if (m_pBridge && m_pMarker && m_pReference && m_pHinge)
 {
 Vector vecTemp = UTIL_AxisRotationToVec(
 (m_pHinge->pev->origin - pev->origin).Normalize(), pev->armorvalue / 2);
