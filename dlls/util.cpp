@@ -895,10 +895,9 @@ CBaseEntity* UTIL_FollowGroupReference(CBaseEntity* pStartEntity, const char* sz
 	{
 		if (szMemberName[i] == '.')
 		{
-			if (i < MAX_ALIASNAME_LEN)
+			if (i < MAX_ALIASNAME_LEN - 1)
 			{
-				strncpy(szBuf, szMemberName, i);
-				szBuf[i] = 0;
+				snprintf(szBuf, sizeof(szBuf), "%.*s", i, szMemberName);
 				szThisMember = szBuf;
 				szTail = &szMemberName[i + 1];
 			}
@@ -954,11 +953,10 @@ CBaseEntity* UTIL_FollowReference(CBaseEntity* pStartEntity, const char* szName)
 	{
 		if (szName[i] == '.')
 		{
-			char szRoot[MAX_ALIASNAME_LEN + 1];
-			if (i < MAX_ALIASNAME_LEN)
+			if (i < MAX_ALIASNAME_LEN - 1)
 			{
-				strncpy(szRoot, szName, i);
-				szRoot[i] = 0;
+				char szRoot[MAX_ALIASNAME_LEN];
+				snprintf(szRoot, sizeof(szRoot), "%.*s", i, szName);
 				return UTIL_FollowGroupReference(pStartEntity, szRoot, szName + i + 1);
 			}
 			return nullptr;
