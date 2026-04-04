@@ -168,6 +168,14 @@ void SetModel(edict_t* entity, const char* path)
 		return;
 	}
 
+	// BSP inline submodels ("*1", "*2", ...) are embedded in the map file and
+	// are not filesystem resources; pass them directly to the engine.
+	if (*path == '*')
+	{
+		SET_MODEL(entity, path);
+		return;
+	}
+
 	if (UTIL_ResourceExists(path))
 	{
 		SET_MODEL(entity, path);
