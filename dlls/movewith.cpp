@@ -151,7 +151,7 @@ void UTIL_DesiredAction(CBaseEntity* pEnt)
 	if (!pEnt)
 		return;
 
-	pEnt->m_iLFlags |= LF_DODESIRED | LF_DESIRED_ACTION;
+	SetBits(pEnt->m_iLFlags, LF_DODESIRED | LF_DESIRED_ACTION);
 	EnqueueDesiredNext(pEnt);
 }
 
@@ -165,7 +165,7 @@ void UTIL_DesiredThink(CBaseEntity* pEnt)
 	if (!pEnt)
 		return;
 
-	pEnt->m_iLFlags |= LF_DODESIRED | LF_DESIRED_THINK;
+	SetBits(pEnt->m_iLFlags, LF_DODESIRED | LF_DESIRED_THINK);
 	EnqueueDesiredNext(pEnt);
 }
 
