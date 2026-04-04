@@ -906,18 +906,10 @@ void CBaseEntity::InitMoveWith()
 	m_pSiblingMoveWith = pParent->m_pChildMoveWith;
 	pParent->m_pChildMoveWith = this;
 
-	// add parent to the assist list if not already there
-	if (pParent->m_iLFlags & LF_DOASSIST)
-		return;
-
-	pParent->m_iLFlags |= LF_DOASSIST;
-
-	// add to global assist list (headed by CWorld::World)
-	if (CWorld::World)
-	{
-		pParent->m_pAssistLink = CWorld::World->m_pAssistLink;
-		CWorld::World->m_pAssistLink = pParent;
-	}
+	// MoveWith parent registration in the old assist list is no longer needed.
+	// PostAssist velocity and Desired processing now use dedicated FIFO queues.
+	// Callers should use UTIL_PostAssistVelocity/UTIL_PostAssistAVelocity when
+	// they need to schedule post-assist velocity application.
 }
 
 
