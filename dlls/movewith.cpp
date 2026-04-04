@@ -315,9 +315,8 @@ void UTIL_AssignOrigin(CBaseEntity* pEnt, const Vector& vecOrigin, bool bInitiat
 	if (!pEnt->m_pChildMoveWith)
 		return;
 
-	DEV_LOG(mw_debug, "AssignOrigin: %s (%.1f %.1f %.1f) -> %d children",
-		STRING(pEnt->pev->classname), vecOrigin.x, vecOrigin.y, vecOrigin.z,
-		[&]() { int n = 0; for (auto* c = pEnt->m_pChildMoveWith; c; c = c->m_pSiblingMoveWith) ++n; return n; }());
+	DEV_LOG(mw_debug, "AssignOrigin: %s (%.1f %.1f %.1f)",
+		STRING(pEnt->pev->classname), vecOrigin.x, vecOrigin.y, vecOrigin.z);
 
 	int loopbreaker = MAX_MOVEWITH_DEPTH;
 	CBaseEntity* pChild = pEnt->m_pChildMoveWith;
@@ -461,10 +460,12 @@ static void PrintChildTree(edict_t* pClient, CBaseEntity* pEnt, int depth)
 	if (!pEnt || depth > MAX_MOVEWITH_DEPTH)
 		return;
 
-	// indent
-	char indent[128];
+	// indent (cap visual indentation to keep output readable)
+	static constexpr int MAX_INDENT = 32;
+	char indent[MAX_INDENT * 2 + 1];
+	int clampedDepth = (depth < MAX_INDENT) ? depth : MAX_INDENT;
 	int i = 0;
-	for (; i < depth * 2 && i < (int)sizeof(indent) - 1; i++)
+	for (; i < clampedDepth * 2; i++)
 		indent[i] = ' ';
 	indent[i] = '\0';
 
