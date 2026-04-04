@@ -592,8 +592,8 @@ void CFuncPlatRot::GoDown()
 void CFuncPlatRot::HitBottom()
 {
 	CFuncPlat::HitBottom();
-	pev->avelocity = g_vecZero;
-	pev->angles = m_start;
+	UTIL_SetAvelocity(this, g_vecZero);
+	UTIL_SetAngles(this, m_start);
 }
 
 
@@ -613,8 +613,8 @@ void CFuncPlatRot::GoUp()
 void CFuncPlatRot::HitTop()
 {
 	CFuncPlat::HitTop();
-	pev->avelocity = g_vecZero;
-	pev->angles = m_end;
+	UTIL_SetAvelocity(this, g_vecZero);
+	UTIL_SetAngles(this, m_end);
 }
 
 
@@ -625,10 +625,10 @@ void CFuncPlatRot::RotMove(Vector& destAngle, float time)
 
 	// Travel time is so short, we're practically there already;  so make it so.
 	if (time >= 0.1)
-		pev->avelocity = vecDestDelta / time;
+		UTIL_SetAvelocity(this, vecDestDelta / time);
 	else
 	{
-		pev->avelocity = vecDestDelta;
+		UTIL_SetAvelocity(this, vecDestDelta);
 		SetNextThink(1);
 	}
 }
@@ -723,7 +723,7 @@ void CFuncTrain::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE use
 		if (pev->enemy)
 			pev->target = pev->enemy->v.targetname;
 		DontThink();
-		pev->velocity = g_vecZero;
+		UTIL_SetVelocity(this, g_vecZero);
 		if (!FStringNull(pev->noiseStopMoving))
 			EMIT_SOUND(ENT(pev), CHAN_VOICE, (char*)STRING(pev->noiseStopMoving), m_volume, ATTN_NORM);
 	}
@@ -950,7 +950,7 @@ void CFuncTrain::OverrideReset()
 		if (!pTarg)
 		{
 			DontThink();
-			pev->velocity = g_vecZero;
+			UTIL_SetVelocity(this, g_vecZero);
 		}
 		else // Keep moving for 0.1 secs, then find path_corner again and restart
 		{
@@ -1051,7 +1051,7 @@ void CSpriteTrain::LinearMove(const Vector& vecDest, float flSpeed)
 	m_waitTime = pev->ltime + flTravelTime;
 
 	// scale the destdelta vector by the time spent traveling to get velocity
-	pev->velocity = vecDestDelta / flTravelTime;
+	UTIL_SetVelocity(this, vecDestDelta / flTravelTime);
 }
 
 
@@ -1086,7 +1086,7 @@ void CSpriteTrain::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE u
 		if (pev->enemy)
 			pev->target = pev->enemy->v.targetname;
 
-		pev->velocity = g_vecZero;
+		UTIL_SetVelocity(this, g_vecZero);
 		if (!FStringNull(pev->noiseStopMoving))
 			EMIT_SOUND(ENT(pev), CHAN_VOICE, (char*)STRING(pev->noiseStopMoving), m_volume, ATTN_NORM);
 
@@ -1319,7 +1319,7 @@ void CSpriteTrain::OverrideReset()
 		if (!pTarg)
 		{
 			DontThink();
-			pev->velocity = g_vecZero;
+			UTIL_SetVelocity(this, g_vecZero);
 		}
 		else // Keep moving for 0.1 secs, then find path_corner again and restart
 		{
@@ -1339,7 +1339,7 @@ void CSpriteTrain::Think()
 		{
 			if (m_stopSprite)
 			{
-				pev->velocity = g_vecZero;
+				UTIL_SetVelocity(this, g_vecZero);
 				m_stopSprite = false;
 			}
 
@@ -1355,7 +1355,7 @@ void CSpriteTrain::Think()
 		{
 			if (m_stopSprite)
 			{
-				pev->velocity = g_vecZero;
+				UTIL_SetVelocity(this, g_vecZero);
 				m_stopSprite = false;
 			}
 
@@ -2320,8 +2320,8 @@ void CFuncTrackChange::UpdateTrain(Vector& dest)
 {
 	float time = (pev->nextthink - pev->ltime);
 
-	m_train->pev->velocity = pev->velocity;
-	m_train->pev->avelocity = pev->avelocity;
+	UTIL_SetVelocity(m_train, pev->velocity);
+	UTIL_SetAvelocity(m_train, pev->avelocity);
 	m_train->NextThink(m_train->pev->ltime + time, false);
 
 	// Attempt at getting the train to rotate properly around the origin of the trackchange
@@ -2338,7 +2338,7 @@ void CFuncTrackChange::UpdateTrain(Vector& dest)
 	local.z = DotProduct(offset, gpGlobals->v_up);
 
 	local = local - offset;
-	m_train->pev->velocity = pev->velocity + (local * (1.0 / time));
+	UTIL_SetVelocity(m_train, pev->velocity + (local * (1.0 / time)));
 }
 
 void CFuncTrackChange::GoDown()
@@ -2728,7 +2728,7 @@ void CGunTarget::Wait()
 
 void CGunTarget::Stop()
 {
-	pev->velocity = g_vecZero;
+	UTIL_SetVelocity(this, g_vecZero);
 	DontThink();
 	pev->takedamage = DAMAGE_NO;
 }
@@ -2922,7 +2922,7 @@ m_pTrain = pTrain;
 if (m_iDirection == DIRECTION_STOP)
 {
 	// Stop the train immediately and end the sequence
-	pTrain->pev->velocity = g_vecZero;
+	UTIL_SetVelocity(pTrain, g_vecZero);
 	pTrain->DontThink();
 	SetNextThink(0.1);
 	SetThink(&CTrainSequence::EndThink);
