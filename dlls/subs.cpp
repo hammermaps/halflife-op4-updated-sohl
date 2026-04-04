@@ -51,6 +51,8 @@ void CNullEntity::Spawn()
 	REMOVE_ENTITY(ENT(pev));
 }
 LINK_ENTITY_TO_CLASS(info_null, CNullEntity);
+LINK_ENTITY_TO_CLASS(info_compile_parameters, CNullEntity);
+LINK_ENTITY_TO_CLASS(info_texlights, CNullEntity);
 
 class CBaseDMStart : public CPointEntity
 {

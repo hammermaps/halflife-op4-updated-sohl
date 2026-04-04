@@ -30,6 +30,7 @@
 #define MIN_CUSTOM_LIGHT_STYLE 32 // LRC - styles 0-31 are reserved engine styles; styles >= 32 are designer-defined
 
 class CTriggerLightstyle; // LRC - forward declaration
+class CLightFading;      // LRC - forward declaration
 
 class CLight : public CPointEntity
 {
@@ -50,6 +51,7 @@ public:
 	static TYPEDESCRIPTION m_SaveData[];
 
 	friend class CTriggerLightstyle; // LRC - allow CTriggerLightstyle to access m_iStyle
+	friend class CLightFading;      // LRC - allow CLightFading to access m_iStyle
 
 private:
 	int m_iStyle;
@@ -263,6 +265,7 @@ private:
 	STATE m_iState = STATE_OFF;
 };
 LINK_ENTITY_TO_CLASS(env_dlight, CLightDynamic);
+LINK_ENTITY_TO_CLASS(light_glow, CLightDynamic);
 TYPEDESCRIPTION CLightDynamic::m_SaveData[] = {
 	DEFINE_FIELD(CLightDynamic, m_iState, FIELD_INTEGER),
 };
@@ -337,3 +340,171 @@ TYPEDESCRIPTION CTriggerLightstyle::m_SaveData[] = {
 	DEFINE_FIELD(CTriggerLightstyle, m_iszNewStyle, FIELD_STRING),
 };
 IMPLEMENT_SAVERESTORE(CTriggerLightstyle, CPointEntity);
+
+//=========================================================
+// light_fading
+// LRC - A light that fades smoothly between on and off states.
+//=========================================================
+class CLightFading : public CLight
+{
+public:
+void Spawn() override;
+bool KeyValue(KeyValueData* pkvd) override;
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+void Think() override;
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+enum LightModes
+{
+Light_Off,
+Light_On
+};
+
+private:
+int m_iLightMode;
+char m_szLightIntensity[2];
+float m_fLightUpdateTime = 0.1f;
+};
+
+LINK_ENTITY_TO_CLASS(light_fading, CLightFading);
+
+TYPEDESCRIPTION CLightFading::m_SaveData[] =
+{
+DEFINE_FIELD(CLightFading, m_iLightMode, FIELD_INTEGER),
+DEFINE_FIELD(CLightFading, m_fLightUpdateTime, FIELD_FLOAT),
+};
+
+IMPLEMENT_SAVERESTORE(CLightFading, CLight);
+
+void CLightFading::Spawn()
+{
+CLight::Spawn();
+
+if (pev->spawnflags & SF_LIGHT_START_OFF)
+{
+m_iLightMode = Light_Off;
+m_szLightIntensity[0] = 'a';
+}
+else
+{
+m_iLightMode = Light_On;
+m_szLightIntensity[0] = 'z';
+}
+
+m_szLightIntensity[1] = '\0';
+
+LIGHT_STYLE(m_iStyle, m_szLightIntensity);
+
+DontThink();
+}
+
+bool CLightFading::KeyValue(KeyValueData* pkvd)
+{
+if (FStrEq(pkvd->szKeyName, "lightFrequency"))
+{
+m_fLightUpdateTime = 1.0f / (atof(pkvd->szValue));
+return true;
+}
+return CLight::KeyValue(pkvd);
+}
+
+void CLightFading::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+m_iLightMode = !m_iLightMode;
+
+SetNextThink(0.001f);
+}
+
+void CLightFading::Think()
+{
+if (m_iLightMode == Light_On && m_szLightIntensity[0] < 'z')
+{
+m_szLightIntensity[0]++;
+}
+else if (m_iLightMode == Light_Off && m_szLightIntensity[0] > 'a')
+{
+m_szLightIntensity[0]--;
+}
+
+LIGHT_STYLE(m_iStyle, m_szLightIntensity);
+
+SetNextThink(m_fLightUpdateTime);
+}
+
+//=========================================================
+// CLightFader
+// LRC - helper entity that smoothly fades a CLight between styles.
+// Spawned programmatically by trigger_lightstyle.
+//=========================================================
+class CLightFader : public CPointEntity
+{
+public:
+void EXPORT FadeThink();
+void EXPORT WaitThink();
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+CLight* m_pLight;
+char m_cFrom;
+char m_cTo;
+char m_szCurStyle[2];
+float m_fEndTime;
+int m_iszPattern;
+float m_fStep;
+int m_iWait;
+};
+
+LINK_ENTITY_TO_CLASS(lightfader, CLightFader);
+
+TYPEDESCRIPTION CLightFader::m_SaveData[] =
+{
+DEFINE_FIELD(CLightFader, m_pLight, FIELD_CLASSPTR),
+DEFINE_FIELD(CLightFader, m_cFrom, FIELD_CHARACTER),
+DEFINE_FIELD(CLightFader, m_cTo, FIELD_CHARACTER),
+DEFINE_ARRAY(CLightFader, m_szCurStyle, FIELD_CHARACTER, 2),
+DEFINE_FIELD(CLightFader, m_fEndTime, FIELD_FLOAT),
+DEFINE_FIELD(CLightFader, m_iszPattern, FIELD_STRING),
+DEFINE_FIELD(CLightFader, m_fStep, FIELD_FLOAT),
+DEFINE_FIELD(CLightFader, m_iWait, FIELD_INTEGER),
+};
+
+IMPLEMENT_SAVERESTORE(CLightFader, CPointEntity);
+
+void CLightFader::FadeThink()
+{
+if (m_fEndTime > gpGlobals->time)
+{
+m_szCurStyle[0] = m_cTo + (char)((m_cFrom - m_cTo) * (m_fEndTime - gpGlobals->time) * m_fStep);
+m_szCurStyle[1] = 0;
+m_pLight->SetStyle(MAKE_STRING(m_szCurStyle));
+SetNextThink(0.1);
+}
+else
+{
+// Fade is finished
+m_pLight->SetStyle(m_iszPattern);
+if (m_iWait > -1)
+{
+SetThink(&CLightFader::WaitThink);
+SetNextThink(m_iWait);
+}
+else
+{
+SetThink(&CLightFader::SUB_Remove);
+SetNextThink(0.1);
+}
+}
+}
+
+void CLightFader::WaitThink()
+{
+// Revert the light and remove the fader
+m_pLight->SetStyle(0);
+SetThink(&CLightFader::SUB_Remove);
+SetNextThink(0.1);
+}

@@ -33,6 +33,7 @@
 #include "ctf/ctfplay_gamerules.h"
 #include "ctf/CTFGoalFlag.h"
 #include "UserMessages.h"
+#include "weapons.h"
 
 #define SF_TRIGGER_PUSH_START_OFF 2		   //spawnflag that makes trigger_push spawn turned OFF
 #define SF_TRIGGER_HURT_TARGETONCE 1	   // Only fire hurt target once
@@ -2569,6 +2570,7 @@ public:
 };
 
 LINK_ENTITY_TO_CLASS(trigger_playerfreeze, CTriggerPlayerFreeze);
+LINK_ENTITY_TO_CLASS(player_freeze, CTriggerPlayerFreeze);
 
 void CTriggerPlayerFreeze::Spawn()
 {
@@ -4010,4 +4012,212 @@ pMonster->SetConditions(bits_COND_NEW_ENEMY);
 
 if (m_iPlayerReact >= 0)
 pMonster->m_iPlayerReact = m_iPlayerReact;
+}
+
+//=========================================================
+// trigger_changevalue
+// LRC - changes a keyvalue field on a target entity at runtime.
+//=========================================================
+class CTriggerChangeValue : public CBaseDelay
+{
+public:
+bool KeyValue(KeyValueData* pkvd) override;
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+int ObjectCaps() override { return CBaseDelay::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+
+static TYPEDESCRIPTION m_SaveData[];
+
+private:
+string_t m_iszNewValue;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_changevalue, CTriggerChangeValue);
+
+TYPEDESCRIPTION CTriggerChangeValue::m_SaveData[] =
+{
+DEFINE_FIELD(CTriggerChangeValue, m_iszNewValue, FIELD_STRING),
+};
+
+IMPLEMENT_SAVERESTORE(CTriggerChangeValue, CBaseDelay);
+
+bool CTriggerChangeValue::KeyValue(KeyValueData* pkvd)
+{
+if (FStrEq(pkvd->szKeyName, "m_iszNewValue"))
+{
+m_iszNewValue = ALLOC_STRING(pkvd->szValue);
+return true;
+}
+return CBaseDelay::KeyValue(pkvd);
+}
+
+void CTriggerChangeValue::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+
+if (pTarget)
+{
+KeyValueData mypkvd;
+mypkvd.szKeyName = (char*)STRING(pev->netname);
+mypkvd.szValue = (char*)STRING(m_iszNewValue);
+		mypkvd.fHandled = 0;
+pTarget->KeyValue(&mypkvd);
+}
+}
+
+//=========================================================
+// trigger_hevcharge
+// LRC - charges/discharges the player's HEV suit armor.
+// If the trigger has a targetname, firing it will toggle state.
+//=========================================================
+#define SF_HEVCHARGE_NOANNOUNCE 0x04
+
+class CTriggerHevCharge : public CBaseTrigger
+{
+public:
+void Spawn() override;
+void EXPORT ChargeTouch(CBaseEntity* pOther);
+void EXPORT AnnounceThink();
+};
+
+LINK_ENTITY_TO_CLASS(trigger_hevcharge, CTriggerHevCharge);
+
+void CTriggerHevCharge::Spawn()
+{
+InitTrigger();
+SetTouch(&CTriggerHevCharge::ChargeTouch);
+SetThink(&CTriggerHevCharge::AnnounceThink);
+
+if (!FStringNull(pev->targetname))
+{
+SetUse(&CTriggerHevCharge::ToggleUse);
+}
+else
+{
+SetUse(nullptr);
+}
+
+if (FBitSet(pev->spawnflags, SF_TRIGGER_HURT_START_OFF))
+pev->solid = SOLID_NOT;
+
+	UTIL_SetOrigin(pev, pev->origin);
+}
+
+void CTriggerHevCharge::ChargeTouch(CBaseEntity* pOther)
+{
+if (IsLockedByMaster())
+return;
+
+if (!pOther->IsPlayer())
+return;
+
+auto pPlayer = static_cast<CBasePlayer*>(pOther);
+if (!pPlayer->HasSuit())
+return;
+
+if (pev->dmgtime > gpGlobals->time)
+return;
+pev->dmgtime = gpGlobals->time + 0.5;
+
+int iNewArmor = pOther->pev->armorvalue + pev->frags;
+if (iNewArmor > MAX_NORMAL_BATTERY)
+iNewArmor = MAX_NORMAL_BATTERY;
+if (iNewArmor < 0)
+iNewArmor = 0;
+if (iNewArmor == (int)pOther->pev->armorvalue)
+return;
+
+pOther->pev->armorvalue = iNewArmor;
+
+if (pev->target)
+{
+SUB_UseTargets(pOther, USE_TOGGLE, 0);
+}
+
+if (g_pGameRules->IsMultiplayer() || (pev->spawnflags & SF_HEVCHARGE_NOANNOUNCE))
+return;
+
+pev->aiment = ENT(pOther->pev);
+SetNextThink(1);
+}
+
+void CTriggerHevCharge::AnnounceThink()
+{
+CBaseEntity* pEntity = CBaseEntity::Instance(pev->aiment);
+if (pEntity && pEntity->IsPlayer())
+{
+auto pPlayer = static_cast<CBasePlayer*>(pEntity);
+int pct = (int)((pPlayer->pev->armorvalue * 100.0) * (1.0 / MAX_NORMAL_BATTERY) + 0.5);
+char szCharge[64];
+snprintf(szCharge, sizeof(szCharge), "!HEV_%1dP", pct / 10);
+pPlayer->SetSuitUpdate(szCharge, SUIT_SENTENCE, SUIT_REPEAT_OK);
+}
+}
+
+//=========================================================
+// watcher_count
+// LRC - watches how many entities with a given targetname are active.
+//=========================================================
+#define SF_WRCOUNT_FIRESTART 0x0001
+#define SF_WRCOUNT_STARTED 0x8000
+
+class CWatcherCount : public CBaseToggle
+{
+public:
+void Spawn() override;
+void EXPORT Think() override;
+int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+};
+
+LINK_ENTITY_TO_CLASS(watcher_count, CWatcherCount);
+
+void CWatcherCount::Spawn()
+{
+pev->solid = SOLID_NOT;
+SetNextThink(0.5);
+}
+
+void CWatcherCount::Think()
+{
+SetNextThink(0.1);
+int iCount = 0;
+CBaseEntity* pCurrent = nullptr;
+
+pCurrent = UTIL_FindEntityByTargetname(nullptr, STRING(pev->noise));
+while (pCurrent != nullptr)
+{
+iCount++;
+pCurrent = UTIL_FindEntityByTargetname(pCurrent, STRING(pev->noise));
+}
+
+if (pev->spawnflags & SF_WRCOUNT_STARTED)
+{
+if (iCount > pev->frags)
+{
+if (iCount < pev->impulse && pev->frags >= pev->impulse)
+FireTargets(STRING(pev->netname), this, this, USE_TOGGLE, 0);
+FireTargets(STRING(pev->noise1), this, this, USE_TOGGLE, 0);
+}
+else if (iCount < pev->frags)
+{
+if (iCount >= pev->impulse && pev->frags < pev->impulse)
+FireTargets(STRING(pev->message), this, this, USE_TOGGLE, 0);
+FireTargets(STRING(pev->noise2), this, this, USE_TOGGLE, 0);
+}
+}
+else
+{
+pev->spawnflags |= SF_WRCOUNT_STARTED;
+if (pev->spawnflags & SF_WRCOUNT_FIRESTART)
+{
+if (iCount < pev->impulse)
+FireTargets(STRING(pev->netname), this, this, USE_TOGGLE, 0);
+else
+FireTargets(STRING(pev->message), this, this, USE_TOGGLE, 0);
+}
+}
+pev->frags = iCount;
 }

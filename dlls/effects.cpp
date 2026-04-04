@@ -3857,3 +3857,62 @@ void CEnvDecal::Spawn()
 			ALERT(at_debug, "env_decal \"%s\" can't find decal \"%s\"\n", STRING(pev->targetname), STRING(pev->noise));
 	}
 }
+
+//=========================================================
+// hud_sprite
+// LRC - displays a sprite on the player's HUD using gmsgStatusIcon.
+//=========================================================
+#define SF_HUDSPR_ACTIVE 1
+
+class CHudSprite : public CBaseEntity
+{
+public:
+void Spawn() override;
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+STATE GetState() override { return (pev->spawnflags & SF_HUDSPR_ACTIVE) ? STATE_ON : STATE_OFF; }
+void Think() override;
+};
+
+LINK_ENTITY_TO_CLASS(hud_sprite, CHudSprite);
+
+void CHudSprite::Spawn()
+{
+if (FStringNull(pev->targetname))
+{
+pev->spawnflags |= SF_HUDSPR_ACTIVE;
+}
+
+if (pev->spawnflags & SF_HUDSPR_ACTIVE)
+{
+SetNextThink(2);
+}
+}
+
+void CHudSprite::Think()
+{
+Use(this, this, USE_ON, 0);
+}
+
+void CHudSprite::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+if (!pActivator || !pActivator->IsPlayer())
+{
+pActivator = CBaseEntity::Instance(g_engfuncs.pfnPEntityOfEntIndex(1));
+}
+
+if (ShouldToggle(useType))
+{
+if (pev->spawnflags & SF_HUDSPR_ACTIVE)
+pev->spawnflags &= ~SF_HUDSPR_ACTIVE;
+else
+pev->spawnflags |= SF_HUDSPR_ACTIVE;
+}
+
+MESSAGE_BEGIN(MSG_ONE, gmsgStatusIcon, nullptr, pActivator->pev);
+WRITE_BYTE(pev->spawnflags & SF_HUDSPR_ACTIVE);
+WRITE_STRING(STRING(pev->model));
+WRITE_BYTE(pev->rendercolor.x);
+WRITE_BYTE(pev->rendercolor.y);
+WRITE_BYTE(pev->rendercolor.z);
+MESSAGE_END();
+}

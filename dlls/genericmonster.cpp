@@ -147,3 +147,86 @@ void CGenericMonster::Precache()
 //=========================================================
 // AI Schedules Specific to this monster
 //=========================================================
+
+//=========================================================
+// CDeadGenericMonster
+// LRC - dead version of monster_generic, for placing corpses.
+//=========================================================
+class CDeadGenericMonster : public CBaseMonster
+{
+public:
+void Spawn() override;
+void Precache() override;
+int Classify() override { return CLASS_PLAYER_ALLY; }
+bool KeyValue(KeyValueData* pkvd) override;
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+int HasCustomGibs() override { return m_iszGibModel; }
+
+int m_iszGibModel;
+};
+
+LINK_ENTITY_TO_CLASS(monster_generic_dead, CDeadGenericMonster);
+
+TYPEDESCRIPTION CDeadGenericMonster::m_SaveData[] =
+{
+DEFINE_FIELD(CDeadGenericMonster, m_iszGibModel, FIELD_STRING),
+};
+
+IMPLEMENT_SAVERESTORE(CDeadGenericMonster, CBaseMonster);
+
+bool CDeadGenericMonster::KeyValue(KeyValueData* pkvd)
+{
+if (FStrEq(pkvd->szKeyName, "m_bloodColor"))
+{
+m_bloodColor = atoi(pkvd->szValue);
+return true;
+}
+else if (FStrEq(pkvd->szKeyName, "m_iszGibModel"))
+{
+m_iszGibModel = ALLOC_STRING(pkvd->szValue);
+return true;
+}
+return CBaseMonster::KeyValue(pkvd);
+}
+
+void CDeadGenericMonster::Spawn()
+{
+Precache();
+SET_MODEL(ENT(pev), STRING(pev->model));
+
+pev->effects = 0;
+pev->yaw_speed = 8;
+pev->sequence = 0;
+
+if (pev->netname)
+{
+pev->sequence = LookupSequence(STRING(pev->netname));
+
+if (pev->sequence == -1)
+{
+ALERT(at_debug, "Invalid sequence name \"%s\" in monster_generic_dead\n", STRING(pev->netname));
+}
+}
+else
+{
+pev->sequence = LookupActivity(pev->frags);
+}
+
+pev->health = 8;
+
+MonsterInitDead();
+
+ResetSequenceInfo();
+pev->frame = 255;
+}
+
+void CDeadGenericMonster::Precache()
+{
+PRECACHE_MODEL((char*)STRING(pev->model));
+if (m_iszGibModel)
+PRECACHE_MODEL((char*)STRING(m_iszGibModel));
+}
