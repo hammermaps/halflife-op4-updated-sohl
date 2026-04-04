@@ -1451,7 +1451,7 @@ void CTankSequence::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 
 	// Activate: take control of the tank, start the sequence
 	CBaseEntity* pEnt = UTIL_FindEntityByTargetname(NULL, STRING(m_iszEntity));
-	if (!pEnt || !FStrEq(STRING(pEnt->pev->classname), "func_tank"))
+	if (!pEnt || strncmp(STRING(pEnt->pev->classname), "func_tank", 9) != 0)
 	{
 		ALERT(at_error, "Invalid or missing tank \"%s\" for scripted_tanksequence!\n", STRING(m_iszEntity));
 		return;
@@ -1589,10 +1589,7 @@ void CTankSequence::StopSequence()
 
 	m_pTank->StopSequence();
 
-	if ((pev->spawnflags & SF_TSEQ_REPEATABLE) == 0)
-		UTIL_Remove(this);
-
-	// Handle active state change
+	// Handle active state change (must be before UTIL_Remove)
 	if (m_pTank->IsActive() && (m_iActive == TSEQ_FLAG_OFF || m_iActive == TSEQ_FLAG_TOGGLE))
 	{
 		m_pTank->TankDeactivate();
@@ -1603,4 +1600,7 @@ void CTankSequence::StopSequence()
 	}
 
 	m_pTank = NULL;
+
+	if ((pev->spawnflags & SF_TSEQ_REPEATABLE) == 0)
+		UTIL_Remove(this);
 }
