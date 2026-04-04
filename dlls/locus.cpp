@@ -403,7 +403,8 @@ float CCalcRatio::CalcRatio(CBaseEntity* pLocus)
 		fBasis = -fBasis;
 		break; // negative
 	case 3:
-		fBasis = 1 / fBasis;
+		if (fBasis != 0)
+			fBasis = 1 / fBasis;
 		break; // reciprocal
 	}
 
@@ -579,20 +580,23 @@ Vector CCalcVelocityPath::CalcVelocity(CBaseEntity* pLocus)
 	if (pev->health)
 	{
 		float len = vecOffs.Length();
-		switch ((int)pev->health)
+		if (len > 0)
 		{
-		case 1:
-			vecOffs = vecOffs / len;
-			break;
-		case 2:
-			vecOffs = vecOffs / (len * len);
-			break;
-		case 3:
-			vecOffs = vecOffs / (len * len * len);
-			break;
-		case 4:
-			vecOffs = vecOffs * len;
-			break;
+			switch ((int)pev->health)
+			{
+			case 1:
+				vecOffs = vecOffs / len;
+				break;
+			case 2:
+				vecOffs = vecOffs / (len * len);
+				break;
+			case 3:
+				vecOffs = vecOffs / (len * len * len);
+				break;
+			case 4:
+				vecOffs = vecOffs * len;
+				break;
+			}
 		}
 	}
 
