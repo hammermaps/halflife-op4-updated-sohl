@@ -854,8 +854,138 @@ CBaseEntity* UTIL_FindEntityByClassname(CBaseEntity* pStartEntity, const char* s
 	return UTIL_FindEntityByString(pStartEntity, "classname", szName);
 }
 
+// LRC - follow all info_alias entities named szValue to find their target entity.
+// Returns the first target entity (by edict offset) that comes after pStartEntity.
+CBaseEntity* UTIL_FollowAliasReference(CBaseEntity* pStartEntity, const char* szValue)
+{
+	CBaseEntity* pEntity = UTIL_FindEntityByString(nullptr, "targetname", szValue);
+	CBaseEntity* pBestEntity = nullptr;
+	int iBestOffset = -1;
+
+	while (pEntity)
+	{
+		if (pEntity->IsAlias())
+		{
+			CBaseEntity* pTempEntity = static_cast<CBaseAlias*>(pEntity)->FollowAlias(pStartEntity);
+			if (pTempEntity)
+			{
+				int iTempOffset = OFFSET(pTempEntity->pev);
+				if (iBestOffset == -1 || iTempOffset < iBestOffset)
+				{
+					iBestOffset = iTempOffset;
+					pBestEntity = pTempEntity;
+				}
+			}
+		}
+		pEntity = UTIL_FindEntityByString(pEntity, "targetname", szValue);
+	}
+
+	return pBestEntity;
+}
+
+// LRC - follow an info_group member reference: "groupname.membername"
+CBaseEntity* UTIL_FollowGroupReference(CBaseEntity* pStartEntity, const char* szGroupName, const char* szMemberName)
+{
+	char szBuf[MAX_ALIASNAME_LEN];
+	const char* szThisMember = szMemberName;
+	const char* szTail = nullptr;
+
+	// check for nested member reference (e.g. "group.sub.member")
+	for (int i = 0; szMemberName[i]; i++)
+	{
+		if (szMemberName[i] == '.')
+		{
+			if (i < MAX_ALIASNAME_LEN - 1)
+			{
+				snprintf(szBuf, sizeof(szBuf), "%.*s", i, szMemberName);
+				szThisMember = szBuf;
+				szTail = &szMemberName[i + 1];
+			}
+			break;
+		}
+	}
+
+	CBaseEntity* pEntity = UTIL_FindEntityByString(nullptr, "targetname", szGroupName);
+	CBaseEntity* pBestEntity = nullptr;
+	int iBestOffset = -1;
+
+	while (pEntity)
+	{
+		if (FStrEq(STRING(pEntity->pev->classname), "info_group"))
+		{
+			string_t iszMemberValue = static_cast<CInfoGroup*>(pEntity)->GetMember(szThisMember);
+			if (!FStringNull(iszMemberValue))
+			{
+				CBaseEntity* pTempEntity;
+				if (szTail)
+					pTempEntity = UTIL_FollowGroupReference(pStartEntity, STRING(iszMemberValue), szTail);
+				else
+					pTempEntity = UTIL_FindEntityByString(pStartEntity, "targetname", STRING(iszMemberValue));
+
+				if (pTempEntity)
+				{
+					int iTempOffset = OFFSET(pTempEntity->pev);
+					if (iBestOffset == -1 || iTempOffset < iBestOffset)
+					{
+						iBestOffset = iTempOffset;
+						pBestEntity = pTempEntity;
+					}
+				}
+			}
+		}
+		pEntity = UTIL_FindEntityByString(pEntity, "targetname", szGroupName);
+	}
+
+	return pBestEntity;
+}
+
+// LRC - resolve a Spirit-style reference:
+//   "*name"      -> dereference info_alias "name"
+//   "name.member" -> dereference info_group "name" member "member"
+// Returns nullptr if szName is not a reference.
+CBaseEntity* UTIL_FollowReference(CBaseEntity* pStartEntity, const char* szName)
+{
+	if (!szName || szName[0] == 0)
+		return nullptr;
+
+	// group member reference?
+	for (int i = 0; szName[i]; i++)
+	{
+		if (szName[i] == '.')
+		{
+			if (i < MAX_ALIASNAME_LEN - 1)
+			{
+				char szRoot[MAX_ALIASNAME_LEN];
+				snprintf(szRoot, sizeof(szRoot), "%.*s", i, szName);
+				return UTIL_FollowGroupReference(pStartEntity, szRoot, szName + i + 1);
+			}
+			return nullptr;
+		}
+	}
+
+	// alias reference?
+	if (szName[0] == '*')
+	{
+		if (FStrEq(szName, "*player"))
+		{
+			CBaseEntity* pPlayer = UTIL_FindEntityByClassname(nullptr, "player");
+			if (pPlayer && (pStartEntity == nullptr || OFFSET(pPlayer->pev) > OFFSET(pStartEntity->pev)))
+				return pPlayer;
+			return nullptr;
+		}
+		return UTIL_FollowAliasReference(pStartEntity, szName + 1);
+	}
+
+	return nullptr;
+}
+
 CBaseEntity* UTIL_FindEntityByTargetname(CBaseEntity* pStartEntity, const char* szName)
 {
+	// LRC - handle Spirit alias (*name) and group (name.member) references
+	CBaseEntity* pFound = UTIL_FollowReference(pStartEntity, szName);
+	if (pFound)
+		return pFound;
+
 	return UTIL_FindEntityByString(pStartEntity, "targetname", szName);
 }
 
