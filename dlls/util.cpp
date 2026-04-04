@@ -2145,7 +2145,7 @@ unsigned short CSaveRestoreBuffer::TokenHash(const char* pszToken)
 		if (i > 50 && !beentheredonethat)
 		{
 			beentheredonethat = true;
-			LOG_WARNING("CSaveRestoreBuffer :: TokenHash() is getting too full!");
+			LOG_ERROR("CSaveRestoreBuffer :: TokenHash() is getting too full!");
 		}
 #endif
 
