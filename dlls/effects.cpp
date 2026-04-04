@@ -2684,3 +2684,1298 @@ void CEnvWarpBall::Think()
 	SUB_UseTargets(this, USE_TOGGLE, 0);
 	DontThink();
 }
+
+// =========================================================
+// env_model - SoHL 1.2 animated model display entity
+// =========================================================
+#define SF_ENVMODEL_OFF        1
+#define SF_ENVMODEL_DROPTOFLOOR 2
+#define SF_ENVMODEL_SOLID      4
+
+class CEnvModel : public CBaseAnimating
+{
+public:
+	void Spawn() override;
+	void Precache() override;
+	void Think() override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	STATE GetState() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	void SetSequence();
+
+	string_t m_iszSequence_On;
+	string_t m_iszSequence_Off;
+	int m_iAction_On;
+	int m_iAction_Off;
+};
+
+LINK_ENTITY_TO_CLASS(env_model, CEnvModel);
+
+TYPEDESCRIPTION CEnvModel::m_SaveData[] =
+{
+	DEFINE_FIELD(CEnvModel, m_iszSequence_On, FIELD_STRING),
+	DEFINE_FIELD(CEnvModel, m_iszSequence_Off, FIELD_STRING),
+	DEFINE_FIELD(CEnvModel, m_iAction_On, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvModel, m_iAction_Off, FIELD_INTEGER),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvModel, CBaseAnimating);
+
+bool CEnvModel::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "m_iszSequence_On"))
+	{
+		m_iszSequence_On = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszSequence_Off"))
+	{
+		m_iszSequence_Off = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iAction_On"))
+	{
+		m_iAction_On = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iAction_Off"))
+	{
+		m_iAction_Off = atoi(pkvd->szValue);
+		return true;
+	}
+
+	return CBaseAnimating::KeyValue(pkvd);
+}
+
+void CEnvModel::Spawn()
+{
+	Precache();
+	SET_MODEL(ENT(pev), STRING(pev->model));
+	UTIL_SetOrigin(pev, pev->origin);
+
+	if (pev->spawnflags & SF_ENVMODEL_SOLID)
+	{
+		pev->solid = SOLID_SLIDEBOX;
+		UTIL_SetSize(pev, Vector(-10, -10, -10), Vector(10, 10, 10));
+	}
+
+	if (pev->spawnflags & SF_ENVMODEL_DROPTOFLOOR)
+	{
+		pev->origin.z += 1;
+		DROP_TO_FLOOR(ENT(pev));
+	}
+
+	SetBoneController(0, 0);
+	SetBoneController(1, 0);
+
+	SetSequence();
+
+	SetNextThink(0.1);
+}
+
+void CEnvModel::Precache()
+{
+	PRECACHE_MODEL((char*)STRING(pev->model));
+}
+
+STATE CEnvModel::GetState()
+{
+	if (pev->spawnflags & SF_ENVMODEL_OFF)
+		return STATE_OFF;
+	else
+		return STATE_ON;
+}
+
+void CEnvModel::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (ShouldToggle(useType, !(pev->spawnflags & SF_ENVMODEL_OFF)))
+	{
+		if (pev->spawnflags & SF_ENVMODEL_OFF)
+			pev->spawnflags &= ~SF_ENVMODEL_OFF;
+		else
+			pev->spawnflags |= SF_ENVMODEL_OFF;
+
+		SetSequence();
+		SetNextThink(0.1);
+	}
+}
+
+void CEnvModel::Think()
+{
+	StudioFrameAdvance();
+
+	if (m_fSequenceFinished && !m_fSequenceLoops)
+	{
+		int iTemp;
+		if (pev->spawnflags & SF_ENVMODEL_OFF)
+			iTemp = m_iAction_Off;
+		else
+			iTemp = m_iAction_On;
+
+		switch (iTemp)
+		{
+		case 2: // change state
+			if (pev->spawnflags & SF_ENVMODEL_OFF)
+				pev->spawnflags &= ~SF_ENVMODEL_OFF;
+			else
+				pev->spawnflags |= SF_ENVMODEL_OFF;
+			SetSequence();
+			break;
+		default: // remain frozen
+			return;
+		}
+	}
+	SetNextThink(0.1);
+}
+
+void CEnvModel::SetSequence()
+{
+	int iszSeq;
+
+	if (pev->spawnflags & SF_ENVMODEL_OFF)
+		iszSeq = m_iszSequence_Off;
+	else
+		iszSeq = m_iszSequence_On;
+
+	if (!iszSeq)
+		return;
+	pev->sequence = LookupSequence(STRING(iszSeq));
+
+	if (pev->sequence == -1)
+	{
+		if (pev->targetname)
+			ALERT(at_error, "env_model %s: unknown sequence \"%s\"\n", STRING(pev->targetname), STRING(iszSeq));
+		else
+			ALERT(at_error, "env_model: unknown sequence \"%s\"\n", STRING(iszSeq));
+		pev->sequence = 0;
+	}
+
+	pev->frame = 0;
+	ResetSequenceInfo();
+
+	if (pev->spawnflags & SF_ENVMODEL_OFF)
+	{
+		if (m_iAction_Off == 1)
+			m_fSequenceLoops = true;
+		else
+			m_fSequenceLoops = false;
+	}
+	else
+	{
+		if (m_iAction_On == 1)
+			m_fSequenceLoops = true;
+		else
+			m_fSequenceLoops = false;
+	}
+}
+
+// =========================================================
+// env_quakefx - SoHL 1.2 Quake-style temp entity effects
+// =========================================================
+#define SF_QUAKEFX_REPEATABLE 1
+
+class CEnvQuakeFx : public CPointEntity
+{
+public:
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+};
+
+LINK_ENTITY_TO_CLASS(env_quakefx, CEnvQuakeFx);
+
+void CEnvQuakeFx::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	Vector vecPos;
+	if (pev->message)
+		vecPos = CalcLocus_Position(this, pActivator, STRING(pev->message));
+	else
+		vecPos = pev->origin;
+
+	MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
+	WRITE_BYTE(pev->impulse);
+	WRITE_COORD(vecPos.x);
+	WRITE_COORD(vecPos.y);
+	WRITE_COORD(vecPos.z);
+	if (pev->impulse == TE_PARTICLEBURST)
+	{
+		WRITE_SHORT(pev->armortype);  // radius
+		WRITE_BYTE(pev->frags);       // particle colour
+		WRITE_BYTE(pev->health * 10); // duration
+	}
+	else if (pev->impulse == TE_EXPLOSION2)
+	{
+		WRITE_BYTE(0); // colour
+		WRITE_BYTE(1); // number of colours
+	}
+	MESSAGE_END();
+
+	if (!(pev->spawnflags & SF_QUAKEFX_REPEATABLE))
+	{
+		SetThink(&CEnvQuakeFx::SUB_Remove);
+		SetNextThink(0);
+	}
+}
+
+// =========================================================
+// env_beamtrail - SoHL 1.2 beam trail effect
+// =========================================================
+#define SF_BEAMTRAIL_OFF 1
+
+class CEnvBeamTrail : public CPointEntity
+{
+public:
+	void Spawn() override;
+	void Precache() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	STATE GetState() override;
+	void EXPORT StartTrailThink();
+	void Affect(CBaseEntity* pTarget, USE_TYPE useType);
+
+	int m_iSprite; // Don't save, precache
+};
+
+LINK_ENTITY_TO_CLASS(env_beamtrail, CEnvBeamTrail);
+
+void CEnvBeamTrail::Precache()
+{
+	m_iSprite = 0;
+
+	if (pev->target)
+		PrecacheModel("sprites/null.spr");
+
+	if (!FStringNull(pev->netname))
+		m_iSprite = PrecacheModel((char*)STRING(pev->netname));
+
+	if (m_iSprite == 0)
+	{
+		ALERT(at_error, "env_beamtrail \"%s\" has no sprite configured in netname; removing\n", STRING(pev->targetname));
+		UTIL_Remove(this);
+		return;
+	}
+}
+
+STATE CEnvBeamTrail::GetState()
+{
+	if (pev->spawnflags & SF_BEAMTRAIL_OFF)
+		return STATE_OFF;
+	else
+		return STATE_ON;
+}
+
+void CEnvBeamTrail::StartTrailThink()
+{
+	pev->spawnflags |= SF_BEAMTRAIL_OFF; // fake turning off, so the Use turns it on properly
+	Use(this, this, USE_ON, 0);
+}
+
+void CEnvBeamTrail::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (pev->target)
+	{
+		CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+		while (pTarget)
+		{
+			Affect(pTarget, useType);
+			pTarget = UTIL_FindEntityByTargetname(pTarget, STRING(pev->target));
+		}
+	}
+	else
+	{
+		if (!ShouldToggle(useType))
+			return;
+		Affect(this, useType);
+	}
+
+	if (useType == USE_ON)
+		pev->spawnflags &= ~SF_BEAMTRAIL_OFF;
+	else if (useType == USE_OFF)
+		pev->spawnflags |= SF_BEAMTRAIL_OFF;
+	else if (useType == USE_TOGGLE)
+	{
+		if (pev->spawnflags & SF_BEAMTRAIL_OFF)
+			pev->spawnflags &= ~SF_BEAMTRAIL_OFF;
+		else
+			pev->spawnflags |= SF_BEAMTRAIL_OFF;
+	}
+}
+
+void CEnvBeamTrail::Affect(CBaseEntity* pTarget, USE_TYPE useType)
+{
+	bool bTurnOn;
+
+	if (useType == USE_ON)
+		bTurnOn = true;
+	else if (useType == USE_OFF)
+		bTurnOn = false;
+	else // USE_TOGGLE
+		bTurnOn = (pev->spawnflags & SF_BEAMTRAIL_OFF) != 0;
+
+	if (bTurnOn)
+	{
+		MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
+		WRITE_BYTE(TE_BEAMFOLLOW);
+		WRITE_SHORT(pTarget->entindex()); // entity
+		WRITE_SHORT(m_iSprite);           // model
+		WRITE_BYTE(pev->health * 10);     // life
+		WRITE_BYTE(pev->armorvalue);      // width
+		WRITE_BYTE(pev->rendercolor.x);   // r
+		WRITE_BYTE(pev->rendercolor.y);   // g
+		WRITE_BYTE(pev->rendercolor.z);   // b
+		WRITE_BYTE(pev->renderamt);       // brightness
+		MESSAGE_END();
+	}
+	else
+	{
+		MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
+		WRITE_BYTE(TE_KILLBEAM);
+		WRITE_SHORT(pTarget->entindex());
+		MESSAGE_END();
+	}
+}
+
+void CEnvBeamTrail::Spawn()
+{
+	Precache();
+
+	SET_MODEL(ENT(pev), "sprites/null.spr");
+	UTIL_SetSize(pev, Vector(0, 0, 0), Vector(0, 0, 0));
+
+	if (!(pev->spawnflags & SF_BEAMTRAIL_OFF))
+	{
+		SetThink(&CEnvBeamTrail::StartTrailThink);
+		UTIL_DesiredThink(this);
+	}
+}
+
+// =========================================================
+// env_footsteps - SoHL 1.2 custom footstep sounds
+// =========================================================
+#define SF_FOOTSTEPS_SET  1
+#define SF_FOOTSTEPS_ONCE 2
+
+class CEnvFootsteps : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	void Precache() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+	STATE GetState() override;
+	STATE GetState(CBaseEntity* pEnt);
+	void PrecacheNoise(const char* szNoise);
+};
+
+LINK_ENTITY_TO_CLASS(env_footsteps, CEnvFootsteps);
+
+void CEnvFootsteps::Spawn()
+{
+	Precache();
+}
+
+void CEnvFootsteps::PrecacheNoise(const char* szNoise)
+{
+	static char szBuf[256];
+	int i = 0, j = 0;
+	size_t len = strlen(szNoise);
+	if (len >= sizeof(szBuf))
+	{
+		ALERT(at_error, "env_footsteps: noise string too long (max %d): %s\n", (int)(sizeof(szBuf) - 1), szNoise);
+		return;
+	}
+	for (i = 0; szNoise[i]; i++)
+	{
+		if (szNoise[i] == '?')
+		{
+			strncpy(szBuf, szNoise, sizeof(szBuf) - 1);
+			szBuf[sizeof(szBuf) - 1] = '\0';
+			for (j = 0; j < 4; j++)
+			{
+				szBuf[i] = j + '1';
+				PRECACHE_SOUND(szBuf);
+			}
+		}
+	}
+	if (!j)
+		PRECACHE_SOUND((char*)szNoise);
+}
+
+void CEnvFootsteps::Precache()
+{
+	if (pev->noise)
+		PrecacheNoise(STRING(pev->noise));
+	if (pev->noise1)
+		PrecacheNoise(STRING(pev->noise1));
+	if (pev->noise2)
+		PrecacheNoise(STRING(pev->noise2));
+	if (pev->noise3)
+		PrecacheNoise(STRING(pev->noise3));
+}
+
+STATE CEnvFootsteps::GetState()
+{
+	if (pev->spawnflags & SF_FOOTSTEPS_SET)
+		return STATE_OFF;
+	return pev->impulse ? STATE_ON : STATE_OFF;
+}
+
+STATE CEnvFootsteps::GetState(CBaseEntity* pEnt)
+{
+	if (pev->spawnflags & SF_FOOTSTEPS_SET)
+		return STATE_OFF;
+	if (pEnt->IsPlayer())
+	{
+		int playerMask = 1 << (pEnt->entindex() - 1);
+		if (pev->impulse & playerMask)
+			return STATE_ON;
+		else
+			return STATE_OFF;
+	}
+	else
+		return GetState();
+}
+
+void CEnvFootsteps::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (pActivator && pActivator->IsPlayer())
+	{
+		int playerMask = 1 << (pActivator->entindex() - 1);
+
+		if ((pev->spawnflags & SF_FOOTSTEPS_SET) || (!(pev->impulse & playerMask) && (useType == USE_ON || useType == USE_TOGGLE)))
+		{
+			pev->impulse |= playerMask;
+			if (pev->frags)
+			{
+				char sTemp[16];
+				snprintf(sTemp, sizeof(sTemp), "%d", (int)pev->frags);
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "stype", sTemp);
+			}
+			else if (pev->noise)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "ssnd", STRING(pev->noise));
+			}
+			if (pev->noise1)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "lsnd", STRING(pev->noise1));
+			}
+			if (pev->noise2)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "wsnd", STRING(pev->noise2));
+			}
+			if (pev->noise3)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "psnd", STRING(pev->noise3));
+			}
+			// workaround for physinfo string bug: force the engine to null-terminate it
+			g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "x", "0");
+			if ((pev->spawnflags & SF_FOOTSTEPS_SET) && (pev->spawnflags & SF_FOOTSTEPS_ONCE))
+			{
+				UTIL_Remove(this);
+			}
+		}
+		else if ((pev->impulse & playerMask) && (useType == USE_OFF || useType == USE_TOGGLE))
+		{
+			pev->impulse &= ~playerMask;
+			if (pev->frags)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "stype", "0");
+			}
+			else if (pev->noise)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "ssnd", "0");
+			}
+			if (pev->noise1)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "lsnd", "0");
+			}
+			if (pev->noise2)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "wsnd", "0");
+			}
+			if (pev->noise3)
+			{
+				g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "psnd", "0");
+			}
+			// workaround for physinfo string bug: force the engine to null-terminate it
+			g_engfuncs.pfnSetPhysicsKeyValue(pActivator->edict(), "x", "0");
+			if (pev->spawnflags & SF_FOOTSTEPS_ONCE)
+			{
+				UTIL_Remove(this);
+			}
+		}
+	}
+}
+
+// =========================================================
+// env_rain - SoHL 1.2 rain/precipitation effects
+// =========================================================
+#define SF_RAIN_START_OFF 1
+
+#define MAX_RAIN_BEAMS 32
+
+#define RAIN_AXIS_X 1
+#define RAIN_AXIS_Y 2
+#define RAIN_AXIS_Z 0
+
+#define RAIN_EXTENT_OBSTRUCTED         1
+#define RAIN_EXTENT_ARCING             2
+#define RAIN_EXTENT_OBSTRUCTED_REVERSE 3
+#define RAIN_EXTENT_ARCING_REVERSE     4
+
+class CEnvRain : public CBaseEntity
+{
+public:
+	void Spawn() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	void Think() override;
+	void Precache() override;
+	bool KeyValue(KeyValueData* pkvd) override;
+	int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	STATE GetState() override { return m_iState; }
+
+	STATE m_iState;
+	int m_spriteTexture;
+	int m_iszSpriteName;
+	int m_dripSize;
+	int m_minDripSpeed;
+	int m_maxDripSpeed;
+	int m_burstSize;
+	int m_brightness;
+	int m_pitch; // don't saverestore this
+	float m_flUpdateTime;
+	float m_flMaxUpdateTime;
+	int m_axis;
+	int m_iExtent;
+	float m_fLifeTime;
+	int m_iNoise;
+};
+
+LINK_ENTITY_TO_CLASS(env_rain, CEnvRain);
+
+TYPEDESCRIPTION CEnvRain::m_SaveData[] =
+{
+	DEFINE_FIELD(CEnvRain, m_iState, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_spriteTexture, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_dripSize, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_minDripSpeed, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_maxDripSpeed, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_burstSize, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_brightness, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_flUpdateTime, FIELD_FLOAT),
+	DEFINE_FIELD(CEnvRain, m_flMaxUpdateTime, FIELD_FLOAT),
+	DEFINE_FIELD(CEnvRain, m_iszSpriteName, FIELD_STRING),
+	DEFINE_FIELD(CEnvRain, m_axis, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_iExtent, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvRain, m_fLifeTime, FIELD_FLOAT),
+	DEFINE_FIELD(CEnvRain, m_iNoise, FIELD_INTEGER),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvRain, CBaseEntity);
+
+void CEnvRain::Precache()
+{
+	m_spriteTexture = PrecacheModel((char*)STRING(m_iszSpriteName));
+}
+
+bool CEnvRain::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "m_dripSize"))
+	{
+		m_dripSize = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_burstSize"))
+	{
+		m_burstSize = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_dripSpeed"))
+	{
+		int temp = atoi(pkvd->szValue);
+		m_maxDripSpeed = temp + (temp / 4);
+		m_minDripSpeed = temp - (temp / 4);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_brightness"))
+	{
+		m_brightness = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_flUpdateTime"))
+	{
+		m_flUpdateTime = atof(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_flMaxUpdateTime"))
+	{
+		m_flMaxUpdateTime = atof(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "pitch"))
+	{
+		m_pitch = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "texture"))
+	{
+		m_iszSpriteName = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_axis"))
+	{
+		m_axis = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iExtent"))
+	{
+		m_iExtent = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_fLifeTime"))
+	{
+		m_fLifeTime = atof(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iNoise"))
+	{
+		m_iNoise = atoi(pkvd->szValue);
+		return true;
+	}
+
+	return CBaseEntity::KeyValue(pkvd);
+}
+
+void CEnvRain::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (!ShouldToggle(useType))
+		return;
+
+	if (m_iState == STATE_ON)
+	{
+		m_iState = STATE_OFF;
+		DontThink();
+	}
+	else
+	{
+		m_iState = STATE_ON;
+		SetNextThink(0.1);
+	}
+}
+
+void CEnvRain::Spawn()
+{
+	Precache();
+	SET_MODEL(ENT(pev), STRING(pev->model)); // Set size
+	pev->solid = SOLID_NOT;
+	pev->effects = EF_NODRAW;
+
+	if (pev->rendercolor == g_vecZero)
+		pev->rendercolor = Vector(255, 255, 255);
+
+	if (m_pitch)
+		pev->angles.x = m_pitch;
+	else if (pev->angles.x == 0) // don't allow horizontal rain
+		pev->angles.x = 90;
+
+	if (m_burstSize == 0)
+		m_burstSize = 2;
+
+	if (pev->spawnflags & SF_RAIN_START_OFF)
+		m_iState = STATE_OFF;
+	else
+	{
+		m_iState = STATE_ON;
+		SetNextThink(0.1);
+	}
+}
+
+void CEnvRain::Think()
+{
+	Vector vecSrc;
+	Vector vecDest;
+
+	UTIL_MakeVectors(pev->angles);
+	Vector vecOffs = gpGlobals->v_forward;
+	float flScale = 0;
+	bool bHaveScale = false;
+	switch (m_axis)
+	{
+	case RAIN_AXIS_X:
+		if (vecOffs.x != 0)
+		{
+			flScale = pev->size.x / vecOffs.x;
+			bHaveScale = true;
+		}
+		else if (vecOffs.y != 0)
+		{
+			flScale = pev->size.y / vecOffs.y;
+			bHaveScale = true;
+		}
+		else if (vecOffs.z != 0)
+		{
+			flScale = pev->size.z / vecOffs.z;
+			bHaveScale = true;
+		}
+		break;
+	case RAIN_AXIS_Y:
+		if (vecOffs.y != 0)
+		{
+			flScale = pev->size.y / vecOffs.y;
+			bHaveScale = true;
+		}
+		else if (vecOffs.x != 0)
+		{
+			flScale = pev->size.x / vecOffs.x;
+			bHaveScale = true;
+		}
+		else if (vecOffs.z != 0)
+		{
+			flScale = pev->size.z / vecOffs.z;
+			bHaveScale = true;
+		}
+		break;
+	case RAIN_AXIS_Z:
+		if (vecOffs.z != 0)
+		{
+			flScale = pev->size.z / vecOffs.z;
+			bHaveScale = true;
+		}
+		else if (vecOffs.x != 0)
+		{
+			flScale = pev->size.x / vecOffs.x;
+			bHaveScale = true;
+		}
+		else if (vecOffs.y != 0)
+		{
+			flScale = pev->size.y / vecOffs.y;
+			bHaveScale = true;
+		}
+		break;
+	}
+	if (bHaveScale)
+		vecOffs = vecOffs * flScale;
+
+	int repeats;
+	if (!m_fLifeTime && !m_flUpdateTime && !m_flMaxUpdateTime)
+		repeats = m_burstSize * 3;
+	else
+		repeats = m_burstSize;
+
+	int drawn = 0;
+	int tries = 0;
+	TraceResult tr;
+	bool bDraw;
+
+	while (drawn < repeats && tries < (repeats * 3))
+	{
+		tries++;
+		if (m_axis == RAIN_AXIS_X)
+			vecSrc.x = pev->maxs.x;
+		else
+			vecSrc.x = pev->mins.x + RANDOM_LONG(0, pev->size.x);
+		if (m_axis == RAIN_AXIS_Y)
+			vecSrc.y = pev->maxs.y;
+		else
+			vecSrc.y = pev->mins.y + RANDOM_LONG(0, pev->size.y);
+		if (m_axis == RAIN_AXIS_Z)
+			vecSrc.z = pev->maxs.z;
+		else
+			vecSrc.z = pev->mins.z + RANDOM_LONG(0, pev->size.z);
+		vecDest = vecSrc - vecOffs;
+		bDraw = true;
+
+		switch (m_iExtent)
+		{
+		case RAIN_EXTENT_OBSTRUCTED:
+			UTIL_TraceLine(vecSrc, vecDest, ignore_monsters, nullptr, &tr);
+			vecDest = tr.vecEndPos;
+			break;
+		case RAIN_EXTENT_OBSTRUCTED_REVERSE:
+			UTIL_TraceLine(vecDest, vecSrc, ignore_monsters, nullptr, &tr);
+			vecSrc = tr.vecEndPos;
+			break;
+		case RAIN_EXTENT_ARCING:
+			UTIL_TraceLine(vecSrc, vecDest, ignore_monsters, nullptr, &tr);
+			if (tr.flFraction == 1.0)
+				bDraw = false;
+			vecDest = tr.vecEndPos;
+			break;
+		case RAIN_EXTENT_ARCING_REVERSE:
+			UTIL_TraceLine(vecDest, vecSrc, ignore_monsters, nullptr, &tr);
+			if (tr.flFraction == 1.0)
+				bDraw = false;
+			vecSrc = tr.vecEndPos;
+			break;
+		}
+
+		if (!bDraw)
+			continue;
+
+		drawn++;
+
+		MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
+		WRITE_BYTE(TE_BEAMPOINTS);
+		WRITE_COORD(vecDest.x);
+		WRITE_COORD(vecDest.y);
+		WRITE_COORD(vecDest.z);
+		WRITE_COORD(vecSrc.x);
+		WRITE_COORD(vecSrc.y);
+		WRITE_COORD(vecSrc.z);
+		WRITE_SHORT(m_spriteTexture);
+		WRITE_BYTE(0); // framestart
+		WRITE_BYTE(0); // framerate
+		if (m_fLifeTime)
+			WRITE_BYTE((int)(m_fLifeTime * 10)); // life
+		else if (m_flMaxUpdateTime)
+			WRITE_BYTE((int)(RANDOM_FLOAT(m_flUpdateTime, m_flMaxUpdateTime) * 30));
+		else
+			WRITE_BYTE((int)(m_flUpdateTime * 30)); // life
+		WRITE_BYTE(m_dripSize);                  // width
+		WRITE_BYTE(m_iNoise);                    // noise
+		WRITE_BYTE((int)pev->rendercolor.x);     // r
+		WRITE_BYTE((int)pev->rendercolor.y);     // g
+		WRITE_BYTE((int)pev->rendercolor.z);     // b
+		WRITE_BYTE(m_brightness);                // brightness
+		WRITE_BYTE((int)RANDOM_LONG(m_minDripSpeed, m_maxDripSpeed)); // speed
+		MESSAGE_END();
+	}
+
+	if (pev->target && drawn)
+		FireTargets(STRING(pev->target), this, this, USE_TOGGLE, 0);
+
+	if (m_flMaxUpdateTime)
+		SetNextThink(RANDOM_FLOAT(m_flUpdateTime, m_flMaxUpdateTime));
+	else if (m_flUpdateTime)
+		SetNextThink(m_flUpdateTime);
+}
+
+// =========================================================
+// env_shockwave - SoHL 1.2 expanding ring/shockwave effect
+// =========================================================
+#define SF_SHOCKWAVE_CENTERED   1
+#define SF_SHOCKWAVE_REPEATABLE 2
+
+class CEnvShockwave : public CPointEntity
+{
+public:
+	void Precache() override;
+	void Spawn() override { Precache(); }
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	bool KeyValue(KeyValueData* pkvd) override;
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	int m_iTime;
+	int m_iRadius;
+	int m_iHeight;
+	int m_iScrollRate;
+	int m_iNoise;
+	int m_iFrameRate;
+	int m_iStartFrame;
+	int m_iSpriteTexture;
+	char m_cType;
+	int m_iszPosition;
+};
+
+LINK_ENTITY_TO_CLASS(env_shockwave, CEnvShockwave);
+
+TYPEDESCRIPTION CEnvShockwave::m_SaveData[] =
+{
+	DEFINE_FIELD(CEnvShockwave, m_iHeight, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvShockwave, m_iTime, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvShockwave, m_iRadius, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvShockwave, m_iScrollRate, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvShockwave, m_iNoise, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvShockwave, m_iFrameRate, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvShockwave, m_iStartFrame, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvShockwave, m_iSpriteTexture, FIELD_INTEGER),
+	DEFINE_FIELD(CEnvShockwave, m_cType, FIELD_CHARACTER),
+	DEFINE_FIELD(CEnvShockwave, m_iszPosition, FIELD_STRING),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvShockwave, CBaseEntity);
+
+void CEnvShockwave::Precache()
+{
+	m_iSpriteTexture = PrecacheModel((char*)STRING(pev->netname));
+}
+
+bool CEnvShockwave::KeyValue(KeyValueData* pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "m_iTime"))
+	{
+		m_iTime = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iRadius"))
+	{
+		m_iRadius = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iHeight"))
+	{
+		m_iHeight = atoi(pkvd->szValue) / 2; // actual height is doubled when drawn
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iScrollRate"))
+	{
+		m_iScrollRate = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iNoise"))
+	{
+		m_iNoise = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iFrameRate"))
+	{
+		m_iFrameRate = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iStartFrame"))
+	{
+		m_iStartFrame = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszPosition"))
+	{
+		m_iszPosition = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_cType"))
+	{
+		m_cType = atoi(pkvd->szValue);
+		return true;
+	}
+
+	return CBaseEntity::KeyValue(pkvd);
+}
+
+void CEnvShockwave::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	Vector vecPos;
+	if (m_iszPosition)
+		vecPos = CalcLocus_Position(this, pActivator, STRING(m_iszPosition));
+	else
+		vecPos = pev->origin;
+
+	if (!(pev->spawnflags & SF_SHOCKWAVE_CENTERED))
+		vecPos.z += m_iHeight;
+
+	MESSAGE_BEGIN(MSG_PVS, SVC_TEMPENTITY, pev->origin);
+	if (m_cType)
+		WRITE_BYTE(m_cType);
+	else
+		WRITE_BYTE(TE_BEAMCYLINDER);
+	WRITE_COORD(vecPos.x);
+	WRITE_COORD(vecPos.y);
+	WRITE_COORD(vecPos.z);
+	WRITE_COORD(vecPos.x);
+	WRITE_COORD(vecPos.y);
+	WRITE_COORD(vecPos.z + m_iRadius);
+	WRITE_SHORT(m_iSpriteTexture);
+	WRITE_BYTE(m_iStartFrame);
+	WRITE_BYTE(m_iFrameRate);
+	WRITE_BYTE(m_iTime);
+	WRITE_BYTE(m_iHeight);
+	WRITE_BYTE(m_iNoise);
+	WRITE_BYTE(pev->rendercolor.x);
+	WRITE_BYTE(pev->rendercolor.y);
+	WRITE_BYTE(pev->rendercolor.z);
+	WRITE_BYTE(pev->renderamt);
+	WRITE_BYTE(m_iScrollRate);
+	MESSAGE_END();
+
+	if (!(pev->spawnflags & SF_SHOCKWAVE_REPEATABLE))
+	{
+		SetThink(&CEnvShockwave::SUB_Remove);
+		SetNextThink(0);
+	}
+}
+
+// =========================================================
+// env_elight - SoHL 1.2 entity-attached dynamic light
+// Standalone implementation using TE_ELIGHT messages
+// =========================================================
+#define SF_ELIGHT_ONLYONCE 1
+#define SF_ELIGHT_STARTON  2
+
+class CEnvELight : public CPointEntity
+{
+public:
+	void Spawn() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	void Think() override;
+	STATE GetState() override;
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	void SendLight(bool bActive);
+
+	EHANDLE m_hAttach;
+	STATE m_iState = STATE_OFF;
+};
+
+LINK_ENTITY_TO_CLASS(env_elight, CEnvELight);
+
+TYPEDESCRIPTION CEnvELight::m_SaveData[] =
+{
+	DEFINE_FIELD(CEnvELight, m_hAttach, FIELD_EHANDLE),
+	DEFINE_FIELD(CEnvELight, m_iState, FIELD_INTEGER),
+};
+
+IMPLEMENT_SAVERESTORE(CEnvELight, CPointEntity);
+
+STATE CEnvELight::GetState()
+{
+	return m_iState;
+}
+
+void CEnvELight::Spawn()
+{
+	pev->solid = SOLID_NOT;
+	pev->movetype = MOVETYPE_NONE;
+
+	if (FStringNull(pev->targetname) || (pev->spawnflags & SF_ELIGHT_STARTON))
+	{
+		// Auto-activate after spawn
+		SetThink(&CEnvELight::SUB_CallUseToggle);
+		SetNextThink(0.1);
+	}
+}
+
+void CEnvELight::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (!ShouldToggle(useType, m_iState == STATE_ON))
+		return;
+
+	if (m_iState == STATE_ON)
+	{
+		// Turn off
+		SendLight(false);
+		m_iState = STATE_OFF;
+		DontThink();
+		return;
+	}
+
+	// Resolve attachment target
+	if (pev->target)
+	{
+		m_hAttach = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+		if (m_hAttach == nullptr)
+		{
+			ALERT(at_console, "env_elight \"%s\" can't find target %s\n", STRING(pev->targetname), STRING(pev->target));
+			return;
+		}
+	}
+	else
+	{
+		m_hAttach = this;
+	}
+
+	// Resolve position and store it for SendLight
+	if (pev->message)
+		pev->origin = CalcLocus_Position(this, pActivator, STRING(pev->message));
+
+	// Turn on
+	m_iState = STATE_ON;
+	SendLight(true);
+
+	if (pev->health)
+	{
+		SetNextThink(pev->health);
+	}
+	else if (pev->spawnflags & SF_ELIGHT_ONLYONCE)
+	{
+		SetThink(&CBaseEntity::SUB_Remove);
+		SetNextThink(0);
+	}
+}
+
+void CEnvELight::SendLight(bool bActive)
+{
+	if (m_hAttach == nullptr)
+		return;
+
+	MESSAGE_BEGIN(MSG_PVS, SVC_TEMPENTITY, pev->origin);
+	WRITE_BYTE(TE_ELIGHT);
+	WRITE_SHORT(m_hAttach->entindex() + 0x1000 * pev->impulse); // entity + attachment
+	WRITE_COORD(pev->origin.x);
+	WRITE_COORD(pev->origin.y);
+	WRITE_COORD(pev->origin.z);
+	WRITE_COORD(bActive ? pev->renderamt : 0); // radius
+	WRITE_BYTE(pev->rendercolor.x);            // r
+	WRITE_BYTE(pev->rendercolor.y);            // g
+	WRITE_BYTE(pev->rendercolor.z);            // b
+	WRITE_BYTE(bActive ? (pev->health ? (int)(pev->health * 10) : 2) : 2); // life in 0.1s
+	WRITE_COORD(bActive ? pev->frags : pev->renderamt); // decay
+	MESSAGE_END();
+}
+
+void CEnvELight::Think()
+{
+	// Timer expired, turn off
+	SendLight(false);
+	m_iState = STATE_OFF;
+
+	if (pev->spawnflags & SF_ELIGHT_ONLYONCE)
+	{
+		SetThink(&CBaseEntity::SUB_Remove);
+		SetNextThink(0);
+	}
+}
+
+// =========================================================
+// env_decal - SoHL 1.2 decal placement entity
+// =========================================================
+class CEnvDecal : public CPointEntity
+{
+public:
+	void Spawn() override;
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+};
+
+LINK_ENTITY_TO_CLASS(env_decal, CEnvDecal);
+
+void CEnvDecal::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	int iTexture = 0;
+
+	switch (pev->impulse)
+	{
+	case 1: iTexture = DECAL_GUNSHOT1 + RANDOM_LONG(0, 4); break;
+	case 2: iTexture = DECAL_BLOOD1 + RANDOM_LONG(0, 5); break;
+	case 3: iTexture = DECAL_YBLOOD1 + RANDOM_LONG(0, 5); break;
+	case 4: iTexture = DECAL_GLASSBREAK1 + RANDOM_LONG(0, 2); break;
+	case 5: iTexture = DECAL_BIGSHOT1 + RANDOM_LONG(0, 4); break;
+	case 6: iTexture = DECAL_SCORCH1 + RANDOM_LONG(0, 1); break;
+	case 7: iTexture = DECAL_SPIT1 + RANDOM_LONG(0, 1); break;
+	}
+
+	if (pev->impulse)
+		iTexture = gDecals[iTexture].index;
+	else
+		iTexture = pev->skin; // custom texture
+
+	Vector vecPos;
+	if (!FStringNull(pev->target))
+		vecPos = CalcLocus_Position(this, pActivator, STRING(pev->target));
+	else
+		vecPos = pev->origin;
+
+	Vector vecOffs;
+	if (!FStringNull(pev->netname))
+		vecOffs = CalcLocus_Velocity(this, pActivator, STRING(pev->netname));
+	else
+	{
+		UTIL_MakeVectors(pev->angles);
+		vecOffs = gpGlobals->v_forward;
+	}
+
+	if (pev->message)
+		vecOffs = vecOffs * CalcLocus_Ratio(pActivator, STRING(pev->message));
+	else
+		vecOffs = vecOffs.Normalize() * 4000;
+
+	TraceResult trace;
+	UTIL_TraceLine(vecPos, vecPos + vecOffs, ignore_monsters, nullptr, &trace);
+
+	if (trace.flFraction == 1.0)
+		return; // didn't hit anything
+
+	int entityIndex = (short)ENTINDEX(trace.pHit);
+
+	MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
+	WRITE_BYTE(TE_BSPDECAL);
+	WRITE_COORD(trace.vecEndPos.x);
+	WRITE_COORD(trace.vecEndPos.y);
+	WRITE_COORD(trace.vecEndPos.z);
+	WRITE_SHORT(iTexture);
+	WRITE_SHORT(entityIndex);
+	if (entityIndex)
+		WRITE_SHORT((int)VARS(trace.pHit)->modelindex);
+	MESSAGE_END();
+}
+
+void CEnvDecal::Spawn()
+{
+	if (pev->impulse == 0)
+	{
+		pev->skin = DECAL_INDEX(STRING(pev->noise));
+
+		if (pev->skin == 0)
+			ALERT(at_debug, "env_decal \"%s\" can't find decal \"%s\"\n", STRING(pev->targetname), STRING(pev->noise));
+	}
+}
+
+//=========================================================
+// hud_sprite
+// LRC - displays a sprite on the player's HUD using gmsgStatusIcon.
+//=========================================================
+#define SF_HUDSPR_ACTIVE 1
+
+class CHudSprite : public CBaseEntity
+{
+public:
+void Spawn() override;
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+STATE GetState() override { return (pev->spawnflags & SF_HUDSPR_ACTIVE) ? STATE_ON : STATE_OFF; }
+void Think() override;
+};
+
+LINK_ENTITY_TO_CLASS(hud_sprite, CHudSprite);
+
+void CHudSprite::Spawn()
+{
+if (FStringNull(pev->targetname))
+{
+pev->spawnflags |= SF_HUDSPR_ACTIVE;
+}
+
+if (pev->spawnflags & SF_HUDSPR_ACTIVE)
+{
+SetNextThink(2);
+}
+}
+
+void CHudSprite::Think()
+{
+Use(this, this, USE_ON, 0);
+}
+
+void CHudSprite::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+if (!pActivator || !pActivator->IsPlayer())
+{
+pActivator = CBaseEntity::Instance(g_engfuncs.pfnPEntityOfEntIndex(1));
+}
+
+if (ShouldToggle(useType))
+{
+if (pev->spawnflags & SF_HUDSPR_ACTIVE)
+pev->spawnflags &= ~SF_HUDSPR_ACTIVE;
+else
+pev->spawnflags |= SF_HUDSPR_ACTIVE;
+}
+
+MESSAGE_BEGIN(MSG_ONE, gmsgStatusIcon, nullptr, pActivator->pev);
+WRITE_BYTE(pev->spawnflags & SF_HUDSPR_ACTIVE);
+WRITE_STRING(STRING(pev->model));
+WRITE_BYTE(pev->rendercolor.x);
+WRITE_BYTE(pev->rendercolor.y);
+WRITE_BYTE(pev->rendercolor.z);
+MESSAGE_END();
+}

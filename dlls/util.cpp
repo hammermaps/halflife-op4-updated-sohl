@@ -34,6 +34,8 @@
 #include "game.h"
 #include "UserMessages.h"
 #include "filesystem_utils.h"
+#include "alias.h"
+#include "movewith.h"
 
 // ==========================================
 // Safe resource precache / model set wrappers
@@ -854,6 +856,26 @@ CBaseEntity* UTIL_FindEntityByClassname(CBaseEntity* pStartEntity, const char* s
 CBaseEntity* UTIL_FindEntityByTargetname(CBaseEntity* pStartEntity, const char* szName)
 {
 	return UTIL_FindEntityByString(pStartEntity, "targetname", szName);
+}
+
+// LRC - mark an alias entity as needing a flush/update.
+// Only sets the LF_ALIASLIST flag. Does not repurpose CBaseAlias::m_pNextAlias
+// which is owned by the global alias list in alias.cpp.
+void UTIL_AddToAliasList(CBaseAlias* pAlias)
+{
+	if (!pAlias)
+	{
+		ALERT(at_debug, "UTIL_AddToAliasList: null alias!\n");
+		return;
+	}
+
+	if (!CWorld::World)
+	{
+		ALERT(at_debug, "UTIL_AddToAliasList: no World!\n");
+		return;
+	}
+
+	pAlias->m_iLFlags |= LF_ALIASLIST;
 }
 
 

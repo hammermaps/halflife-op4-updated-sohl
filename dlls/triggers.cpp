@@ -33,6 +33,7 @@
 #include "ctf/ctfplay_gamerules.h"
 #include "ctf/CTFGoalFlag.h"
 #include "UserMessages.h"
+#include "weapons.h"
 
 #define SF_TRIGGER_PUSH_START_OFF 2		   //spawnflag that makes trigger_push spawn turned OFF
 #define SF_TRIGGER_HURT_TARGETONCE 1	   // Only fire hurt target once
@@ -2569,6 +2570,7 @@ public:
 };
 
 LINK_ENTITY_TO_CLASS(trigger_playerfreeze, CTriggerPlayerFreeze);
+LINK_ENTITY_TO_CLASS(player_freeze, CTriggerPlayerFreeze);
 
 void CTriggerPlayerFreeze::Spawn()
 {
@@ -4010,4 +4012,408 @@ pMonster->SetConditions(bits_COND_NEW_ENEMY);
 
 if (m_iPlayerReact >= 0)
 pMonster->m_iPlayerReact = m_iPlayerReact;
+}
+
+//=========================================================
+// trigger_changevalue
+// LRC - changes a keyvalue field on a target entity at runtime.
+//=========================================================
+class CTriggerChangeValue : public CBaseDelay
+{
+public:
+bool KeyValue(KeyValueData* pkvd) override;
+void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+
+int ObjectCaps() override { return CBaseDelay::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+
+static TYPEDESCRIPTION m_SaveData[];
+
+private:
+string_t m_iszNewValue;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_changevalue, CTriggerChangeValue);
+
+TYPEDESCRIPTION CTriggerChangeValue::m_SaveData[] =
+{
+DEFINE_FIELD(CTriggerChangeValue, m_iszNewValue, FIELD_STRING),
+};
+
+IMPLEMENT_SAVERESTORE(CTriggerChangeValue, CBaseDelay);
+
+bool CTriggerChangeValue::KeyValue(KeyValueData* pkvd)
+{
+if (FStrEq(pkvd->szKeyName, "m_iszNewValue"))
+{
+m_iszNewValue = ALLOC_STRING(pkvd->szValue);
+return true;
+}
+return CBaseDelay::KeyValue(pkvd);
+}
+
+void CTriggerChangeValue::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (FStringNull(pev->target))
+	{
+		ALERT(at_error, "trigger_changevalue with no target set\n");
+		return;
+	}
+
+	if (FStringNull(pev->netname))
+	{
+		ALERT(at_error, "trigger_changevalue with no key name (netname) set\n");
+		return;
+	}
+
+	CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+
+	if (pTarget)
+	{
+		KeyValueData mypkvd;
+		mypkvd.szKeyName = (char*)STRING(pev->netname);
+		mypkvd.szValue = (char*)STRING(m_iszNewValue);
+		mypkvd.fHandled = 0;
+		pTarget->KeyValue(&mypkvd);
+	}
+}
+
+//=========================================================
+// trigger_hevcharge
+// LRC - charges/discharges the player's HEV suit armor.
+// If the trigger has a targetname, firing it will toggle state.
+//=========================================================
+#define SF_HEVCHARGE_NOANNOUNCE 0x04
+
+class CTriggerHevCharge : public CBaseTrigger
+{
+public:
+void Spawn() override;
+void EXPORT ChargeTouch(CBaseEntity* pOther);
+void EXPORT AnnounceThink();
+};
+
+LINK_ENTITY_TO_CLASS(trigger_hevcharge, CTriggerHevCharge);
+
+void CTriggerHevCharge::Spawn()
+{
+InitTrigger();
+SetTouch(&CTriggerHevCharge::ChargeTouch);
+SetThink(&CTriggerHevCharge::AnnounceThink);
+
+if (!FStringNull(pev->targetname))
+{
+SetUse(&CTriggerHevCharge::ToggleUse);
+}
+else
+{
+SetUse(nullptr);
+}
+
+if (FBitSet(pev->spawnflags, SF_TRIGGER_HURT_START_OFF))
+pev->solid = SOLID_NOT;
+
+	UTIL_SetOrigin(pev, pev->origin);
+}
+
+void CTriggerHevCharge::ChargeTouch(CBaseEntity* pOther)
+{
+if (IsLockedByMaster())
+return;
+
+if (!pOther->IsPlayer())
+return;
+
+auto pPlayer = static_cast<CBasePlayer*>(pOther);
+if (!pPlayer->HasSuit())
+return;
+
+if (pev->dmgtime > gpGlobals->time)
+return;
+pev->dmgtime = gpGlobals->time + 0.5;
+
+int iNewArmor = pOther->pev->armorvalue + pev->frags;
+if (iNewArmor > MAX_NORMAL_BATTERY)
+iNewArmor = MAX_NORMAL_BATTERY;
+if (iNewArmor < 0)
+iNewArmor = 0;
+if (iNewArmor == (int)pOther->pev->armorvalue)
+return;
+
+pOther->pev->armorvalue = iNewArmor;
+
+if (pev->target)
+{
+SUB_UseTargets(pOther, USE_TOGGLE, 0);
+}
+
+if (g_pGameRules->IsMultiplayer() || (pev->spawnflags & SF_HEVCHARGE_NOANNOUNCE))
+return;
+
+pev->aiment = ENT(pOther->pev);
+SetNextThink(1);
+}
+
+void CTriggerHevCharge::AnnounceThink()
+{
+CBaseEntity* pEntity = CBaseEntity::Instance(pev->aiment);
+if (pEntity && pEntity->IsPlayer())
+{
+auto pPlayer = static_cast<CBasePlayer*>(pEntity);
+int pct = (int)((pPlayer->pev->armorvalue * 100.0) * (1.0 / MAX_NORMAL_BATTERY) + 0.5);
+char szCharge[64];
+snprintf(szCharge, sizeof(szCharge), "!HEV_%1dP", pct / 10);
+pPlayer->SetSuitUpdate(szCharge, SUIT_SENTENCE, SUIT_REPEAT_OK);
+}
+}
+
+//=========================================================
+// watcher_count
+// LRC - watches how many entities with a given targetname are active.
+//=========================================================
+#define SF_WRCOUNT_FIRESTART 0x0001
+#define SF_WRCOUNT_STARTED 0x8000
+
+class CWatcherCount : public CBaseToggle
+{
+public:
+void Spawn() override;
+void EXPORT Think() override;
+int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+};
+
+LINK_ENTITY_TO_CLASS(watcher_count, CWatcherCount);
+
+void CWatcherCount::Spawn()
+{
+pev->solid = SOLID_NOT;
+SetNextThink(0.5);
+}
+
+void CWatcherCount::Think()
+{
+SetNextThink(0.1);
+int iCount = 0;
+
+if (FStringNull(pev->noise))
+{
+pev->frags = 0;
+return;
+}
+
+CBaseEntity* pCurrent = nullptr;
+
+pCurrent = UTIL_FindEntityByTargetname(nullptr, STRING(pev->noise));
+while (pCurrent != nullptr)
+{
+iCount++;
+pCurrent = UTIL_FindEntityByTargetname(pCurrent, STRING(pev->noise));
+}
+
+if (pev->spawnflags & SF_WRCOUNT_STARTED)
+{
+if (iCount > pev->frags)
+{
+if (iCount < pev->impulse && pev->frags >= pev->impulse)
+FireTargets(STRING(pev->netname), this, this, USE_TOGGLE, 0);
+FireTargets(STRING(pev->noise1), this, this, USE_TOGGLE, 0);
+}
+else if (iCount < pev->frags)
+{
+if (iCount >= pev->impulse && pev->frags < pev->impulse)
+FireTargets(STRING(pev->message), this, this, USE_TOGGLE, 0);
+FireTargets(STRING(pev->noise2), this, this, USE_TOGGLE, 0);
+}
+}
+else
+{
+pev->spawnflags |= SF_WRCOUNT_STARTED;
+if (pev->spawnflags & SF_WRCOUNT_FIRESTART)
+{
+if (iCount < pev->impulse)
+FireTargets(STRING(pev->netname), this, this, USE_TOGGLE, 0);
+else
+FireTargets(STRING(pev->message), this, this, USE_TOGGLE, 0);
+}
+}
+pev->frags = iCount;
+}
+
+//=========================================================
+// motion_thread - LRC 
+// Helper entity for SoHL motion_manager pattern.
+// Continuously adjusts target position/facing each frame.
+//=========================================================
+#define SF_MOTION_DEBUG 1
+
+class CMotionThread : public CPointEntity
+{
+public:
+void Think() override;
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+string_t m_iszPosition;
+int m_iPosMode = 0;
+string_t m_iszFacing;
+int m_iFaceMode = 0;
+EHANDLE m_hLocus;
+EHANDLE m_hTarget;
+};
+
+LINK_ENTITY_TO_CLASS(motion_thread, CMotionThread);
+
+TYPEDESCRIPTION CMotionThread::m_SaveData[] =
+{
+DEFINE_FIELD(CMotionThread, m_iszPosition, FIELD_STRING),
+DEFINE_FIELD(CMotionThread, m_iPosMode, FIELD_INTEGER),
+DEFINE_FIELD(CMotionThread, m_iszFacing, FIELD_STRING),
+DEFINE_FIELD(CMotionThread, m_iFaceMode, FIELD_INTEGER),
+DEFINE_FIELD(CMotionThread, m_hLocus, FIELD_EHANDLE),
+DEFINE_FIELD(CMotionThread, m_hTarget, FIELD_EHANDLE),
+};
+
+IMPLEMENT_SAVERESTORE(CMotionThread, CPointEntity);
+
+void CMotionThread::Think()
+{
+if (m_hLocus == nullptr || m_hTarget == nullptr)
+{
+if (FBitSet(pev->spawnflags, SF_MOTION_DEBUG))
+ALERT(at_debug, "motion_thread expires\n");
+SetThink(&CMotionThread::SUB_Remove);
+SetNextThink(0.1);
+return;
+}
+
+SetNextThink(0); // think every frame
+
+if (FBitSet(pev->spawnflags, SF_MOTION_DEBUG))
+ALERT(at_debug, "motion_thread affects %s \"%s\":\n",
+STRING(m_hTarget->pev->classname), STRING(m_hTarget->pev->targetname));
+
+Vector vecTemp;
+
+if (m_iszPosition)
+{
+switch (m_iPosMode)
+{
+case 0: // set position
+UTIL_AssignOrigin(m_hTarget, CalcLocus_Position(this, m_hLocus, STRING(m_iszPosition)));
+m_hTarget->pev->flags &= ~FL_ONGROUND;
+break;
+case 1: // offset position (= fake velocity)
+UTIL_AssignOrigin(m_hTarget,
+m_hTarget->pev->origin + gpGlobals->frametime * CalcLocus_Velocity(this, m_hLocus, STRING(m_iszPosition)));
+m_hTarget->pev->flags &= ~FL_ONGROUND;
+break;
+case 2: // set velocity
+UTIL_SetVelocity(m_hTarget, CalcLocus_Velocity(this, m_hLocus, STRING(m_iszPosition)));
+break;
+case 3: // accelerate
+UTIL_SetVelocity(m_hTarget,
+m_hTarget->pev->velocity + gpGlobals->frametime * CalcLocus_Velocity(this, m_hLocus, STRING(m_iszPosition)));
+break;
+case 4: // follow position
+UTIL_SetVelocity(m_hTarget,
+CalcLocus_Position(this, m_hLocus, STRING(m_iszPosition)) - m_hTarget->pev->origin);
+break;
+}
+}
+
+if (m_iszFacing)
+{
+switch (m_iFaceMode)
+{
+case 0: // set angles
+vecTemp = CalcLocus_Velocity(this, m_hLocus, STRING(m_iszFacing));
+if (vecTemp != g_vecZero)
+UTIL_SetAngles(m_hTarget, UTIL_VecToAngles(vecTemp));
+break;
+case 1: // offset angles (rotate by velocity direction)
+vecTemp = CalcLocus_Velocity(this, m_hLocus, STRING(m_iszFacing));
+if (vecTemp != g_vecZero)
+UTIL_SetAngles(m_hTarget, m_hTarget->pev->angles + gpGlobals->frametime * UTIL_VecToAngles(vecTemp));
+break;
+case 2: // rotate by raw angles
+UTIL_StringToRandomVector((float*)vecTemp, STRING(m_iszFacing));
+UTIL_SetAngles(m_hTarget, m_hTarget->pev->angles + gpGlobals->frametime * vecTemp);
+break;
+case 3: // set avelocity
+UTIL_StringToRandomVector((float*)vecTemp, STRING(m_iszFacing));
+UTIL_SetAvelocity(m_hTarget, vecTemp);
+break;
+}
+}
+}
+
+//=========================================================
+// trigger_rottest - LRC debugging entity for rotation testing
+//=========================================================
+class CTriggerRotTest : public CBaseDelay
+{
+public:
+void PostSpawn() override;
+void Think() override;
+
+bool Save(CSave& save) override;
+bool Restore(CRestore& restore) override;
+static TYPEDESCRIPTION m_SaveData[];
+
+private:
+CBaseEntity* m_pMarker = nullptr;
+CBaseEntity* m_pReference = nullptr;
+CBaseEntity* m_pBridge = nullptr;
+CBaseEntity* m_pHinge = nullptr;
+};
+
+LINK_ENTITY_TO_CLASS(trigger_rottest, CTriggerRotTest);
+
+TYPEDESCRIPTION CTriggerRotTest::m_SaveData[] =
+{
+DEFINE_FIELD(CTriggerRotTest, m_pMarker, FIELD_CLASSPTR),
+DEFINE_FIELD(CTriggerRotTest, m_pReference, FIELD_CLASSPTR),
+DEFINE_FIELD(CTriggerRotTest, m_pBridge, FIELD_CLASSPTR),
+DEFINE_FIELD(CTriggerRotTest, m_pHinge, FIELD_CLASSPTR),
+};
+
+IMPLEMENT_SAVERESTORE(CTriggerRotTest, CBaseDelay);
+
+void CTriggerRotTest::PostSpawn()
+{
+m_pMarker = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
+m_pReference = UTIL_FindEntityByTargetname(nullptr, STRING(pev->netname));
+m_pBridge = UTIL_FindEntityByTargetname(nullptr, STRING(pev->noise1));
+m_pHinge = UTIL_FindEntityByTargetname(nullptr, STRING(pev->message));
+pev->armorvalue = 0; // initial angle
+if (pev->armortype == 0)
+pev->armortype = 30;
+SetNextThink(1);
+}
+
+void CTriggerRotTest::Think()
+{
+if (m_pReference)
+{
+m_pReference->pev->origin = pev->origin;
+m_pReference->pev->origin.x = m_pReference->pev->origin.x + pev->health;
+}
+if (m_pMarker && m_pHinge)
+{
+Vector vecTemp = UTIL_AxisRotationToVec((m_pHinge->pev->origin - pev->origin).Normalize(), pev->armorvalue);
+m_pMarker->pev->origin = pev->origin + pev->health * vecTemp;
+}
+if (m_pBridge && m_pMarker && m_pReference && m_pHinge)
+{
+Vector vecTemp = UTIL_AxisRotationToVec(
+(m_pHinge->pev->origin - pev->origin).Normalize(), pev->armorvalue / 2);
+m_pBridge->pev->origin = pev->origin + pev->health * vecTemp;
+}
+
+pev->armorvalue += pev->armortype;
+SetNextThink(0.05);
 }

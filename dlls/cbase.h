@@ -845,6 +845,8 @@ push_trigger_data
 //
 // This spawns first when each level begins.
 //=======================
+class CBaseAlias;  // Forward declaration for alias list
+
 class CWorld : public CBaseEntity
 {
 public:
@@ -856,6 +858,9 @@ public:
 	bool KeyValue(KeyValueData* pkvd) override;
 
 	static inline CWorld* World = nullptr;
+
+	// LRC - linked list of alias entities for FlushChanges
+	CBaseAlias* m_pFirstAlias = nullptr;
 };
 
 inline DLL_GLOBAL edict_t* g_pBodyQueueHead = nullptr;

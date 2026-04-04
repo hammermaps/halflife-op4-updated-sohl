@@ -282,3 +282,59 @@ void InitAliasListOnRestore()
 		}
 	}
 }
+
+//=========================================================
+// multi_alias
+// LRC - alias entity that references multiple targets.
+//=========================================================
+LINK_ENTITY_TO_CLASS(multi_alias, CMultiAlias);
+
+TYPEDESCRIPTION CMultiAlias::m_SaveData[] =
+{
+DEFINE_FIELD(CMultiAlias, m_cTargets, FIELD_INTEGER),
+DEFINE_ARRAY(CMultiAlias, m_iszTargets, FIELD_STRING, MAX_ALIAS_TARGETS),
+DEFINE_ARRAY(CMultiAlias, m_fTargetType, FIELD_INTEGER, MAX_ALIAS_TARGETS),
+};
+
+IMPLEMENT_SAVERESTORE(CMultiAlias, CBaseAlias);
+
+bool CMultiAlias::KeyValue(KeyValueData* pkvd)
+{
+if (m_cTargets < MAX_ALIAS_TARGETS)
+{
+char tmp[128];
+UTIL_StripToken(pkvd->szKeyName, tmp, sizeof(tmp));
+m_iszTargets[m_cTargets] = ALLOC_STRING(tmp);
+m_fTargetType[m_cTargets] = atoi(pkvd->szValue);
+m_cTargets++;
+return true;
+}
+else
+{
+ALERT(at_error, "Too many targets for multi_alias %s (limit is %d)\n", STRING(pev->targetname), MAX_ALIAS_TARGETS);
+}
+return CBaseAlias::KeyValue(pkvd);
+}
+
+CBaseEntity* CMultiAlias::FollowAlias(CBaseEntity* pFrom)
+{
+CBaseEntity* pBest = nullptr;
+
+for (int i = 0; i < m_cTargets; i++)
+{
+CBaseEntity* pTemp;
+if (m_fTargetType[i])
+pTemp = UTIL_FindEntityByClassname(pFrom, STRING(m_iszTargets[i]));
+else
+pTemp = UTIL_FindEntityByTargetname(pFrom, STRING(m_iszTargets[i]));
+
+if (pTemp)
+{
+// Return the first match found
+if (!pBest)
+pBest = pTemp;
+}
+}
+
+return pBest;
+}

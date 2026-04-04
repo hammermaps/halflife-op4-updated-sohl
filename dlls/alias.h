@@ -120,3 +120,23 @@ public:
 
 	int m_iszNewTarget;
 };
+
+//=========================================================
+// multi_alias
+// LRC - An alias that maps to multiple entities by targetname
+// or classname. Parsed in a multi_manager-like way.
+//=========================================================
+class CMultiAlias : public CBaseAlias
+{
+public:
+	bool KeyValue(KeyValueData* pkvd) override;
+	CBaseEntity* FollowAlias(CBaseEntity* pFrom) override;
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	int m_cTargets;
+	int m_iszTargets[MAX_ALIAS_TARGETS];
+	int m_fTargetType[MAX_ALIAS_TARGETS]; // 0 = targetname, 1 = classname
+};
