@@ -26,6 +26,7 @@
 #include "pm_defs.h"
 #include "pm_materials.h"
 #include "pm_shared.h"
+#include "logger.h"
 
 static char* memfgets(byte* pMemFile, int fileSize, int& filePos, char* pBuffer, int bufferSize);
 
@@ -203,7 +204,7 @@ void CAmbientGeneric::Spawn()
 
 	if (FStringNull(pev->message) || strlen(szSoundFile) < 1)
 	{
-		ALERT(at_error, "EMPTY AMBIENT AT: %f, %f, %f\n", pev->origin.x, pev->origin.y, pev->origin.z);
+		LOG_ERROR("EMPTY AMBIENT AT: %f, %f, %f", pev->origin.x, pev->origin.y, pev->origin.z);
 		SetNextThink(0.1);
 		SetThink(&CAmbientGeneric::SUB_Remove);
 		return;
@@ -1329,7 +1330,7 @@ void SENTENCEG_Init()
 
 		if (gcallsentences >= CVOXFILESENTENCEMAX)
 		{
-			ALERT(at_error, "Too many sentences in sentences.txt!\n");
+			LOG_ERROR("Too many sentences in sentences.txt!");
 			break;
 		}
 
@@ -1338,7 +1339,7 @@ void SENTENCEG_Init()
 		const char* pString = buffer + i;
 
 		if (strlen(pString) >= CBSENTENCENAME_MAX)
-			ALERT(at_warning, "Sentence %s longer than %d letters\n", pString, CBSENTENCENAME_MAX - 1);
+			LOG_WARNING("Sentence %s longer than %d letters", pString, CBSENTENCENAME_MAX - 1);
 
 		const int iSent = gcallsentences++;
 		strncpy(gszallsentencenames[iSent], pString, CBSENTENCENAME_MAX - 1);
@@ -1369,7 +1370,7 @@ void SENTENCEG_Init()
 			isentencegs++;
 			if (isentencegs >= CSENTENCEG_MAX)
 			{
-				ALERT(at_error, "Too many sentence groups in sentences.txt!\n");
+				LOG_ERROR("Too many sentence groups in sentences.txt!");
 				break;
 			}
 
@@ -1886,7 +1887,7 @@ void CSpeaker::Spawn()
 
 	if (0 == m_preset && (FStringNull(pev->message) || strlen(szSoundFile) < 1))
 	{
-		ALERT(at_error, "SPEAKER with no Level/Sentence! at: %f, %f, %f\n", pev->origin.x, pev->origin.y, pev->origin.z);
+		LOG_ERROR("SPEAKER with no Level/Sentence! at: %f, %f, %f", pev->origin.x, pev->origin.y, pev->origin.z);
 		SetNextThink(0.1);
 		SetThink(&CSpeaker::SUB_Remove);
 		return;

@@ -55,6 +55,9 @@ extern cvar_t spamdelay;
 extern cvar_t impulsetarget;
 extern cvar_t mw_debug;
 
+// System-wide logger level (0=DEBUG … 4=CRITICAL, default 2=WARNING)
+extern cvar_t sohl_log_level;
+
 // Engine Cvars
 inline cvar_t* g_psv_gravity;
 inline cvar_t* g_psv_aim;

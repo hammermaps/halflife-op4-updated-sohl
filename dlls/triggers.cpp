@@ -34,6 +34,7 @@
 #include "ctf/CTFGoalFlag.h"
 #include "UserMessages.h"
 #include "weapons.h"
+#include "logger.h"
 
 #define SF_TRIGGER_PUSH_START_OFF 2		   //spawnflag that makes trigger_push spawn turned OFF
 #define SF_TRIGGER_HURT_TARGETONCE 1	   // Only fire hurt target once
@@ -1491,7 +1492,7 @@ bool CChangeLevel::KeyValue(KeyValueData* pkvd)
 	{
 		if (strlen(pkvd->szValue) >= cchMapNameMost)
 		{
-			ALERT(at_error, "Map name '%s' too long (32 chars)\n", pkvd->szValue);
+			LOG_ERROR("Map name '%s' too long (32 chars)", pkvd->szValue);
 			return true;
 		}
 		strcpy(m_szMapName, pkvd->szValue);
@@ -1501,7 +1502,7 @@ bool CChangeLevel::KeyValue(KeyValueData* pkvd)
 	{
 		if (strlen(pkvd->szValue) >= cchMapNameMost)
 		{
-			ALERT(at_error, "Landmark name '%s' too long (32 chars)\n", pkvd->szValue);
+			LOG_ERROR("Landmark name '%s' too long (32 chars)", pkvd->szValue);
 			return true;
 		}
 		strcpy(m_szLandmarkName, pkvd->szValue);
@@ -1536,7 +1537,7 @@ void CChangeLevel::Spawn()
 
 	if (0 == stricmp(m_szMapName, STRING(gpGlobals->mapname)))
 	{
-		ALERT(at_error, "trigger_changelevel points to the current map (%s), which does not work\n", STRING(gpGlobals->mapname));
+		LOG_ERROR("trigger_changelevel points to the current map (%s), which does not work", STRING(gpGlobals->mapname));
 	}
 
 	if (!FStringNull(pev->targetname))
@@ -1578,7 +1579,7 @@ edict_t* CChangeLevel::FindLandmark(const char* pLandmarkName)
 		else
 			pentLandmark = FIND_ENTITY_BY_STRING(pentLandmark, "targetname", pLandmarkName);
 	}
-	ALERT(at_error, "Can't find landmark %s\n", pLandmarkName);
+	LOG_ERROR("Can't find landmark %s", pLandmarkName);
 	return NULL;
 }
 
@@ -1806,7 +1807,7 @@ int CChangeLevel::ChangeList(LEVELLIST* pLevelList, int maxList)
 							entityFlags[entityCount] = flags;
 							entityCount++;
 							if (entityCount > MAX_ENTITY)
-								ALERT(at_error, "Too many entities across a transition!");
+								LOG_ERROR("Too many entities across a transition!");
 						}
 						//						else
 						//							ALERT( at_console, "Failed %s\n", STRING(pEntity->pev->classname) );
@@ -3865,7 +3866,7 @@ if (FStringNull(pev->target))
 if (pActivator && pActivator != this)
 Affect(pActivator, useType);
 else if (pev->spawnflags & SF_CUSTOM_DEBUG)
-ALERT(at_debug, "DEBUG: env_customize \"%s\" was fired without a locus!\n", STRING(pev->targetname));
+LOG_DEBUG("env_customize \"%s\" was fired without a locus!", STRING(pev->targetname));
 }
 else
 {
@@ -3887,7 +3888,7 @@ bFound = true;
 pTarget = UTIL_FindEntityByClassname(pTarget, STRING(pev->target));
 }
 if (!bFound && (pev->spawnflags & SF_CUSTOM_DEBUG))
-ALERT(at_debug, "DEBUG: env_customize \"%s\" does nothing; can't find entity \"%s\".\n",
+LOG_DEBUG("env_customize \"%s\" does nothing; can't find entity \"%s\".",
 STRING(pev->targetname), STRING(pev->target));
 }
 
@@ -4058,13 +4059,13 @@ void CTriggerChangeValue::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE
 {
 	if (FStringNull(pev->target))
 	{
-		ALERT(at_error, "trigger_changevalue with no target set\n");
+		LOG_ERROR("trigger_changevalue with no target set");
 		return;
 	}
 
 	if (FStringNull(pev->netname))
 	{
-		ALERT(at_error, "trigger_changevalue with no key name (netname) set\n");
+		LOG_ERROR("trigger_changevalue with no key name (netname) set");
 		return;
 	}
 
@@ -4284,7 +4285,7 @@ void CMotionThread::Think()
 if (m_hLocus == nullptr || m_hTarget == nullptr)
 {
 if (FBitSet(pev->spawnflags, SF_MOTION_DEBUG))
-ALERT(at_debug, "motion_thread expires\n");
+LOG_DEBUG("motion_thread expires");
 SetThink(&CMotionThread::SUB_Remove);
 SetNextThink(0.1);
 return;
@@ -4293,7 +4294,7 @@ return;
 SetNextThink(0); // think every frame
 
 if (FBitSet(pev->spawnflags, SF_MOTION_DEBUG))
-ALERT(at_debug, "motion_thread affects %s \"%s\":\n",
+LOG_DEBUG("motion_thread affects %s \"%s\":",
 STRING(m_hTarget->pev->classname), STRING(m_hTarget->pev->targetname));
 
 Vector vecTemp;

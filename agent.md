@@ -109,6 +109,8 @@ Only two checks are enabled:
 | `dlls/game.h` | Game-wide CVARs and settings |
 | `dlls/skill.h` | Skill/difficulty level definitions |
 | `dlls/util.h` | Server-side utility functions and macros |
+| `dlls/logger.h` | System-wide logger (`CLogger`, `LOG_*` macros) |
+| `dlls/logger.cpp` | Logger implementation (file I/O, timestamps) |
 | `dlls/movewith.h` | MoveWith entity parenting system (SoHL) |
 | `dlls/movewith.cpp` | MoveWith core logic (SoHL) |
 | `dlls/alias.h` | Alias entity system (SoHL) |
@@ -179,6 +181,68 @@ All Opposing Force entities have been audited for SoHL compliance:
 | **Weapons** | CDisplacer, CEagle, CKnife, CM249, CPenguin, CPipewrench, CSporeLauncher, CSpore, CShockBeam, CShockRifle, CBarnacleGrapple, CSniperRifle | ✅ SetNextThink wrappers |
 | **Rope** | CRope, CRopeSegment, CRopeSample, CElectrifiedWire | ✅ SetNextThink wrappers |
 | **CTF** | CTFGoalFlag, CTFGoalBase, CTFGoal, CItemCTF, and item entities | ✅ SetNextThink wrappers |
+
+## Logging
+
+All diagnostic output in server-side code (`dlls/`) **must** use the system-wide logger — never call `ALERT()` or `printf()` directly for new code.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `dlls/logger.h` | `CLogger` class, `LogLevel` enum, `LOG_*` convenience macros |
+| `dlls/logger.cpp` | Implementation: file I/O, timestamps, engine console forwarding |
+
+### Log file
+
+Entries are written to **`<gamedir>/sohl_debug.log`** in monolog (PHP) format:
+
+```
+[2026-04-04 13:01:28] game.WARNING: PrecacheModel: "models/foo.mdl" not found, using fallback
+[2026-04-04 13:01:28] game.ERROR: MoveWith chain overflow in UTIL_AssignOrigin!
+```
+
+### Log levels
+
+The minimum level is controlled at runtime by the console variable **`sohl_log_level`** (default `2` = WARNING). No recompile is needed to change it.
+
+| `sohl_log_level` | Level | When to use |
+|-----------------|-------|-------------|
+| `0` | `DEBUG` | Verbose per-frame or per-entity traces; developer info only |
+| `1` | `INFO` | Normal operational events (player joins, level changes, `UTIL_LogPrintf` equivalents) |
+| `2` | `WARNING` *(default)* | Recoverable problems: missing assets, unexpected-but-safe conditions |
+| `3` | `ERROR` | Logic errors, bad entity state, save/restore failures |
+| `4` | `CRITICAL` | Unrecoverable conditions that may corrupt state |
+
+### Macros (include `"logger.h"`)
+
+```cpp
+LOG_DEBUG("locus CalcPosition: no calc entity for \"%s\"", szText);
+LOG_INFO("Player %s connected from %s", name, address);
+LOG_WARNING("PrecacheModel: \"%s\" not found, using fallback \"%s\"", path, fallback);
+LOG_ERROR("Save/Restore overflow — buffer too small");
+LOG_CRITICAL("Worldspawn created twice; map is corrupt");
+```
+
+All macros use the `"game"` channel by default. To tag output with a specific subsystem, call `g_Logger.Write()` directly:
+
+```cpp
+g_Logger.Write(LogLevel::WARNING, "movewith", "Chain overflow in UTIL_SetVelocity!");
+g_Logger.Write(LogLevel::DEBUG,   "sound",    "Precaching %d sentences", count);
+```
+
+### Rules for agents
+
+1. **Always use `LOG_*` macros** (or `g_Logger.Write()`) for any new diagnostic/error message in `dlls/` server code. Do **not** introduce new `ALERT()` calls.
+2. **Migrate existing `ALERT()` calls** when touching a file — replace:
+   - `ALERT(at_error, ...)` → `LOG_ERROR(...)`
+   - `ALERT(at_warning, ...)` → `LOG_WARNING(...)`
+   - `ALERT(at_debug, ...)` → `LOG_DEBUG(...)`
+   - `ALERT(at_console, ...)` used for permanent runtime events → `LOG_INFO(...)`
+   - `ALERT(at_aiconsole, ...)` → `LOG_DEBUG(...)` (only visible at `developer 2`)
+3. **Do not strip `\n` yourself** — the logger appends its own newline to every entry; format strings must **not** end with `\n`.
+4. **`UTIL_LogPrintf()`** (multiplayer server log events) already mirrors to `LOG_INFO` — leave both calls in place.
+5. Client-side code (`cl_dll/`) must **not** include `logger.h`; the logger is server-only.
 
 ## Scope of Changes
 

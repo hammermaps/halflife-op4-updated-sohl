@@ -21,6 +21,7 @@
 #include "activitymap.h"
 #include "animation.h"
 #include "scriptevent.h"
+#include "logger.h"
 
 #pragma warning(disable : 4244)
 
@@ -181,7 +182,7 @@ void SequencePrecache(void* pmodel, const char* pSequenceName)
 			{
 				if (0 == strlen(pevent[i].options))
 				{
-					ALERT(at_error, "Bad sound event %d in sequence %s :: %s (sound is \"%s\")\n", pevent[i].event, pstudiohdr->name, pSequenceName, pevent[i].options);
+					LOG_ERROR("Bad sound event %d in sequence %s :: %s (sound is \"%s\")", pevent[i].event, pstudiohdr->name, pSequenceName, pevent[i].options);
 				}
 
 				PrecacheSound((char*)(gpGlobals->pStringBase + ALLOC_STRING(pevent[i].options)));

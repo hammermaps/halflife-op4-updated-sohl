@@ -21,6 +21,7 @@
 #include "cbase.h"
 #include "trains.h"
 #include "saverestore.h"
+#include "logger.h"
 
 class CPathCorner : public CPointEntity
 {
@@ -105,7 +106,7 @@ void CPathCorner:: Touch( CBaseEntity *pOther )
 	// Find the next "stop" on the path, make it the goal of the "toucher".
 	if (FStringNull(pev->target))
 	{
-		ALERT(at_warning, "PathCornerTouch: no next stop specified");
+		LOG_WARNING("PathCornerTouch: no next stop specified");
 	}
 
 	pOther->m_pGoalEnt = CBaseEntity::Instance( FIND_ENTITY_BY_TARGETNAME ( NULL, STRING(pev->target) ) );
@@ -400,7 +401,7 @@ CPathTrack* CPathTrack::Nearest(Vector origin)
 		deadCount++;
 		if (deadCount > 9999)
 		{
-			ALERT(at_error, "Bad sequence of path_tracks from %s", STRING(pev->targetname));
+			LOG_ERROR("Bad sequence of path_tracks from %s", STRING(pev->targetname));
 			return NULL;
 		}
 		delta = origin - ppath->pev->origin;

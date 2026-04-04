@@ -18,6 +18,7 @@
 #include "client.h"
 #include "game.h"
 #include "filesystem_utils.h"
+#include "logger.h"
 
 cvar_t displaysoundlist = {"displaysoundlist", "0"};
 
@@ -50,6 +51,9 @@ cvar_t sv_allowbunnyhopping = {"sv_allowbunnyhopping", "0", FCVAR_SERVER};
 // LRC - SoHL cvars
 cvar_t impulsetarget = {"sohl_impulsetarget", "0", FCVAR_SERVER};
 cvar_t mw_debug = {"sohl_mw_debug", "0", FCVAR_SERVER};
+
+// System-wide logger level: 0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR, 4=CRITICAL (default: 2)
+cvar_t sohl_log_level = {"sohl_log_level", "2", FCVAR_SERVER};
 
 //Macros to make skill cvars easier to define
 #define DECLARE_SKILL_CVARS(name)                 \
@@ -664,6 +668,8 @@ void GameDLLInit()
 	// LRC - SoHL cvars
 	CVAR_REGISTER(&impulsetarget);
 	CVAR_REGISTER(&mw_debug);
+	CVAR_REGISTER(&sohl_log_level);
+	g_Logger.Init(&sohl_log_level);
 
 	// REGISTER CVARS FOR SKILL LEVEL STUFF
 	// Agrunt
@@ -1211,5 +1217,6 @@ void GameDLLInit()
 
 void GameDLLShutdown()
 {
+	g_Logger.Shutdown();
 	FileSystem_FreeFileSystem();
 }
