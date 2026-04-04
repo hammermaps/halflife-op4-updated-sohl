@@ -737,7 +737,7 @@
 
 @BaseClass = MoveWith
 [
-movewith(target_destination) : "Moves with" 
+	movewith(target_destination) : "Moves with"
 ]
 
 @BaseClass = Master
@@ -4220,7 +4220,7 @@ initammo(string) : "Initial Ammo" : "6"
 @PointClass base(Targetname) = info_alias : "Alias"
 [
 	target(target_destination) : "Reference while On"
-        netname(string) : "Reference while Off"
+	netname(string) : "Reference while Off"
 	spawnflags(Flags) = 
 	[
 		1 : "Start Off" 	: 0
