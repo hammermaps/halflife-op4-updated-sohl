@@ -1,17 +1,3 @@
-/***
-*
-*	Copyright (c) 1996-2001, Valve LLC. All rights reserved.
-*
-*	This product contains software technology licensed from Id
-*	Software, Inc. ("Id Technology").  Id Technology (c) 1996 Id Software, Inc.
-*	All Rights Reserved.
-*
-*   Use, distribution, and modification of this source code and/or resulting
-*   object code is restricted to non-commercial enhancements to products from
-*   Valve LLC.  All other use, distribution, or modification is prohibited
-*   without written permission from Valve LLC.
-*
-****/
 // LRC - MoveWith system implementation
 
 #include "extdll.h"
@@ -19,23 +5,19 @@
 #include "cbase.h"
 #include "movewith.h"
 
+#include <algorithm>
+#include <vector>
+
 //=========================================================
-// FIFO Queue state — two-batch (current + next) for both
-// PostAssist and Desired queues.
+// Non-intrusive FIFO queue state — two-batch (current + next)
+// for both PostAssist and Desired queues.
 // Static in this TU; not saved/restored (rebuilt each frame).
 //=========================================================
 
-// PostAssist queue
-static CBaseEntity* s_pPostAssistHeadCur = nullptr;
-static CBaseEntity* s_pPostAssistTailCur = nullptr;
-static CBaseEntity* s_pPostAssistHeadNext = nullptr;
-static CBaseEntity* s_pPostAssistTailNext = nullptr;
-
-// Desired queue
-static CBaseEntity* s_pDesiredHeadCur = nullptr;
-static CBaseEntity* s_pDesiredTailCur = nullptr;
-static CBaseEntity* s_pDesiredHeadNext = nullptr;
-static CBaseEntity* s_pDesiredTailNext = nullptr;
+static std::vector<CBaseEntity*> s_PostAssistCur;
+static std::vector<CBaseEntity*> s_PostAssistNext;
+static std::vector<CBaseEntity*> s_DesiredCur;
+static std::vector<CBaseEntity*> s_DesiredNext;
 
 // Rate-limit budget warnings
 static float s_flLastPostAssistWarnTime = 0;
@@ -51,15 +33,10 @@ bool g_doingDesired = false;
 //=========================================================
 void MoveWith_ResetQueues()
 {
-	s_pPostAssistHeadCur = nullptr;
-	s_pPostAssistTailCur = nullptr;
-	s_pPostAssistHeadNext = nullptr;
-	s_pPostAssistTailNext = nullptr;
-
-	s_pDesiredHeadCur = nullptr;
-	s_pDesiredTailCur = nullptr;
-	s_pDesiredHeadNext = nullptr;
-	s_pDesiredTailNext = nullptr;
+	s_PostAssistCur.clear();
+	s_PostAssistNext.clear();
+	s_DesiredCur.clear();
+	s_DesiredNext.clear();
 
 	s_flLastPostAssistWarnTime = 0;
 	s_flLastDesiredWarnTime = 0;
@@ -69,46 +46,66 @@ void MoveWith_ResetQueues()
 
 
 //=========================================================
-// Internal: enqueue helpers (always append to tail = FIFO)
+// MoveWith_RemoveEntityFromQueues
+// Remove an entity from all queues — call from SUB_Remove
+// to prevent processing of freed entities.
+//=========================================================
+void MoveWith_RemoveEntityFromQueues(CBaseEntity* pEnt)
+{
+	if (!pEnt)
+		return;
+
+	// For the "Cur" queues (which may be actively iterated by index inside
+	// MoveWith_ProcessFrameQueues when this is called from DesiredAction/Think),
+	// we must nullify rather than erase to avoid shifting indices mid-iteration.
+	// Null entries are compacted at the end of each processing pass via std::remove.
+	//
+	// For the "Next" queues (never iterated during processing), we can erase
+	// immediately to free the slot.
+
+	for (auto& p : s_PostAssistCur)
+		if (p == pEnt) p = nullptr;
+	for (auto& p : s_DesiredCur)
+		if (p == pEnt) p = nullptr;
+
+	s_PostAssistNext.erase(
+		std::remove(s_PostAssistNext.begin(), s_PostAssistNext.end(), pEnt),
+		s_PostAssistNext.end());
+	s_DesiredNext.erase(
+		std::remove(s_DesiredNext.begin(), s_DesiredNext.end(), pEnt),
+		s_DesiredNext.end());
+
+	ClearBits(pEnt->m_iLFlags, LF_DOASSIST | LF_DODESIRED);
+}
+
+
+//=========================================================
+// Internal: enqueue helpers — append to next batch (FIFO)
 //=========================================================
 static void EnqueuePostAssistNext(CBaseEntity* pEnt)
 {
-	if (FBitSet(pEnt->m_iLFlags, LF_IN_POSTASSIST_QUEUE))
-		return; // duplicate guard
+	// Duplicate guard: check if already in either queue
+	for (CBaseEntity* p : s_PostAssistNext)
+		if (p == pEnt)
+			return;
+	for (CBaseEntity* p : s_PostAssistCur)
+		if (p == pEnt)
+			return;
 
-	SetBits(pEnt->m_iLFlags, LF_IN_POSTASSIST_QUEUE);
-	pEnt->m_pPostAssistNext = nullptr;
-
-	if (s_pPostAssistTailNext)
-	{
-		s_pPostAssistTailNext->m_pPostAssistNext = pEnt;
-		s_pPostAssistTailNext = pEnt;
-	}
-	else
-	{
-		s_pPostAssistHeadNext = pEnt;
-		s_pPostAssistTailNext = pEnt;
-	}
+	s_PostAssistNext.push_back(pEnt);
 }
 
 static void EnqueueDesiredNext(CBaseEntity* pEnt)
 {
-	if (FBitSet(pEnt->m_iLFlags, LF_IN_DESIRED_QUEUE))
-		return; // duplicate guard
+	// Duplicate guard: check if already in either queue
+	for (CBaseEntity* p : s_DesiredNext)
+		if (p == pEnt)
+			return;
+	for (CBaseEntity* p : s_DesiredCur)
+		if (p == pEnt)
+			return;
 
-	SetBits(pEnt->m_iLFlags, LF_IN_DESIRED_QUEUE);
-	pEnt->m_pDesiredNext = nullptr;
-
-	if (s_pDesiredTailNext)
-	{
-		s_pDesiredTailNext->m_pDesiredNext = pEnt;
-		s_pDesiredTailNext = pEnt;
-	}
-	else
-	{
-		s_pDesiredHeadNext = pEnt;
-		s_pDesiredTailNext = pEnt;
-	}
+	s_DesiredNext.push_back(pEnt);
 }
 
 
@@ -196,38 +193,22 @@ static bool IsEntityValidForQueue(CBaseEntity* pEnt)
 void MoveWith_ProcessFrameQueues()
 {
 	// ---- Phase 1: Swap PostAssist batches ----
-	// If there are leftover entries in Cur (from budget cap last frame),
-	// prepend them before Next to preserve FIFO across frames.
-	if (s_pPostAssistHeadCur)
+	// Append any remaining Cur entries (budget leftovers) before Next.
+	if (!s_PostAssistCur.empty())
 	{
-		// Leftover Cur exists — append Next to the end of Cur
-		if (s_pPostAssistHeadNext)
-		{
-			s_pPostAssistTailCur->m_pPostAssistNext = s_pPostAssistHeadNext;
-			s_pPostAssistTailCur = s_pPostAssistTailNext;
-		}
-		// Cur stays as is (now Cur + old Next merged)
+		// Prepend leftover Cur to Next, then swap
+		s_PostAssistNext.insert(s_PostAssistNext.begin(),
+			s_PostAssistCur.begin(), s_PostAssistCur.end());
 	}
-	else
-	{
-		// No leftover — just promote Next to Cur
-		s_pPostAssistHeadCur = s_pPostAssistHeadNext;
-		s_pPostAssistTailCur = s_pPostAssistTailNext;
-	}
-	s_pPostAssistHeadNext = nullptr;
-	s_pPostAssistTailNext = nullptr;
+	s_PostAssistCur.clear();
+	std::swap(s_PostAssistCur, s_PostAssistNext);
 
 	// ---- Phase 2: Process PostAssist Cur (FIFO with budget) ----
 	int postAssistCount = 0;
-	while (s_pPostAssistHeadCur && postAssistCount < MAX_POSTASSIST_PER_FRAME)
+	for (int i = 0; i < (int)s_PostAssistCur.size() && postAssistCount < MAX_POSTASSIST_PER_FRAME; i++)
 	{
-		CBaseEntity* pCurrent = s_pPostAssistHeadCur;
-		s_pPostAssistHeadCur = pCurrent->m_pPostAssistNext;
-		if (!s_pPostAssistHeadCur)
-			s_pPostAssistTailCur = nullptr;
-
-		pCurrent->m_pPostAssistNext = nullptr;
-		ClearBits(pCurrent->m_iLFlags, LF_IN_POSTASSIST_QUEUE);
+		CBaseEntity* pCurrent = s_PostAssistCur[i];
+		s_PostAssistCur[i] = nullptr; // clear as we process
 
 		if (!IsEntityValidForQueue(pCurrent))
 			continue;
@@ -247,42 +228,34 @@ void MoveWith_ProcessFrameQueues()
 		postAssistCount++;
 	}
 
+	// Remove processed (null) entries, keep unprocessed (budget overflow)
+	s_PostAssistCur.erase(
+		std::remove(s_PostAssistCur.begin(), s_PostAssistCur.end(), nullptr),
+		s_PostAssistCur.end());
+
 	// Budget warning (rate-limited)
-	if (s_pPostAssistHeadCur && gpGlobals->time - s_flLastPostAssistWarnTime > 5.0f)
+	if (!s_PostAssistCur.empty() && gpGlobals->time - s_flLastPostAssistWarnTime > 5.0f)
 	{
 		ALERT(at_warning, "MoveWith PostAssist queue budget exceeded (%d). Remaining deferred to next frame.\n", MAX_POSTASSIST_PER_FRAME);
 		s_flLastPostAssistWarnTime = gpGlobals->time;
 	}
 
 	// ---- Phase 3: Swap Desired batches ----
-	if (s_pDesiredHeadCur)
+	if (!s_DesiredCur.empty())
 	{
-		if (s_pDesiredHeadNext)
-		{
-			s_pDesiredTailCur->m_pDesiredNext = s_pDesiredHeadNext;
-			s_pDesiredTailCur = s_pDesiredTailNext;
-		}
+		s_DesiredNext.insert(s_DesiredNext.begin(),
+			s_DesiredCur.begin(), s_DesiredCur.end());
 	}
-	else
-	{
-		s_pDesiredHeadCur = s_pDesiredHeadNext;
-		s_pDesiredTailCur = s_pDesiredTailNext;
-	}
-	s_pDesiredHeadNext = nullptr;
-	s_pDesiredTailNext = nullptr;
+	s_DesiredCur.clear();
+	std::swap(s_DesiredCur, s_DesiredNext);
 
 	// ---- Phase 4: Process Desired Cur (FIFO with budget) ----
 	g_doingDesired = true;
 	int desiredCount = 0;
-	while (s_pDesiredHeadCur && desiredCount < MAX_DESIRED_PER_FRAME)
+	for (int i = 0; i < (int)s_DesiredCur.size() && desiredCount < MAX_DESIRED_PER_FRAME; i++)
 	{
-		CBaseEntity* pCurrent = s_pDesiredHeadCur;
-		s_pDesiredHeadCur = pCurrent->m_pDesiredNext;
-		if (!s_pDesiredHeadCur)
-			s_pDesiredTailCur = nullptr;
-
-		pCurrent->m_pDesiredNext = nullptr;
-		ClearBits(pCurrent->m_iLFlags, LF_IN_DESIRED_QUEUE);
+		CBaseEntity* pCurrent = s_DesiredCur[i];
+		s_DesiredCur[i] = nullptr; // clear as we process
 
 		if (!IsEntityValidForQueue(pCurrent))
 			continue;
@@ -308,13 +281,20 @@ void MoveWith_ProcessFrameQueues()
 	}
 	g_doingDesired = false;
 
+	// Remove processed (null) entries, keep unprocessed (budget overflow)
+	s_DesiredCur.erase(
+		std::remove(s_DesiredCur.begin(), s_DesiredCur.end(), nullptr),
+		s_DesiredCur.end());
+
 	// Budget warning (rate-limited)
-	if (s_pDesiredHeadCur && gpGlobals->time - s_flLastDesiredWarnTime > 5.0f)
+	if (!s_DesiredCur.empty() && gpGlobals->time - s_flLastDesiredWarnTime > 5.0f)
 	{
 		ALERT(at_warning, "MoveWith Desired queue budget exceeded (%d). Remaining deferred to next frame.\n", MAX_DESIRED_PER_FRAME);
 		s_flLastDesiredWarnTime = gpGlobals->time;
 	}
 }
+
+
 
 
 //=========================================================

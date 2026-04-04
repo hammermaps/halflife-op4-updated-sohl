@@ -195,10 +195,6 @@ public:
 	Vector m_vecPostAssistVel;		  // velocity to apply after assist processing
 	Vector m_vecPostAssistAVel;		  // angular velocity to apply after assist processing
 
-	// FIFO queue pointers (intrusive, not saved/restored)
-	CBaseEntity* m_pPostAssistNext;	 // next in PostAssist FIFO queue
-	CBaseEntity* m_pDesiredNext;	 // next in Desired FIFO queue
-
 	// LRC - Think/NextThink system
 	float m_fNextThink;		  // when a think will be performed (may differ from pev->nextthink)
 	float m_fPevNextThink;	  // always set equal to pev->nextthink to detect engine changes

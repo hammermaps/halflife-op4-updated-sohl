@@ -30,8 +30,7 @@
 #define LF_DESIRED_INFO (1 << 10)
 #define LF_DESIRED_ACTION (1 << 11)
 #define LF_ALIASLIST (1 << 12)
-#define LF_IN_POSTASSIST_QUEUE (1 << 13)
-#define LF_IN_DESIRED_QUEUE (1 << 14)
+// bits 13-14 reserved (were LF_IN_POSTASSIST_QUEUE / LF_IN_DESIRED_QUEUE — removed)
 
 // Arbitrary limit to detect infinite loops in MoveWith chains
 #define MAX_MOVEWITH_DEPTH 100
@@ -47,6 +46,9 @@ void MoveWith_ProcessFrameQueues();
 
 // Reset all queue state (call on level start)
 void MoveWith_ResetQueues();
+
+// Remove an entity from all queues (call from SUB_Remove / UpdateOnRemove)
+void MoveWith_RemoveEntityFromQueues(CBaseEntity* pEnt);
 
 // Schedule deferred actions/thinks for an entity
 void UTIL_DesiredAction(CBaseEntity* pEnt);

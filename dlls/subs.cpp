@@ -117,13 +117,9 @@ void CBaseEntity::SUB_Remove()
 		ALERT(at_aiconsole, "SUB_Remove called on entity with health > 0\n");
 	}
 
-	// LRC - clear queue flags to prevent processing of removed entities.
-	// The FIFO queues use "skip on remove" (FL_KILLME check) during processing,
-	// so we just clear the membership flags here. No list-walk needed.
-	ClearBits(m_iLFlags, LF_IN_POSTASSIST_QUEUE | LF_IN_DESIRED_QUEUE | LF_DOASSIST | LF_DODESIRED);
+	// LRC - remove from all MoveWith FIFO queues and clear queue-related flags.
+	MoveWith_RemoveEntityFromQueues(this);
 	m_pAssistLink = NULL;
-	m_pPostAssistNext = nullptr;
-	m_pDesiredNext = nullptr;
 
 	// LRC - remove from parent's MoveWith child list
 	if (m_pMoveWith)
