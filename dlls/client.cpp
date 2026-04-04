@@ -563,6 +563,13 @@ void ClientCommand(edict_t* pEntity)
 			FireTargets(CMD_ARGV(1), player, player, USE_TOGGLE, 0);
 		}
 	}
+	else if (FStrEq(pcmd, "movewith_debug")) // LRC - dump MoveWith hierarchy
+	{
+		if (0 != g_psv_cheats->value)
+		{
+			MoveWith_DebugDump(player);
+		}
+	}
 	else if (FStrEq(pcmd, "fov"))
 	{
 		if (0 != g_psv_cheats->value && CMD_ARGC() > 1)

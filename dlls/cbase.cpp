@@ -23,6 +23,7 @@
 #include "game.h"
 #include "pm_shared.h"
 #include "movewith.h"
+#include "debug.h"
 
 void EntvarsKeyvalue(entvars_t* pev, KeyValueData* pkvd);
 
@@ -905,6 +906,14 @@ void CBaseEntity::InitMoveWith()
 	// insert into parent's child list
 	m_pSiblingMoveWith = pParent->m_pChildMoveWith;
 	pParent->m_pChildMoveWith = this;
+
+	DEV_LOG(mw_debug, "InitMoveWith: [%s] '%s' -> parent [%s] '%s' offset(%.1f %.1f %.1f) rot(%.1f %.1f %.1f)",
+		STRING(pev->classname),
+		pev->targetname ? STRING(pev->targetname) : "<no name>",
+		STRING(pParent->pev->classname),
+		pParent->pev->targetname ? STRING(pParent->pev->targetname) : "<no name>",
+		m_vecMoveWithOffset.x, m_vecMoveWithOffset.y, m_vecMoveWithOffset.z,
+		m_vecRotWithOffset.x, m_vecRotWithOffset.y, m_vecRotWithOffset.z);
 
 	// MoveWith parent registration in the old assist list is no longer needed.
 	// PostAssist velocity and Desired processing now use dedicated FIFO queues.
