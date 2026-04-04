@@ -37,6 +37,7 @@
 #include "world.h"
 #include "ctf/CItemCTF.h"
 #include "movewith.h"
+#include "logger.h"
 
 CGlobalState gGlobalState;
 
@@ -487,7 +488,7 @@ CWorld::CWorld()
 {
 	if (World)
 	{
-		ALERT(at_error, "Do not create multiple instances of worldspawn\n");
+		LOG_ERROR("Do not create multiple instances of worldspawn");
 		return;
 	}
 

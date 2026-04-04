@@ -5,6 +5,7 @@
 #include "cbase.h"
 #include "movewith.h"
 #include "debug.h"
+#include "logger.h"
 #include "game.h"
 #include "weapons.h"
 
@@ -239,7 +240,7 @@ void MoveWith_ProcessFrameQueues()
 	// Budget warning (rate-limited)
 	if (!s_PostAssistCur.empty() && gpGlobals->time - s_flLastPostAssistWarnTime > 5.0f)
 	{
-		ALERT(at_warning, "MoveWith PostAssist queue budget exceeded (%d). Remaining deferred to next frame.\n", MAX_POSTASSIST_PER_FRAME);
+		LOG_WARNING("MoveWith PostAssist queue budget exceeded (%d). Remaining deferred to next frame.", MAX_POSTASSIST_PER_FRAME);
 		s_flLastPostAssistWarnTime = gpGlobals->time;
 	}
 
@@ -292,7 +293,7 @@ void MoveWith_ProcessFrameQueues()
 	// Budget warning (rate-limited)
 	if (!s_DesiredCur.empty() && gpGlobals->time - s_flLastDesiredWarnTime > 5.0f)
 	{
-		ALERT(at_warning, "MoveWith Desired queue budget exceeded (%d). Remaining deferred to next frame.\n", MAX_DESIRED_PER_FRAME);
+		LOG_WARNING("MoveWith Desired queue budget exceeded (%d). Remaining deferred to next frame.", MAX_DESIRED_PER_FRAME);
 		s_flLastDesiredWarnTime = gpGlobals->time;
 	}
 
@@ -324,7 +325,7 @@ void UTIL_AssignOrigin(CBaseEntity* pEnt, const Vector& vecOrigin, bool bInitiat
 	{
 		if (loopbreaker-- <= 0)
 		{
-			ALERT(at_error, "MoveWith chain overflow in UTIL_AssignOrigin!\n");
+			LOG_ERROR("MoveWith chain overflow in UTIL_AssignOrigin!");
 			break;
 		}
 		Vector vecChildOrigin = vecOrigin + pChild->m_vecMoveWithOffset;
@@ -358,7 +359,7 @@ void UTIL_SetVelocity(CBaseEntity* pEnt, const Vector& vecSet)
 	{
 		if (loopbreaker-- <= 0)
 		{
-			ALERT(at_error, "MoveWith chain overflow in UTIL_SetVelocity!\n");
+			LOG_ERROR("MoveWith chain overflow in UTIL_SetVelocity!");
 			break;
 		}
 
@@ -405,7 +406,7 @@ void UTIL_SetAvelocity(CBaseEntity* pEnt, const Vector& vecSet)
 	{
 		if (loopbreaker-- <= 0)
 		{
-			ALERT(at_error, "MoveWith chain overflow in UTIL_SetAvelocity!\n");
+			LOG_ERROR("MoveWith chain overflow in UTIL_SetAvelocity!");
 			break;
 		}
 		DEV_LOG(mw_debug, "  propagate avel to child %s", STRING(pChild->pev->classname));
@@ -435,7 +436,7 @@ void UTIL_SetAngles(CBaseEntity* pEnt, const Vector& vecSet)
 	{
 		if (loopbreaker-- <= 0)
 		{
-			ALERT(at_error, "MoveWith chain overflow in UTIL_SetAngles!\n");
+			LOG_ERROR("MoveWith chain overflow in UTIL_SetAngles!");
 			break;
 		}
 		Vector vecChildAngles = vecSet + pChild->m_vecRotWithOffset;

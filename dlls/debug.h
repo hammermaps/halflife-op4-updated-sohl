@@ -40,21 +40,24 @@
 
 #include "Platform.h"
 #include "enginecallback.h"
+#include "logger.h"
 
 /**
  * @brief Compile-time debug logging macros.
  * These are completely stripped in release builds for zero overhead.
+ * In debug builds they route through the system-wide logger so output
+ * goes both to the console and to sohl_debug.log.
  */
 #ifdef DEBUG
 
 #define DBG_LOG(fmt, ...) \
-	ALERT(at_console, "[DBG] " fmt "\n", ##__VA_ARGS__)
+	LOG_DEBUG(fmt, ##__VA_ARGS__)
 
 #define DBG_WARN(fmt, ...) \
-	ALERT(at_warning, "[WARN] %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+	g_Logger.Write(LogLevel::WARNING, "game", "%s:%d: " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 
 #define DBG_ERROR(fmt, ...) \
-	ALERT(at_error, "[ERR] %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+	g_Logger.Write(LogLevel::ERR, "game", "%s:%d: " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 
 #else // !DEBUG
 
@@ -74,11 +77,11 @@
  *   extern cvar_t mw_debug;
  *   DEV_LOG(mw_debug, "MoveWith child count: %d", count);
  */
-#define DEV_LOG(cvar, fmt, ...)                                        \
-	do                                                                 \
-	{                                                                  \
-		if ((cvar).value != 0)                                         \
-			ALERT(at_console, "[%s] " fmt "\n", (cvar).name, ##__VA_ARGS__); \
+#define DEV_LOG(cvar, fmt, ...)                                         \
+	do                                                                  \
+	{                                                                   \
+		if ((cvar).value != 0)                                          \
+			g_Logger.Write(LogLevel::DEBUG, (cvar).name, fmt, ##__VA_ARGS__); \
 	} while (0)
 
 

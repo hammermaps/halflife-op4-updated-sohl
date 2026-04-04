@@ -19,6 +19,7 @@
 #include "util.h"
 #include "cbase.h"
 #include "alias.h"
+#include "logger.h"
 
 // Global alias list head
 CBaseAlias* g_pAliasList = nullptr;
@@ -140,14 +141,14 @@ void CTriggerChangeAlias::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE
 	CBaseEntity* pAlias = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
 	if (!pAlias)
 	{
-		ALERT(at_error, "trigger_changealias \"%s\" can't find alias \"%s\"\n",
+		LOG_ERROR("trigger_changealias \"%s\" can't find alias \"%s\"",
 			STRING(pev->targetname), STRING(pev->target));
 		return;
 	}
 
 	if (!pAlias->IsAlias())
 	{
-		ALERT(at_error, "trigger_changealias \"%s\": target \"%s\" is not an alias!\n",
+		LOG_ERROR("trigger_changealias \"%s\": target \"%s\" is not an alias!",
 			STRING(pev->targetname), STRING(pev->target));
 		return;
 	}
@@ -191,7 +192,7 @@ bool CInfoGroup::KeyValue(KeyValueData* pkvd)
 	}
 	else
 	{
-		ALERT(at_error, "Too many members for info_group \"%s\" (limit is %d)\n",
+		LOG_ERROR("Too many members for info_group \"%s\" (limit is %d)",
 			STRING(pev->targetname), MAX_ALIAS_TARGETS);
 	}
 	return CPointEntity::KeyValue(pkvd);
@@ -206,13 +207,13 @@ void CInfoGroup::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE use
 	if (pTarget && pTarget->IsAlias())
 	{
 		if (pev->spawnflags & SF_GROUP_DEBUG)
-			ALERT(at_debug, "DEBUG: info_group \"%s\" changes alias \"%s\"\n",
+			LOG_DEBUG("info_group \"%s\" changes alias \"%s\"",
 				STRING(pev->targetname), STRING(pTarget->pev->targetname));
 		static_cast<CBaseAlias*>(pTarget)->ChangeValue(this);
 	}
 	else if (pev->target)
 	{
-		ALERT(at_error, "info_group \"%s\": alias \"%s\" was not found or not an alias!\n",
+		LOG_ERROR("info_group \"%s\": alias \"%s\" was not found or not an alias!",
 			STRING(pev->targetname), STRING(pev->target));
 	}
 }
@@ -235,7 +236,7 @@ string_t CInfoGroup::GetMember(const char* szMemberName)
 		return ALLOC_STRING(szBuffer);
 	}
 
-	ALERT(at_debug, "info_group \"%s\" has no member called \"%s\".\n",
+	LOG_DEBUG("info_group \"%s\" has no member called \"%s\".",
 		STRING(pev->targetname), szMemberName);
 	return iStringNull;
 }
@@ -311,7 +312,7 @@ return true;
 }
 else
 {
-ALERT(at_error, "Too many targets for multi_alias %s (limit is %d)\n", STRING(pev->targetname), MAX_ALIAS_TARGETS);
+LOG_ERROR("Too many targets for multi_alias %s (limit is %d)", STRING(pev->targetname), MAX_ALIAS_TARGETS);
 }
 return CBaseAlias::KeyValue(pkvd);
 }

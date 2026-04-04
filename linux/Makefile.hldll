@@ -103,6 +103,7 @@ HLDLL_OBJS = \
 	$(HLDLL_OBJ_DIR)/func_tank.o \
 	$(HLDLL_OBJ_DIR)/func_tank_of.o \
 	$(HLDLL_OBJ_DIR)/game.o \
+	$(HLDLL_OBJ_DIR)/logger.o \
 	$(HLDLL_OBJ_DIR)/gamerules.o \
 	$(HLDLL_OBJ_DIR)/gargantua.o \
 	$(HLDLL_OBJ_DIR)/gauss.o \

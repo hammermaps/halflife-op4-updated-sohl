@@ -24,6 +24,7 @@
 #include "effects.h"
 #include "alias.h"
 #include "movewith.h"
+#include "logger.h"
 
 //=========================================================
 // CalcLocus_Position
@@ -53,7 +54,7 @@ Vector CalcLocus_Position(CBaseEntity* pEntity, CBaseEntity* pLocus, const char*
 		return pCalc->CalcPosition(pLocus);
 	}
 
-	ALERT(at_error, "%s \"%s\" has bad or missing calc_position value \"%s\"\n",
+	LOG_ERROR("%s \"%s\" has bad or missing calc_position value \"%s\"",
 		STRING(pEntity->pev->classname), STRING(pEntity->pev->targetname), szText);
 	return g_vecZero;
 }
@@ -84,7 +85,7 @@ Vector CalcLocus_Velocity(CBaseEntity* pEntity, CBaseEntity* pLocus, const char*
 	if (pCalc != nullptr)
 		return pCalc->CalcVelocity(pLocus);
 
-	ALERT(at_error, "%s \"%s\" has bad or missing calc_velocity value \"%s\"\n",
+	LOG_ERROR("%s \"%s\" has bad or missing calc_velocity value \"%s\"",
 		STRING(pEntity->pev->classname), STRING(pEntity->pev->targetname), szText);
 	return g_vecZero;
 }
@@ -113,7 +114,7 @@ float CalcLocus_Ratio(CBaseEntity* pLocus, const char* szText)
 	if (pCalc != nullptr)
 		return pCalc->CalcRatio(pLocus);
 
-	ALERT(at_error, "Bad or missing calc_ratio entity \"%s\"\n", szText);
+	LOG_ERROR("Bad or missing calc_ratio entity \"%s\"", szText);
 	return 0;
 }
 
@@ -243,14 +244,14 @@ void CLocusBeam::Precache()
 {
 	if (!m_iszSprite)
 	{
-		ALERT(at_error, "locus_beam with no sprite specified\n");
+		LOG_ERROR("locus_beam with no sprite specified");
 		return;
 	}
 
 	const char* pszSprite = STRING(m_iszSprite);
 	if (pszSprite == nullptr || pszSprite[0] == '\0')
 	{
-		ALERT(at_error, "locus_beam with empty sprite specified\n");
+		LOG_ERROR("locus_beam with empty sprite specified");
 		return;
 	}
 

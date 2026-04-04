@@ -34,6 +34,7 @@
 #include "game.h"
 #include "UserMessages.h"
 #include "filesystem_utils.h"
+#include "logger.h"
 #include "alias.h"
 #include "movewith.h"
 
@@ -102,7 +103,7 @@ int PrecacheModel(const char* path)
 {
 	if (!path || *path == '\0')
 	{
-		ALERT(at_warning, "PrecacheModel: NULL or empty model path, using fallback\n");
+		LOG_WARNING("PrecacheModel: NULL or empty model path, using fallback");
 		return PRECACHE_MODEL(FALLBACK_MODEL);
 	}
 
@@ -112,7 +113,7 @@ int PrecacheModel(const char* path)
 	}
 
 	const char* fallback = UTIL_GetModelFallback(path);
-	ALERT(at_warning, "PrecacheModel: File \"%s\" not found, using fallback \"%s\"\n", path, fallback);
+	LOG_WARNING("PrecacheModel: File \"%s\" not found, using fallback \"%s\"", path, fallback);
 	return PRECACHE_MODEL(fallback);
 }
 
@@ -120,7 +121,7 @@ int PrecacheSound(const char* path)
 {
 	if (!path || *path == '\0')
 	{
-		ALERT(at_warning, "PrecacheSound: NULL or empty sound path, using fallback\n");
+		LOG_WARNING("PrecacheSound: NULL or empty sound path, using fallback");
 		return PRECACHE_SOUND(FALLBACK_SOUND);
 	}
 
@@ -133,7 +134,7 @@ int PrecacheSound(const char* path)
 		return PRECACHE_SOUND(path);
 	}
 
-	ALERT(at_warning, "PrecacheSound: File \"%s\" not found, using fallback \"%s\"\n", path, FALLBACK_SOUND);
+	LOG_WARNING("PrecacheSound: File \"%s\" not found, using fallback \"%s\"", path, FALLBACK_SOUND);
 	return PRECACHE_SOUND(FALLBACK_SOUND);
 }
 
@@ -141,7 +142,7 @@ unsigned short PrecacheEvent(int type, const char* path)
 {
 	if (!path || *path == '\0')
 	{
-		ALERT(at_warning, "PrecacheEvent: NULL or empty event path\n");
+		LOG_WARNING("PrecacheEvent: NULL or empty event path");
 		return 0;
 	}
 
@@ -150,7 +151,7 @@ unsigned short PrecacheEvent(int type, const char* path)
 		return PRECACHE_EVENT(type, path);
 	}
 
-	ALERT(at_warning, "PrecacheEvent: File \"%s\" not found, event will not fire\n", path);
+	LOG_WARNING("PrecacheEvent: File \"%s\" not found, event will not fire", path);
 	return 0;
 }
 
@@ -158,13 +159,13 @@ void SetModel(edict_t* entity, const char* path)
 {
 	if (!entity)
 	{
-		ALERT(at_warning, "SetModel: NULL entity\n");
+		LOG_WARNING("SetModel: NULL entity");
 		return;
 	}
 
 	if (!path || *path == '\0')
 	{
-		ALERT(at_warning, "SetModel: NULL or empty model path for entity %d, using fallback\n",
+		LOG_WARNING("SetModel: NULL or empty model path for entity %d, using fallback",
 			ENTINDEX(entity));
 		SET_MODEL(entity, FALLBACK_MODEL);
 		return;
@@ -185,7 +186,7 @@ void SetModel(edict_t* entity, const char* path)
 	}
 
 	const char* fallback = UTIL_GetModelFallback(path);
-	ALERT(at_warning, "SetModel: File \"%s\" not found for entity %d, using fallback \"%s\"\n",
+	LOG_WARNING("SetModel: File \"%s\" not found for entity %d, using fallback \"%s\"",
 		path, ENTINDEX(entity), fallback);
 	SET_MODEL(entity, fallback);
 }
@@ -865,13 +866,13 @@ void UTIL_AddToAliasList(CBaseAlias* pAlias)
 {
 	if (!pAlias)
 	{
-		ALERT(at_debug, "UTIL_AddToAliasList: null alias!\n");
+		LOG_DEBUG("UTIL_AddToAliasList: null alias!");
 		return;
 	}
 
 	if (!CWorld::World)
 	{
-		ALERT(at_debug, "UTIL_AddToAliasList: no World!\n");
+		LOG_DEBUG("UTIL_AddToAliasList: no World!");
 		return;
 	}
 
@@ -1932,8 +1933,9 @@ void UTIL_LogPrintf(const char* fmt, ...)
 	vsnprintf(string, sizeof(string), fmt, argptr);
 	va_end(argptr);
 
-	// Print to server console
+	// Print to server console and to the log file.
 	ALERT(at_logged, "%s", string);
+	g_Logger.Write(LogLevel::INFO, "game", "%s", string);
 }
 
 //=========================================================
@@ -2130,7 +2132,7 @@ unsigned short CSaveRestoreBuffer::TokenHash(const char* pszToken)
 	if (0 == m_data.tokenCount || nullptr == m_data.pTokens)
 	{
 		//if we're here it means trigger_changelevel is trying to actually save something when it's not supposed to.
-		ALERT(at_error, "No token table array in TokenHash()!\n");
+		LOG_ERROR("No token table array in TokenHash()!");
 		return 0;
 	}
 
@@ -2143,7 +2145,7 @@ unsigned short CSaveRestoreBuffer::TokenHash(const char* pszToken)
 		if (i > 50 && !beentheredonethat)
 		{
 			beentheredonethat = true;
-			ALERT(at_error, "CSaveRestoreBuffer :: TokenHash() is getting too full!\n");
+			LOG_WARNING("CSaveRestoreBuffer :: TokenHash() is getting too full!");
 		}
 #endif
 
@@ -2160,7 +2162,7 @@ unsigned short CSaveRestoreBuffer::TokenHash(const char* pszToken)
 
 	// Token hash table full!!!
 	// [Consider doing overflow table(s) after the main table & limiting linear hash table search]
-	ALERT(at_error, "CSaveRestoreBuffer :: TokenHash() is COMPLETELY FULL!\n");
+	LOG_ERROR("CSaveRestoreBuffer :: TokenHash() is COMPLETELY FULL!");
 	return 0;
 }
 
@@ -2300,7 +2302,7 @@ void CSave::WriteFunction(const char* pname, void** data, int count)
 	if (functionName)
 		BufferField(pname, strlen(functionName) + 1, functionName);
 	else
-		ALERT(at_error, "Invalid function pointer in entity!\n");
+		LOG_ERROR("Invalid function pointer in entity!");
 }
 
 
@@ -2343,7 +2345,7 @@ void EntvarsKeyvalue(entvars_t* pev, KeyValueData* pkvd)
 			case FIELD_EDICT:
 			case FIELD_ENTITY:
 			case FIELD_POINTER:
-				ALERT(at_error, "Bad field in entity!!\n");
+				LOG_ERROR("Bad field in entity!!");
 				break;
 			}
 			pkvd->fHandled = 1;
@@ -2411,7 +2413,7 @@ bool CSave::WriteFields(const char* pname, void* pBaseData, TYPEDESCRIPTION* pFi
 		case FIELD_ENTITY:
 		case FIELD_EHANDLE:
 			if (pTest->fieldSize > MAX_ENTITYARRAY)
-				ALERT(at_error, "Can't save more than %d entities in an array!!!\n", MAX_ENTITYARRAY);
+				LOG_ERROR("Can't save more than %d entities in an array!!!", MAX_ENTITYARRAY);
 			for (j = 0; j < pTest->fieldSize; j++)
 			{
 				switch (pTest->fieldType)
@@ -2480,7 +2482,7 @@ bool CSave::WriteFields(const char* pname, void* pBaseData, TYPEDESCRIPTION* pFi
 			WriteFunction(pTest->fieldName, (void**)pOutputData, pTest->fieldSize);
 			break;
 		default:
-			ALERT(at_error, "Bad field type\n");
+			LOG_ERROR("Bad field type");
 		}
 	}
 
@@ -2519,7 +2521,7 @@ void CSave::BufferHeader(const char* pname, int size)
 {
 	short hashvalue = TokenHash(pname);
 	if (size > 1 << (sizeof(short) * 8))
-		ALERT(at_error, "CSave :: BufferHeader() size parameter exceeds 'short'!\n");
+		LOG_ERROR("CSave :: BufferHeader() size parameter exceeds 'short'!");
 	BufferData((const char*)&size, sizeof(short));
 	BufferData((const char*)&hashvalue, sizeof(short));
 }
@@ -2529,7 +2531,7 @@ void CSave::BufferData(const char* pdata, int size)
 {
 	if (m_data.size + size > m_data.bufferSize)
 	{
-		ALERT(at_error, "Save/Restore overflow!\n");
+		LOG_ERROR("Save/Restore overflow!");
 		m_data.size = m_data.bufferSize;
 		return;
 	}
@@ -2703,7 +2705,7 @@ int CRestore::ReadField(void* pBaseData, TYPEDESCRIPTION* pFields, int fieldCoun
 						break;
 
 					default:
-						ALERT(at_error, "Bad field type\n");
+						LOG_ERROR("Bad field type");
 					}
 				}
 			}
@@ -2831,7 +2833,7 @@ void CRestore::BufferReadBytes(char* pOutput, int size)
 
 	if ((m_data.size + size) > m_data.bufferSize)
 	{
-		ALERT(at_error, "Restore overflow!\n");
+		LOG_ERROR("Restore overflow!");
 		m_data.size = m_data.bufferSize;
 		return;
 	}
