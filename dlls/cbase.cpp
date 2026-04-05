@@ -900,13 +900,41 @@ void CBaseEntity::InitMoveWith()
 		}
 	}
 
-	m_pMoveWith = pParent;
-	m_vecMoveWithOffset = pev->origin - pParent->pev->origin;
-	m_vecRotWithOffset = pev->angles - pParent->pev->angles;
+	// Check if we're already in parent's child list (e.g. after save/restore)
+	CBaseEntity* pSibling = pParent->m_pChildMoveWith;
+	while (pSibling)
+	{
+		if (pSibling == this)
+			break;
+		pSibling = pSibling->m_pSiblingMoveWith;
+	}
 
-	// insert into parent's child list
-	m_pSiblingMoveWith = pParent->m_pChildMoveWith;
-	pParent->m_pChildMoveWith = this;
+	if (!pSibling) // not already linked — set up for the first time
+	{
+		m_pMoveWith = pParent;
+		m_vecMoveWithOffset = pev->origin - pParent->pev->origin;
+		m_vecRotWithOffset = pev->angles - pParent->pev->angles;
+
+		// insert into parent's child list
+		m_pSiblingMoveWith = pParent->m_pChildMoveWith;
+		pParent->m_pChildMoveWith = this;
+
+		// LRC - entities with MOVETYPE_NONE won't move even if velocity is set.
+		// The engine's SV_Physics_None skips them entirely.
+		// Change to an appropriate movetype so the engine will apply velocity.
+		if (pev->movetype == MOVETYPE_NONE)
+		{
+			if (pev->solid == SOLID_BSP)
+				pev->movetype = MOVETYPE_PUSH;
+			else
+				pev->movetype = MOVETYPE_NOCLIP;
+
+			DEV_LOG(mw_debug, "InitMoveWith: changed %s '%s' movetype from NONE to %s",
+				STRING(pev->classname),
+				pev->targetname ? STRING(pev->targetname) : "<no name>",
+				(pev->movetype == MOVETYPE_PUSH) ? "PUSH" : "NOCLIP");
+		}
+	}
 
 	DEV_LOG(mw_debug, "InitMoveWith: [%s] '%s' -> parent [%s] '%s' offset(%.1f %.1f %.1f) rot(%.1f %.1f %.1f)",
 		STRING(pev->classname),
@@ -915,11 +943,6 @@ void CBaseEntity::InitMoveWith()
 		pParent->pev->targetname ? STRING(pParent->pev->targetname) : "<no name>",
 		m_vecMoveWithOffset.x, m_vecMoveWithOffset.y, m_vecMoveWithOffset.z,
 		m_vecRotWithOffset.x, m_vecRotWithOffset.y, m_vecRotWithOffset.z);
-
-	// MoveWith parent registration in the old assist list is no longer needed.
-	// PostAssist velocity and Desired processing now use dedicated FIFO queues.
-	// Callers should use UTIL_PostAssistVelocity/UTIL_PostAssistAVelocity when
-	// they need to schedule post-assist velocity application.
 }
 
 
@@ -929,8 +952,14 @@ void CBaseEntity::InitMoveWith()
 //=========================================================
 void CBaseEntity::SetNextThink(float delay, bool correctSpeed)
 {
-	// LRC - m_fNextThink is needed so that we can tell IsThinking
-	m_fNextThink = pev->ltime + delay;
+	// LRC - m_fNextThink is needed so that we can tell IsThinking.
+	// MOVETYPE_PUSH entities use pev->ltime (local time, advanced by engine).
+	// All other movetypes use gpGlobals->time (server clock).
+	if (pev->movetype == MOVETYPE_PUSH)
+		m_fNextThink = pev->ltime + delay;
+	else
+		m_fNextThink = gpGlobals->time + delay;
+
 	m_fPevNextThink = m_fNextThink;
 	pev->nextthink = m_fPevNextThink;
 }
