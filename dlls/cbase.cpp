@@ -982,7 +982,9 @@ void CBaseEntity::AbsoluteNextThink(float time, bool correctSpeed)
 //=========================================================
 void CBaseEntity::SetEternalThink()
 {
-	// set nextthink to the current time; the engine will ensure we keep thinking
+	// LRC - use the correct time base per movetype, just like SetNextThink.
+	// MOVETYPE_PUSH uses pev->ltime (advanced by engine via SV_PushMove).
+	// All other movetypes use gpGlobals->time (server clock).
 	if (pev->movetype == MOVETYPE_PUSH)
 		m_fNextThink = pev->ltime;
 	else

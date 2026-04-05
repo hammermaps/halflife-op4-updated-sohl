@@ -651,6 +651,12 @@ void MoveWith_DrawDebugBeams()
 		CBaseEntity* pChild = pEnt->m_pChildMoveWith;
 		while (pChild)
 		{
+			if (pChild->pev->flags & FL_KILLME)
+			{
+				pChild = pChild->m_pSiblingMoveWith;
+				continue;
+			}
+
 			// Green beam from parent to child
 			MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
 			WRITE_BYTE(TE_BEAMPOINTS);

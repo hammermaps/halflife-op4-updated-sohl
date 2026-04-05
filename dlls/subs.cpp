@@ -89,7 +89,11 @@ bool CBaseDMStart::IsTriggered(CBaseEntity* pEntity)
 	return master;
 }
 
-// This updates global tables that need to know about entities being removed
+// This updates global tables that need to know about entities being removed.
+// Called by both UTIL_Remove (deferred FL_KILLME removal) and SUB_Remove
+// (immediate REMOVE_ENTITY). MoveWith chain cleanup MUST happen here so
+// that entities removed via UTIL_Remove don't leave dangling pointers in
+// parent/child lists — which causes crashes when mw_debug is enabled.
 void CBaseEntity::UpdateOnRemove()
 {
 	int i;
@@ -134,6 +138,7 @@ void CBaseEntity::UpdateOnRemove()
 			pCur = pCur->m_pSiblingMoveWith;
 		}
 		m_pMoveWith = NULL;
+		m_pSiblingMoveWith = NULL;
 	}
 
 	// LRC - orphan any children that were moving with this entity
@@ -154,7 +159,7 @@ void CBaseEntity::UpdateOnRemove()
 // Convenient way to delay removing oneself
 void CBaseEntity::SUB_Remove()
 {
-	UpdateOnRemove(); // also handles MoveWith list cleanup
+	UpdateOnRemove(); // also handles MoveWith list clean
 	if (pev->health > 0)
 	{
 		// this situation can screw up monsters who can't tell their entity pointers are invalid.
