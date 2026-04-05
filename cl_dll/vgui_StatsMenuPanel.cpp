@@ -47,18 +47,28 @@ static void SanitizeFormatString(char* fmt)
 		// Skip flags: -, +, space, 0, #
 		while (*p == '-' || *p == '+' || *p == ' ' || *p == '0' || *p == '#')
 			++p;
-		// Skip optional field width
-		while (*p >= '0' && *p <= '9')
+		// Skip optional field width (numeric literal or '*' for argument-supplied width)
+		if (*p == '*')
 			++p;
+		else
+		{
+			while (*p >= '0' && *p <= '9')
+				++p;
+		}
 		// Skip optional precision
 		if (*p == '.')
 		{
 			++p;
-			while (*p >= '0' && *p <= '9')
+			if (*p == '*')
 				++p;
+			else
+			{
+				while (*p >= '0' && *p <= '9')
+					++p;
+			}
 		}
-		// Skip length modifiers: h, l, L
-		while (*p == 'h' || *p == 'l' || *p == 'L')
+		// Skip length modifiers: h, hh, l, ll, j, z, t, L
+		while (*p == 'h' || *p == 'l' || *p == 'j' || *p == 'z' || *p == 't' || *p == 'L')
 			++p;
 		// Replace the dangerous %n specifier with %d; both consume one
 		// int-sized argument so the remaining arguments stay aligned.
