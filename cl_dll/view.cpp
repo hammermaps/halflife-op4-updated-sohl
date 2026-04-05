@@ -175,13 +175,16 @@ float V_CalcBob(struct ref_params_s* pparams)
 		return bob;
 	}
 
+	// Reset bobtime on level change (game time resets to a smaller value)
+	// to avoid floating-point precision loss over extended play sessions.
+	if (pparams->time < lasttime)
+		bobtime = 0;
 	lasttime = pparams->time;
 
-	//TODO: bobtime will eventually become a value so large that it will no longer behave properly.
-	//Consider resetting the variable if a level change is detected (pparams->time < lasttime might do the trick).
 	bobtime += pparams->frametime;
-	cycle = bobtime - (int)(bobtime / cl_bobcycle->value) * cl_bobcycle->value;
-	cycle /= cl_bobcycle->value;
+	// Wrap bobtime to one cycle so its value stays small and precise.
+	bobtime = fmod(bobtime, cl_bobcycle->value);
+	cycle = bobtime / cl_bobcycle->value;
 
 	if (cycle < cl_bobup->value)
 	{
@@ -527,9 +530,9 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	gEngfuncs.V_ApplyShake(pparams->vieworg, pparams->viewangles, 1.0);
 
 	// never let view origin sit exactly on a node line, because a water plane can
-	// dissapear when viewed with the eye exactly on it.
-	// FIXME, we send origin at 1/128 now, change this?
-	// the server protocol only specifies to 1/16 pixel, so add 1/32 in each axis
+	// disappear when viewed with the eye exactly on it.
+	// The server protocol sends origin at 1/128 precision; 1/32 is intentionally
+	// larger to reliably avoid landing on a BSP node boundary.
 
 	pparams->vieworg[0] += 1.0 / 32;
 	pparams->vieworg[1] += 1.0 / 32;
@@ -703,8 +706,12 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 		steptime = pparams->time - lasttime;
 		if (steptime < 0)
-			//FIXME		I_Error ("steptime < 0");
+		{
+			// Negative steptime means a level change or time reset occurred.
+			// Snap stair smoothing to the current position to avoid a visual jump.
+			oldz = pparams->simorg[2];
 			steptime = 0;
+		}
 
 		oldz += steptime * 150;
 		if (oldz > pparams->simorg[2])
@@ -1069,7 +1076,8 @@ void V_GetSingleTargetCam(cl_entity_t* ent1, float* angle, float* origin)
 
 	V_SmoothInterpolateAngles(v_lastAngles, newAngle, angle, 120.0f);
 
-	// HACK, if player is dead don't clip against his dead body, can't check this
+	// Dead players have SOLID_NOT and are skipped as non-blocking geometry
+	// by the V_GetChaseOrigin trace loop, so no extra handling is needed here.
 	V_GetChaseOrigin(angle, newOrigin, distance, origin);
 }
 

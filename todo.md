@@ -207,10 +207,10 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [180](cl_dll/view.cpp#L180) | `TODO` | TODO: bobtime will eventually become a value so large that it will no longer behave properly. | TODO: bobtime wird irgendwann zu groß und verhält sich nicht mehr korrekt | Mittlere Priorität: bobtime regelmäßig zurücksetzen oder modulobasiert berechnen. |
-| [531](cl_dll/view.cpp#L531) | `FIXME` | FIXME, we send origin at 1/128 now, change this? | FIXME: Origin wird jetzt mit 1/128 gesendet, anpassen? | Niedrige Priorität: Präzision der Ortsübertragung überprüfen. |
-| [706](cl_dll/view.cpp#L706) | `FIXME` | FIXME		I_Error ("steptime < 0"); | FIXME: I_Error aufrufen wenn steptime < 0 | Mittlere Priorität: Fehlerbehandlung für ungültige steptime einbauen. |
-| [1072](cl_dll/view.cpp#L1072) | `HACK` | HACK, if player is dead don't clip against his dead body, can't check this | HACK: Spieler ist tot – nicht gegen eigene Leiche clippen | Niedrige Priorität: Saubere Lösung für Kollisionsausschluss der eigenen Leiche implementieren. |
+| ~~[180](cl_dll/view.cpp#L180)~~ | ~~`TODO`~~ | ~~TODO: bobtime will eventually become a value so large that it will no longer behave properly.~~ | ~~TODO: bobtime wird irgendwann zu groß und verhält sich nicht mehr korrekt~~ | ✅ Erledigt: bobtime wird bei Level-Wechsel zurückgesetzt und per fmod auf einen Zyklus beschränkt. |
+| ~~[531](cl_dll/view.cpp#L531)~~ | ~~`FIXME`~~ | ~~FIXME, we send origin at 1/128 now, change this?~~ | ~~FIXME: Origin wird jetzt mit 1/128 gesendet, anpassen?~~ | ✅ Erledigt: Kommentar aktualisiert – 1/32 ist bewusst größer als die 1/128-Netzwerkpräzision. |
+| ~~[706](cl_dll/view.cpp#L706)~~ | ~~`FIXME`~~ | ~~FIXME		I_Error ("steptime < 0");~~ | ~~FIXME: I_Error aufrufen wenn steptime < 0~~ | ✅ Erledigt: Bei negativer steptime (Level-Wechsel) wird oldz zurückgesetzt statt abzustürzen. |
+| ~~[1072](cl_dll/view.cpp#L1072)~~ | ~~`HACK`~~ | ~~HACK, if player is dead don't clip against his dead body, can't check this~~ | ~~HACK: Spieler ist tot – nicht gegen eigene Leiche clippen~~ | ✅ Erledigt: Kommentar klärt, dass SOLID_NOT-Entitäten im Trace-Loop bereits übersprungen werden. |
 
 
 ### `common/`
