@@ -162,10 +162,10 @@ bool CKnife::Swing(const bool bFirst)
 
 			int damageTypes = DMG_CLUB;
 
-			if (g_pGameRules->IsMultiplayer())
 			{
-				//TODO: This code assumes the target is a player and not some NPC. Rework it to support NPC backstabbing.
-				UTIL_MakeVectors(pEntity->pev->v_angle);
+				// Support backstab against both players (using view angle) and NPCs (using facing angle)
+				const Vector& targetAngle = pEntity->IsPlayer() ? pEntity->pev->v_angle : pEntity->pev->angles;
+				UTIL_MakeVectors(targetAngle);
 
 				const Vector targetRightDirection = gpGlobals->v_right;
 
@@ -173,7 +173,6 @@ bool CKnife::Swing(const bool bFirst)
 
 				const Vector ownerForwardDirection = gpGlobals->v_forward;
 
-				//In multiplayer the knife can backstab targets.
 				const bool isBehindTarget = CrossProduct(targetRightDirection, ownerForwardDirection).z > 0;
 
 				if (isBehindTarget)

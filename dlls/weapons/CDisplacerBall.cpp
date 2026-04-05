@@ -316,8 +316,7 @@ void CDisplacerBall::KillThink()
 	if (CBaseEntity* pTarget = m_hDisplacedTarget)
 	{
 		pTarget->SetThink(&CBaseEntity::SUB_Remove);
-
-		//TODO: no next think? - Solokiller
+		pTarget->SetNextThink(0);
 	}
 
 	SetThink(&CDisplacerBall::ExplodeThink);

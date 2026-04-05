@@ -2882,8 +2882,7 @@ void CTriggerCTFGeneric::Touch(CBaseEntity* pOther)
 
 		SUB_UseTargets(this, triggerType, 0);
 
-		//TODO: constrain team_no input to valid values
-		if (0 != team_score)
+		if (0 != team_score && team_no > CTFTeam::None && static_cast<int>(team_no) <= MaxTeams)
 			teamscores[static_cast<int>(team_no) - 1] += team_score;
 
 		if (pOtherPlayer && score != 0)

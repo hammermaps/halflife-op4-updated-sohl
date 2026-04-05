@@ -636,20 +636,6 @@ void COtis::TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, T
 			flDamage = flDamage / 2;
 		}
 		break;
-		//TODO: Otis doesn't have a helmet, probably don't want his dome being bulletproof
-	case 10:
-		if ((bitsDamageType & (DMG_BULLET | DMG_SLASH | DMG_CLUB)) != 0)
-		{
-			flDamage -= 20;
-			if (flDamage <= 0)
-			{
-				UTIL_Ricochet(ptr->vecEndPos, 1.0);
-				flDamage = 0.01;
-			}
-		}
-		// always a head shot
-		ptr->iHitgroup = HITGROUP_HEAD;
-		break;
 	}
 
 	CTalkMonster::TraceAttack(pevAttacker, flDamage, vecDir, ptr, bitsDamageType);

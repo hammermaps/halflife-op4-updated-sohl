@@ -1030,8 +1030,8 @@ bool CBasePlayerWeapon::ExtractClipAmmo(CBasePlayerWeapon* pWeapon)
 		iAmmo = m_iClip;
 	}
 
-	//TODO: should handle -1 return as well (only return true if ammo was taken)
-	return pWeapon->m_pPlayer->GiveAmmo(iAmmo, pszAmmo1(), iMaxAmmo1()) != 0; // , &m_iPrimaryAmmoType
+	// GiveAmmo returns -1 if ammo type not found or ammo is full; only return true if ammo was successfully given
+	return pWeapon->m_pPlayer->GiveAmmo(iAmmo, pszAmmo1(), iMaxAmmo1()) > 0; // , &m_iPrimaryAmmoType
 }
 
 //=========================================================

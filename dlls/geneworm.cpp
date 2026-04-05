@@ -18,6 +18,7 @@
 #include "skill.h"
 #include "effects.h"
 #include "weapons.h"
+#include "logger.h"
 
 const int AE_GENEWORM_SPIT_START = 0;
 const int AE_GENEWORM_LAUNCH_SPAWN = 2;
@@ -28,6 +29,8 @@ const int AE_GENEWORM_SLASH_RIGHT_OFF = 6;
 const int AE_GENEWORM_SLASH_CENTER_ON = 7;
 const int AE_GENEWORM_SLASH_CENTER_OFF = 8;
 const int AE_GENEWORM_HIT_WALL = 9;
+
+constexpr const char* GENEWORM_TELEPORT_TARGET = "GeneWormTeleport";
 
 class COFGeneWormCloud : public CBaseEntity
 {
@@ -1134,14 +1137,13 @@ void COFGeneWorm::DyingThink()
 		if (pPlayer)
 		{
 			//Teleport the player to the end script
-			//TODO: this really shouldn't be hardcoded
-			for (auto pTeleport : UTIL_FindEntitiesByTargetname("GeneWormTeleport"))
+			for (auto pTeleport : UTIL_FindEntitiesByTargetname(GENEWORM_TELEPORT_TARGET))
 			{
 				pTeleport->Touch(pPlayer);
-				ALERT(at_console, "Touching Target GeneWormTeleport\n");
+				LOG_DEBUG("Touching Target %s", GENEWORM_TELEPORT_TARGET);
 			}
 
-			FireTargets("GeneWormTeleport", pPlayer, pPlayer, USE_ON, 1);
+			FireTargets(GENEWORM_TELEPORT_TARGET, pPlayer, pPlayer, USE_ON, 1);
 		}
 
 		m_flDeathStart = gpGlobals->time + 999;
