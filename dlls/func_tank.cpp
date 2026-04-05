@@ -951,11 +951,13 @@ void CFuncTank::StopSequence()
 CBaseEntity* CFuncTank::BestVisibleEnemy()
 {
 	// Find the nearest visible monster in range
+	// m_maxRange <= 0 means "no maximum range" (same as InRange), use a reasonable default
+	float searchRange = m_maxRange > 0 ? m_maxRange : 4096.0f;
 	CBaseEntity* pBest = NULL;
-	float bestDist = m_maxRange;
+	float bestDist = searchRange;
 
 	CBaseEntity* pEnt = NULL;
-	while ((pEnt = UTIL_FindEntityInSphere(pEnt, pev->origin, m_maxRange)) != NULL)
+	while ((pEnt = UTIL_FindEntityInSphere(pEnt, pev->origin, searchRange)) != NULL)
 	{
 		if (pEnt->IsAlive() && pEnt->pev->takedamage != DAMAGE_NO)
 		{
@@ -1418,17 +1420,17 @@ bool CTankSequence::KeyValue(KeyValueData* pkvd)
 		m_iLaserSpot = atoi(pkvd->szValue);
 		return true;
 	}
-	else if (FStrEq(pkvd->szKeyName, "m_iszEntity"))
+	else if (FStrEq(pkvd->szKeyName, "m_iszEntity") || FStrEq(pkvd->szKeyName, "tank"))
 	{
 		m_iszEntity = ALLOC_STRING(pkvd->szValue);
 		return true;
 	}
-	else if (FStrEq(pkvd->szKeyName, "m_iszEnemy"))
+	else if (FStrEq(pkvd->szKeyName, "m_iszEnemy") || FStrEq(pkvd->szKeyName, "enemy"))
 	{
 		m_iszEnemy = ALLOC_STRING(pkvd->szValue);
 		return true;
 	}
-	else if (FStrEq(pkvd->szKeyName, "m_fDuration"))
+	else if (FStrEq(pkvd->szKeyName, "m_fDuration") || FStrEq(pkvd->szKeyName, "duration"))
 	{
 		m_fDuration = atof(pkvd->szValue);
 		return true;
@@ -1463,7 +1465,7 @@ void CTankSequence::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 		return;
 
 	// Check whether it's being controlled by the player
-	if (pTank->m_pControls)
+	if (pTank->m_pController)
 	{
 		if ((pev->spawnflags & SF_TSEQ_DUMPPLAYER) != 0)
 		{
@@ -1488,6 +1490,11 @@ void CTankSequence::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 		{
 			pTank->m_pSequenceEnemy = pEnemy;
 			pTank->StartSequence(this);
+		}
+		else
+		{
+			// No enemy found - can't start enemy-tracking sequence
+			return;
 		}
 	}
 	else
@@ -1551,6 +1558,9 @@ void CTankSequence::StopSequence()
 		ALERT(at_error, "TankSeq: StopSequence with no tank!\n");
 		return;
 	}
+
+	// Clear sequence-controlled firing override before releasing tank control.
+	m_pTank->pev->spawnflags &= ~SF_TANK_SEQFIRE;
 
 	// If we're doing "shoot at end", fire that shot now.
 	if (m_iShoot == TSEQ_SHOOT_ONCE)
