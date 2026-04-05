@@ -472,7 +472,8 @@ void CBaseToggle::LinearMove(Vector vecDest, float flSpeed)
 	SetThink(&CBaseToggle::LinearMoveDone);
 
 	// scale the destdelta vector by the time spent traveling to get velocity
-	pev->velocity = vecDestDelta / flTravelTime;
+	// LRC - Use UTIL_SetVelocity to propagate to MoveWith children
+	UTIL_SetVelocity(this, vecDestDelta / flTravelTime);
 }
 
 
@@ -491,8 +492,8 @@ void CBaseToggle::LinearMoveDone()
 		return;
 	}
 
-	UTIL_SetOrigin(pev, m_vecFinalDest);
-	pev->velocity = g_vecZero;
+	UTIL_AssignOrigin(this, m_vecFinalDest);
+	UTIL_SetVelocity(this, g_vecZero);
 	DontThink();  // LRC
 	if (m_pfnCallWhenMoveDone)
 		(this->*m_pfnCallWhenMoveDone)();
@@ -568,7 +569,8 @@ void CBaseToggle::AngularMove(Vector vecDestAngle, float flSpeed)
 	SetThink(&CBaseToggle::AngularMoveDone);
 
 	// scale the destdelta vector by the time spent traveling to get velocity
-	pev->avelocity = vecDestDelta / flTravelTime;
+	// LRC - Use UTIL_SetAvelocity to propagate to MoveWith children
+	UTIL_SetAvelocity(this, vecDestDelta / flTravelTime);
 }
 
 
@@ -579,8 +581,8 @@ After rotating, set angle to exact final angle, call "move done" function
 */
 void CBaseToggle::AngularMoveDone()
 {
-	pev->angles = m_vecFinalAngle;
-	pev->avelocity = g_vecZero;
+	UTIL_SetAngles(this, m_vecFinalAngle);
+	UTIL_SetAvelocity(this, g_vecZero);
 	DontThink();
 	if (m_pfnCallWhenMoveDone)
 		(this->*m_pfnCallWhenMoveDone)();
