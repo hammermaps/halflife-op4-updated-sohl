@@ -33,6 +33,33 @@
 #define SF_TANK_MATCHTARGET 0x0080 // LRC - match target position
 #define SF_TANK_SEQFIRE 0x10000    // LRC - TankSequence is firing
 
+// LRC - scripted_tanksequence spawnflags
+#define SF_TSEQ_DUMPPLAYER 1
+#define SF_TSEQ_REPEATABLE 2
+
+// LRC - scripted_tanksequence "until" conditions
+#define TSEQ_UNTIL_NONE    0
+#define TSEQ_UNTIL_FACING  1
+#define TSEQ_UNTIL_DEATH   2
+
+// LRC - scripted_tanksequence turn modes
+#define TSEQ_TURN_NO    0
+#define TSEQ_TURN_ANGLE 1
+#define TSEQ_TURN_FACE  2
+#define TSEQ_TURN_ENEMY 3
+
+// LRC - scripted_tanksequence shoot modes
+#define TSEQ_SHOOT_NO     0
+#define TSEQ_SHOOT_ONCE   1
+#define TSEQ_SHOOT_ALWAYS 2
+#define TSEQ_SHOOT_FACING 3
+
+// LRC - scripted_tanksequence flag change modes
+#define TSEQ_FLAG_NOCHANGE 0
+#define TSEQ_FLAG_ON       1
+#define TSEQ_FLAG_OFF      2
+#define TSEQ_FLAG_TOGGLE   3
+
 enum TANKBULLET
 {
 	TANK_BULLET_NONE = 0,
@@ -68,6 +95,11 @@ public:
 
 	void StartRotSound();
 	void StopRotSound();
+
+	// LRC - scripted_tanksequence support
+	void StartSequence(CTankSequence* pSequence);
+	void StopSequence();
+	CBaseEntity* BestVisibleEnemy();
 
 	// Bmodels don't go across transitions
 	int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
@@ -128,6 +160,9 @@ public:
 	CBaseEntity* m_pSequenceEnemy;  // LRC - entity the sequence wants to attack
 	CLaserSpot* m_pSpot;            // LRC - laser spot (SF_TANK_LASERSPOT)
 	CPointEntity* m_pFireProxy;     // LRC - locus fire position proxy
+	float m_maxRange;	   // Max range to aim/track
+	float m_fireLast;	   // Last time I fired
+	float m_fireRate;	   // How many rounds/second
 
 protected:
 	float m_yawCenter;	  // "Center" yaw
@@ -141,12 +176,9 @@ protected:
 	float m_pitchRange;		// Range of pitch motion as above
 	float m_pitchTolerance; // Tolerance angle
 
-	float m_fireLast;	   // Last time I fired
-	float m_fireRate;	   // How many rounds/second
 	float m_lastSightTime; // Last time I saw target
 	float m_persist;	   // Persistence of firing (how long do I shoot when I can't see)
 	float m_minRange;	   // Minimum range to aim/track
-	float m_maxRange;	   // Max range to aim/track
 
 	Vector m_barrelPos;	 // Length of the freakin barrel
 	float m_spriteScale; // Scale of any sprites we shoot
@@ -202,6 +234,36 @@ TYPEDESCRIPTION CFuncTank::m_SaveData[] =
 };
 
 IMPLEMENT_SAVERESTORE(CFuncTank, CBaseEntity);
+
+// LRC - CTankSequence full class definition (needed before CFuncTank method implementations)
+class CTankSequence : public CBaseEntity
+{
+public:
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
+	void EndThink();
+	void TimeOutThink();
+	bool KeyValue(KeyValueData* pkvd) override;
+	int ObjectCaps() override;
+
+	void StopSequence();
+	void FacingNotify();
+	void DeadEnemyNotify();
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+
+	string_t m_iszEntity;
+	string_t m_iszEnemy;
+	int m_iUntil;
+	float m_fDuration;
+	int m_iTurn;
+	int m_iShoot;
+	int m_iActive;
+	int m_iControllable;
+	int m_iLaserSpot;
+	CFuncTank* m_pTank;
+};
 
 static Vector gTankSpread[] =
 	{
@@ -570,16 +632,52 @@ void CFuncTank::TrackTarget()
 		}
 		SetNextThink(0.05);
 	}
-	else if (m_pSequence && m_pSequenceEnemy) // LRC - scripted sequence targeting
+	else if (m_pSequence) // LRC - scripted sequence targeting
 	{
-		SetNextThink(0.1);
-		barrelEnd = BarrelPosition();
-		targetPosition = m_pSequenceEnemy->BodyTarget(barrelEnd);
-		direction = targetPosition - pev->origin;
-		angles = UTIL_VecToAngles(direction);
-		AdjustAnglesForBarrel(angles, direction.Length());
-		updateTime = true;
-		m_sightOrigin = targetPosition;
+		// LRC - update laser spot
+		if (m_pSpot)
+		{
+			Vector forward;
+			UTIL_MakeVectorsPrivate(pev->angles, forward, NULL, NULL);
+			barrelEnd = BarrelPosition();
+			TraceResult trSpot;
+			UTIL_TraceLine(barrelEnd, barrelEnd + forward * 8192, dont_ignore_monsters, edict(), &trSpot);
+			UTIL_SetOrigin(m_pSpot->pev, trSpot.vecEndPos);
+		}
+		SetNextThink(0.05);
+
+		if (m_pSequence->m_iTurn == TSEQ_TURN_ENEMY)
+		{
+			// Check if the enemy died
+			CBaseMonster* pMonst = m_pSequenceEnemy ? m_pSequenceEnemy->MyMonsterPointer() : NULL;
+			if (pMonst && !pMonst->IsAlive())
+				m_pSequence->DeadEnemyNotify();
+
+			if (m_pSequenceEnemy)
+			{
+				// Work out what angle we need to face to look at the enemy
+				targetPosition = m_pSequenceEnemy->pev->origin + m_pSequenceEnemy->pev->view_ofs;
+				direction = targetPosition - pev->origin;
+				angles = UTIL_VecToAngles(direction);
+				AdjustAnglesForBarrel(angles, direction.Length());
+			}
+		}
+		else if (m_pSequence->m_iTurn == TSEQ_TURN_ANGLE)
+		{
+			angles = m_pSequence->pev->angles;
+		}
+		else if (m_pSequence->m_iTurn == TSEQ_TURN_FACE)
+		{
+			// Work out what angle we need to face to look at the sequence entity
+			direction = m_pSequence->pev->origin - pev->origin;
+			angles = UTIL_VecToAngles(direction);
+			AdjustAnglesForBarrel(angles, direction.Length());
+		}
+		else
+		{
+			// TSEQ_TURN_NO - don't turn, just hold position
+			return;
+		}
 	}
 	else
 	{
@@ -689,6 +787,12 @@ void CFuncTank::TrackTarget()
 
 	if (m_pController)
 		return;
+
+	// LRC - notify sequence when tank is facing target
+	if (m_pSequence && fabs(distX) < m_pitchTolerance && fabs(distY) < m_yawTolerance)
+	{
+		m_pSequence->FacingNotify();
+	}
 
 	// LRC - check sequence fire flag
 	bool seqFire = (pev->spawnflags & SF_TANK_SEQFIRE) != 0;
@@ -826,6 +930,62 @@ void CFuncTank::StopRotSound()
 	pev->spawnflags &= ~SF_TANK_SOUNDON;
 }
 
+// LRC - scripted_tanksequence support
+void CFuncTank::StartSequence(CTankSequence* pSequence)
+{
+	m_pSequence = pSequence;
+	SetNextThink(1.0);
+}
+
+// LRC
+void CFuncTank::StopSequence()
+{
+	StopRotSound();
+	DontThink();
+	pev->avelocity = g_vecZero;
+	m_pSequence = NULL;
+	m_pSequenceEnemy = NULL;
+}
+
+// LRC - pick the best visible enemy for the tank
+CBaseEntity* CFuncTank::BestVisibleEnemy()
+{
+	// Find the nearest visible monster in range
+	// m_maxRange <= 0 means "no maximum range" (same as InRange), use a reasonable default
+	float searchRange = m_maxRange > 0 ? m_maxRange : 4096.0f;
+	CBaseEntity* pBest = NULL;
+	float bestDist = searchRange;
+
+	CBaseEntity* pEnt = NULL;
+	while ((pEnt = UTIL_FindEntityInSphere(pEnt, pev->origin, searchRange)) != NULL)
+	{
+		if (pEnt->IsAlive() && pEnt->pev->takedamage != DAMAGE_NO)
+		{
+			// Check classification
+			if ((pev->spawnflags & SF_TANK_ALIENS) != 0 && pEnt->Classify() == CLASS_ALIEN_MILITARY)
+				; // ok
+			else if ((pev->spawnflags & SF_TANK_HUMANS) != 0 && pEnt->Classify() == CLASS_HUMAN_MILITARY)
+				; // ok
+			else if (pEnt->IsPlayer())
+				; // ok
+			else
+				continue;
+
+			float dist = (pEnt->pev->origin - pev->origin).Length();
+			if (dist < bestDist)
+			{
+				TraceResult tr;
+				UTIL_TraceLine(BarrelPosition(), pEnt->BodyTarget(BarrelPosition()), dont_ignore_monsters, edict(), &tr);
+				if (tr.pHit == pEnt->edict())
+				{
+					bestDist = dist;
+					pBest = pEnt;
+				}
+			}
+		}
+	}
+	return pBest;
+}
 class CFuncTankGun : public CFuncTank
 {
 public:
@@ -1202,63 +1362,77 @@ void CFuncTankControls::Spawn()
 
 
 //============================================================================
-// TANK SEQUENCE - LRC Scripted Tank Sequence entity
+// TANK SEQUENCE - LRC Scripted Tank Sequence entity (from SoHL 1.5)
 //============================================================================
-class CTankSequence : public CBaseEntity
-{
-public:
-	void Spawn() override;
-	bool KeyValue(KeyValueData* pkvd) override;
-	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
-	void Think() override;
-
-	bool Save(CSave& save) override;
-	bool Restore(CRestore& restore) override;
-	static TYPEDESCRIPTION m_SaveData[];
-
-	CFuncTank* m_pTank;    // the tank this sequence controls
-	CBaseEntity* m_pEnemy; // the entity to attack
-	int m_iszTank;         // targetname of the func_tank
-	int m_iszEnemy;        // targetname of the enemy entity
-	float m_flDuration;    // how long to hold the sequence (0 = indefinite)
-	float m_flStopTime;    // when to stop (world time)
-};
+LINK_ENTITY_TO_CLASS(scripted_tanksequence, CTankSequence);
 LINK_ENTITY_TO_CLASS(tank_sequence, CTankSequence);
 
 TYPEDESCRIPTION CTankSequence::m_SaveData[] =
 	{
-		DEFINE_FIELD(CTankSequence, m_pTank, FIELD_CLASSPTR),
-		DEFINE_FIELD(CTankSequence, m_pEnemy, FIELD_CLASSPTR),
-		DEFINE_FIELD(CTankSequence, m_iszTank, FIELD_STRING),
+		DEFINE_FIELD(CTankSequence, m_iszEntity, FIELD_STRING),
 		DEFINE_FIELD(CTankSequence, m_iszEnemy, FIELD_STRING),
-		DEFINE_FIELD(CTankSequence, m_flDuration, FIELD_FLOAT),
-		DEFINE_FIELD(CTankSequence, m_flStopTime, FIELD_TIME),
+		DEFINE_FIELD(CTankSequence, m_iUntil, FIELD_INTEGER),
+		DEFINE_FIELD(CTankSequence, m_fDuration, FIELD_FLOAT),
+		DEFINE_FIELD(CTankSequence, m_iTurn, FIELD_INTEGER),
+		DEFINE_FIELD(CTankSequence, m_iShoot, FIELD_INTEGER),
+		DEFINE_FIELD(CTankSequence, m_iActive, FIELD_INTEGER),
+		DEFINE_FIELD(CTankSequence, m_iControllable, FIELD_INTEGER),
+		DEFINE_FIELD(CTankSequence, m_iLaserSpot, FIELD_INTEGER),
+		DEFINE_FIELD(CTankSequence, m_pTank, FIELD_CLASSPTR),
 };
 
 IMPLEMENT_SAVERESTORE(CTankSequence, CBaseEntity);
 
-void CTankSequence::Spawn()
+int CTankSequence::ObjectCaps()
 {
-	pev->solid = SOLID_NOT;
-	pev->movetype = MOVETYPE_NONE;
-	pev->effects |= EF_NODRAW;
+	return (CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION);
 }
 
 bool CTankSequence::KeyValue(KeyValueData* pkvd)
 {
-	if (FStrEq(pkvd->szKeyName, "tank"))
+	if (FStrEq(pkvd->szKeyName, "m_iUntil"))
 	{
-		m_iszTank = ALLOC_STRING(pkvd->szValue);
+		m_iUntil = atoi(pkvd->szValue);
 		return true;
 	}
-	else if (FStrEq(pkvd->szKeyName, "enemy"))
+	else if (FStrEq(pkvd->szKeyName, "m_iTurn"))
+	{
+		m_iTurn = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iShoot"))
+	{
+		m_iShoot = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iActive"))
+	{
+		m_iActive = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iControllable"))
+	{
+		m_iControllable = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iLaserSpot"))
+	{
+		m_iLaserSpot = atoi(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszEntity") || FStrEq(pkvd->szKeyName, "tank"))
+	{
+		m_iszEntity = ALLOC_STRING(pkvd->szValue);
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_iszEnemy") || FStrEq(pkvd->szKeyName, "enemy"))
 	{
 		m_iszEnemy = ALLOC_STRING(pkvd->szValue);
 		return true;
 	}
-	else if (FStrEq(pkvd->szKeyName, "duration"))
+	else if (FStrEq(pkvd->szKeyName, "m_fDuration") || FStrEq(pkvd->szKeyName, "duration"))
 	{
-		m_flDuration = atof(pkvd->szValue);
+		m_fDuration = atof(pkvd->szValue);
 		return true;
 	}
 	return CBaseEntity::KeyValue(pkvd);
@@ -1271,74 +1445,172 @@ void CTankSequence::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 
 	if (m_pTank)
 	{
-		// Deactivate: release the tank from this sequence
-		pev->spawnflags &= ~SF_TANK_SEQFIRE;
-		m_pTank->pev->spawnflags &= ~SF_TANK_SEQFIRE;
-		m_pTank->m_pSequence = NULL;
-		m_pTank->m_pSequenceEnemy = NULL;
-		m_pTank = NULL;
-		m_pEnemy = NULL;
+		// Already active - deactivate: disable any end conditions and release control
 		DontThink();
+		StopSequence();
 		return;
 	}
 
-	// Activate: find tank and enemy
-	if (!FStringNull(m_iszTank))
+	// Activate: take control of the tank, start the sequence
+	CBaseEntity* pEnt = UTIL_FindEntityByTargetname(NULL, STRING(m_iszEntity));
+	if (!pEnt || strncmp(STRING(pEnt->pev->classname), "func_tank", 9) != 0)
 	{
-		CBaseEntity* pEnt = UTIL_FindEntityByTargetname(NULL, STRING(m_iszTank));
-		while (pEnt)
-		{
-			if (strncmp(STRING(pEnt->pev->classname), "func_tank", 9) == 0)
-			{
-				m_pTank = (CFuncTank*)pEnt;
-				break;
-			}
-			pEnt = UTIL_FindEntityByTargetname(pEnt, STRING(m_iszTank));
-		}
+		ALERT(at_error, "Invalid or missing tank \"%s\" for scripted_tanksequence!\n", STRING(m_iszEntity));
+		return;
 	}
-	else if (pev->target)
-	{
-		CBaseEntity* pEnt = UTIL_FindEntityByTargetname(NULL, STRING(pev->target));
-		while (pEnt)
-		{
-			if (strncmp(STRING(pEnt->pev->classname), "func_tank", 9) == 0)
-			{
-				m_pTank = (CFuncTank*)pEnt;
-				break;
-			}
-			pEnt = UTIL_FindEntityByTargetname(pEnt, STRING(pev->target));
-		}
-	}
+	CFuncTank* pTank = (CFuncTank*)pEnt;
 
-	if (!m_pTank)
+	// Check whether it's being controlled by another sequence
+	if (pTank->m_pSequence)
 		return;
 
-	if (!FStringNull(m_iszEnemy))
-		m_pEnemy = UTIL_FindEntityByTargetname(NULL, STRING(m_iszEnemy));
-
-	// Set the sequence on the tank
-	m_pTank->m_pSequence = this;
-	m_pTank->m_pSequenceEnemy = m_pEnemy;
-	m_pTank->pev->spawnflags |= SF_TANK_SEQFIRE;
-
-	// Schedule timeout if duration is set
-	if (m_flDuration > 0)
+	// Check whether it's being controlled by the player
+	if (pTank->m_pController)
 	{
-		m_flStopTime = gpGlobals->time + m_flDuration;
-		SetNextThink(m_flDuration);
+		if ((pev->spawnflags & SF_TSEQ_DUMPPLAYER) != 0)
+		{
+			pTank->StopControl();
+		}
+		else
+		{
+			return;
+		}
+	}
+
+	// Passed all the tests - take control
+	if (m_iTurn == TSEQ_TURN_ENEMY)
+	{
+		CBaseEntity* pEnemy;
+		if (m_iszEnemy)
+			pEnemy = UTIL_FindEntityGeneric(STRING(m_iszEnemy), pTank->pev->origin, pTank->m_maxRange);
+		else
+			pEnemy = pTank->BestVisibleEnemy();
+
+		if (pEnemy)
+		{
+			pTank->m_pSequenceEnemy = pEnemy;
+			pTank->StartSequence(this);
+		}
+		else
+		{
+			// No enemy found - can't start enemy-tracking sequence
+			return;
+		}
+	}
+	else
+	{
+		pTank->StartSequence(this);
+	}
+
+	if (m_iShoot == TSEQ_SHOOT_ALWAYS)
+		pTank->pev->spawnflags |= SF_TANK_SEQFIRE;
+	else
+		pTank->pev->spawnflags &= ~SF_TANK_SEQFIRE;
+
+	m_pTank = pTank;
+	if (m_fDuration)
+	{
+		SetThink(&CTankSequence::TimeOutThink);
+		SetNextThink(m_fDuration);
 	}
 }
 
-void CTankSequence::Think()
+void CTankSequence::FacingNotify()
 {
-	// Duration expired: release the tank
-	if (m_pTank)
+	if (m_iUntil == TSEQ_UNTIL_FACING)
 	{
-		m_pTank->pev->spawnflags &= ~SF_TANK_SEQFIRE;
-		m_pTank->m_pSequence = NULL;
-		m_pTank->m_pSequenceEnemy = NULL;
-		m_pTank = NULL;
-		m_pEnemy = NULL;
+		SetThink(&CTankSequence::EndThink);
+		SetNextThink(0);
 	}
-	DontThink();
+	else if (m_iShoot == TSEQ_SHOOT_FACING)
+		m_pTank->pev->spawnflags |= SF_TANK_SEQFIRE;
+}
+
+void CTankSequence::DeadEnemyNotify()
+{
+	if (m_iUntil == TSEQ_UNTIL_DEATH)
+	{
+		SetThink(&CTankSequence::EndThink);
+		SetNextThink(0);
+	}
+}
+
+void CTankSequence::EndThink()
+{
+	// The sequence has expired. Release control of the tank.
+	StopSequence();
+	if (!FStringNull(pev->target))
+		FireTargets(STRING(pev->target), this, this, USE_TOGGLE, 0);
+}
+
+void CTankSequence::TimeOutThink()
+{
+	// The sequence has timed out. Release control of the tank.
+	StopSequence();
+	if (!FStringNull(pev->netname))
+		FireTargets(STRING(pev->netname), this, this, USE_TOGGLE, 0);
+}
+
+void CTankSequence::StopSequence()
+{
+	if (!m_pTank)
+	{
+		ALERT(at_error, "TankSeq: StopSequence with no tank!\n");
+		return;
+	}
+
+	// Clear sequence-controlled firing override before releasing tank control.
+	m_pTank->pev->spawnflags &= ~SF_TANK_SEQFIRE;
+
+	// If we're doing "shoot at end", fire that shot now.
+	if (m_iShoot == TSEQ_SHOOT_ONCE)
+	{
+		m_pTank->m_fireLast = gpGlobals->time - 1 / m_pTank->m_fireRate; // exactly one shot
+		Vector forward;
+		UTIL_MakeVectorsPrivate(m_pTank->pev->angles, forward, NULL, NULL);
+		m_pTank->Fire(m_pTank->BarrelPosition(), forward, m_pTank->pev);
+	}
+
+	// Handle laser spot flag change
+	if (m_iLaserSpot)
+	{
+		if ((m_pTank->pev->spawnflags & SF_TANK_LASERSPOT) != 0 && m_iLaserSpot != TSEQ_FLAG_ON)
+		{
+			m_pTank->pev->spawnflags &= ~SF_TANK_LASERSPOT;
+		}
+		else if ((m_pTank->pev->spawnflags & SF_TANK_LASERSPOT) == 0 && m_iLaserSpot != TSEQ_FLAG_OFF)
+		{
+			m_pTank->pev->spawnflags |= SF_TANK_LASERSPOT;
+		}
+	}
+
+	// Handle controllable flag change
+	if (m_iControllable)
+	{
+		if ((m_pTank->pev->spawnflags & SF_TANK_CANCONTROL) != 0 && m_iControllable != TSEQ_FLAG_ON)
+		{
+			m_pTank->pev->spawnflags &= ~SF_TANK_CANCONTROL;
+		}
+		else if ((m_pTank->pev->spawnflags & SF_TANK_CANCONTROL) == 0 && m_iControllable != TSEQ_FLAG_OFF)
+		{
+			m_pTank->pev->spawnflags |= SF_TANK_CANCONTROL;
+		}
+	}
+
+	m_pTank->StopSequence();
+
+	// Handle active state change (must be before UTIL_Remove)
+	if (m_pTank->IsActive() && (m_iActive == TSEQ_FLAG_OFF || m_iActive == TSEQ_FLAG_TOGGLE))
+	{
+		m_pTank->TankDeactivate();
+	}
+	else if (!m_pTank->IsActive() && (m_iActive == TSEQ_FLAG_ON || m_iActive == TSEQ_FLAG_TOGGLE))
+	{
+		m_pTank->TankActivate();
+	}
+
+	m_pTank = NULL;
+
+	if ((pev->spawnflags & SF_TSEQ_REPEATABLE) == 0)
+		UTIL_Remove(this);
 }
