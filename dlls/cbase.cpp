@@ -930,7 +930,12 @@ void CBaseEntity::InitMoveWith()
 void CBaseEntity::SetNextThink(float delay, bool correctSpeed)
 {
 	// LRC - m_fNextThink is needed so that we can tell IsThinking
-	m_fNextThink = pev->ltime + delay;
+	// MOVETYPE_PUSH entities compare nextthink against pev->ltime (advanced by SV_PushMove).
+	// All other movetypes compare nextthink against gpGlobals->time.
+	if (pev->movetype == MOVETYPE_PUSH)
+		m_fNextThink = pev->ltime + delay;
+	else
+		m_fNextThink = gpGlobals->time + delay;
 	m_fPevNextThink = m_fNextThink;
 	pev->nextthink = m_fPevNextThink;
 }
@@ -955,7 +960,10 @@ void CBaseEntity::AbsoluteNextThink(float time, bool correctSpeed)
 void CBaseEntity::SetEternalThink()
 {
 	// set nextthink to the current time; the engine will ensure we keep thinking
-	m_fNextThink = pev->ltime;
+	if (pev->movetype == MOVETYPE_PUSH)
+		m_fNextThink = pev->ltime;
+	else
+		m_fNextThink = gpGlobals->time;
 	m_fPevNextThink = m_fNextThink;
 	pev->nextthink = m_fPevNextThink;
 }

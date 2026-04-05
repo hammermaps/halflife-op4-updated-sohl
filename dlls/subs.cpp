@@ -109,27 +109,15 @@ void CBaseEntity::UpdateOnRemove()
 	}
 	if (!FStringNull(pev->globalname))
 		gGlobalState.EntitySetState(pev->globalname, GLOBAL_DEAD);
-}
 
-// Convenient way to delay removing oneself
-void CBaseEntity::SUB_Remove()
-{
-	UpdateOnRemove();
-	if (pev->health > 0)
-	{
-		// this situation can screw up monsters who can't tell their entity pointers are invalid.
-		pev->health = 0;
-		LOG_DEBUG("SUB_Remove called on entity with health > 0");
-	}
-
-	// LRC - remove from all MoveWith FIFO queues and clear queue-related flags.
+	// LRC - remove from all MoveWith FIFO queues
 	MoveWith_RemoveEntityFromQueues(this);
 	m_pAssistLink = NULL;
 
-	// LRC - remove from parent's MoveWith child list
+	// LRC - remove from parent's MoveWith child list so stale pointers
+	// cannot be dereferenced when the parent later iterates its children
 	if (m_pMoveWith)
 	{
-		// remove from parent's child list
 		CBaseEntity* pPrev = NULL;
 		CBaseEntity* pCur = m_pMoveWith->m_pChildMoveWith;
 		while (pCur != NULL)
@@ -148,7 +136,7 @@ void CBaseEntity::SUB_Remove()
 		m_pMoveWith = NULL;
 	}
 
-	// LRC - do the same thing if another entity is moving with _me_
+	// LRC - orphan any children that were moving with this entity
 	if (m_pChildMoveWith)
 	{
 		CBaseEntity* pCur = m_pChildMoveWith;
@@ -160,6 +148,18 @@ void CBaseEntity::SUB_Remove()
 			pCur = pNext;
 		}
 		m_pChildMoveWith = NULL;
+	}
+}
+
+// Convenient way to delay removing oneself
+void CBaseEntity::SUB_Remove()
+{
+	UpdateOnRemove(); // also handles MoveWith list cleanup
+	if (pev->health > 0)
+	{
+		// this situation can screw up monsters who can't tell their entity pointers are invalid.
+		pev->health = 0;
+		LOG_DEBUG("SUB_Remove called on entity with health > 0");
 	}
 
 	REMOVE_ENTITY(ENT(pev));
