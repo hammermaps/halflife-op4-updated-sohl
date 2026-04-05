@@ -89,7 +89,11 @@ bool CBaseDMStart::IsTriggered(CBaseEntity* pEntity)
 	return master;
 }
 
-// This updates global tables that need to know about entities being removed
+// This updates global tables that need to know about entities being removed.
+// Called by both UTIL_Remove (deferred FL_KILLME removal) and SUB_Remove
+// (immediate REMOVE_ENTITY). MoveWith chain cleanup MUST happen here so
+// that entities removed via UTIL_Remove don't leave dangling pointers in
+// parent/child lists — which causes crashes when mw_debug is enabled.
 void CBaseEntity::UpdateOnRemove()
 {
 	int i;
@@ -109,18 +113,6 @@ void CBaseEntity::UpdateOnRemove()
 	}
 	if (!FStringNull(pev->globalname))
 		gGlobalState.EntitySetState(pev->globalname, GLOBAL_DEAD);
-}
-
-// Convenient way to delay removing oneself
-void CBaseEntity::SUB_Remove()
-{
-	UpdateOnRemove();
-	if (pev->health > 0)
-	{
-		// this situation can screw up monsters who can't tell their entity pointers are invalid.
-		pev->health = 0;
-		LOG_DEBUG("SUB_Remove called on entity with health > 0");
-	}
 
 	// LRC - remove from all MoveWith FIFO queues and clear queue-related flags.
 	MoveWith_RemoveEntityFromQueues(this);
@@ -146,6 +138,7 @@ void CBaseEntity::SUB_Remove()
 			pCur = pCur->m_pSiblingMoveWith;
 		}
 		m_pMoveWith = NULL;
+		m_pSiblingMoveWith = NULL;
 	}
 
 	// LRC - do the same thing if another entity is moving with _me_
@@ -160,6 +153,18 @@ void CBaseEntity::SUB_Remove()
 			pCur = pNext;
 		}
 		m_pChildMoveWith = NULL;
+	}
+}
+
+// Convenient way to delay removing oneself
+void CBaseEntity::SUB_Remove()
+{
+	UpdateOnRemove();
+	if (pev->health > 0)
+	{
+		// this situation can screw up monsters who can't tell their entity pointers are invalid.
+		pev->health = 0;
+		LOG_DEBUG("SUB_Remove called on entity with health > 0");
 	}
 
 	REMOVE_ENTITY(ENT(pev));
