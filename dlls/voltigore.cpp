@@ -473,8 +473,8 @@ int COFVoltigore::ISoundMask()
 void COFVoltigore::TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType)
 {
 	//Ignore shock damage since we have a shock based attack
-	//Skip damage from our own shock attack to avoid self-harm
-	if (pevAttacker == pev || (bitsDamageType & DMG_SHOCK) == 0)
+	//Skip self-inflicted shock damage only; shock from other attackers is still applied
+	if (pevAttacker != pev || (bitsDamageType & DMG_SHOCK) == 0)
 	{
 		SpawnBlood(ptr->vecEndPos, BloodColor(), flDamage); // a little surface blood.
 		TraceBleed(flDamage, vecDir, ptr, bitsDamageType);

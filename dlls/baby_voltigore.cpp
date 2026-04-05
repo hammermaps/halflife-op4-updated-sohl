@@ -202,8 +202,8 @@ int COFBabyVoltigore::ISoundMask()
 void COFBabyVoltigore::TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType)
 {
 	//Ignore shock damage since we have a shock based attack
-	//Skip damage from our own shock attack to avoid self-harm
-	if (pevAttacker == pev || (bitsDamageType & DMG_SHOCK) == 0)
+	//Skip self-inflicted shock damage only; shock from other attackers is still applied
+	if (pevAttacker != pev || (bitsDamageType & DMG_SHOCK) == 0)
 	{
 		if (ptr->iHitgroup == 10 && (bitsDamageType & (DMG_BULLET | DMG_SLASH | DMG_CLUB)) != 0)
 		{
