@@ -808,8 +808,7 @@ bool ShouldSimplify(int routeType)
 {
 	routeType &= ~bits_MF_IS_GOAL;
 
-	//TODO: verify this this needs to be a comparison and not a bit check
-	if ((routeType == bits_MF_TO_PATHCORNER) || (routeType & bits_MF_DONT_SIMPLIFY) != 0)
+	if ((routeType & bits_MF_TO_PATHCORNER) != 0 || (routeType & bits_MF_DONT_SIMPLIFY) != 0)
 		return false;
 	return true;
 }

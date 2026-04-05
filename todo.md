@@ -1,16 +1,16 @@
 # TODO / Unfinished Code Passages
 
-> Automatisch generiert. Gesamt: **263** Einträge in **125** Dateien. **17 Einträge erledigt** (✅), **246 offen**.
+> Automatisch generiert. Gesamt: **263** Einträge in **125** Dateien. **64 Einträge erledigt** (✅), **199 offen**.
 
 
 ## Zusammenfassung nach Typ
 
 | Typ | Gesamt | Offen | Erledigt |
 |-----|--------|-------|---------|
-| `TODO` | 178 | 164 | 14 |
-| `FIXME` | 30 | 30 | 0 |
-| `HACK` | 37 | 37 | 0 |
-| `BUG` | 18 | 15 | 3 |
+| `TODO` | 178 | 130 | 48 |
+| `FIXME` | 30 | 24 | 6 |
+| `HACK` | 37 | 33 | 4 |
+| `BUG` | 18 | 12 | 6 |
 
 
 ---
@@ -36,7 +36,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [28](cl_dll/demo.cpp#L28) | `FIXME` | FIXME:  There should be buffer helper functions to avoid all of the *(int *)& crap. | FIXME: Es sollte Buffer-Hilfsfunktionen geben, um den *(int *)& Unsinn zu vermeiden | Mittlere Priorität: Hilfsfunktionen für typsicheres Buffer-Casting einführen. |
+| [28](cl_dll/demo.cpp#L28) | `FIXME` | FIXME:  There should be buffer helper functions to avoid all of the *(int *)& crap. | FIXME: Es sollte Buffer-Hilfsfunktionen geben, um den *(int *)& Unsinn zu vermeiden | ~~Mittlere Priorität: Hilfsfunktionen für typsicheres Buffer-Casting einführen.~~ ✅ Erledigt: `WriteInt`, `WriteFloat`, `ReadInt`, `ReadFloat` Hilfsfunktionen eingeführt; alle `*(int*)&buf[i]`- und `*(float*)&buf[i]`-Casts durch `memcpy`-basierte Helfer ersetzt. |
 
 
 #### `cl_dll/ev_hldm.cpp`
@@ -52,7 +52,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [100](cl_dll/health.cpp#L100) | `TODO` | TODO: update local health data | TODO: Lokale Gesundheitsdaten aktualisieren | Mittlere Priorität: HUD-Gesundheitsdaten zeitnah synchronisieren. |
+| [100](cl_dll/health.cpp#L100) | `TODO` | TODO: update local health data | TODO: Lokale Gesundheitsdaten aktualisieren | ~~Mittlere Priorität: HUD-Gesundheitsdaten zeitnah synchronisieren.~~ ✅ Erledigt: Stale TODO entfernt – `m_iHealth` wird in `MsgFunc_Health` bereits korrekt aus der Server-Nachricht gesetzt. |
 | [329](cl_dll/health.cpp#L329) | `TODO` | TODO:  get the shift value of the health | TODO: Den Verschiebungswert der Gesundheit ermitteln | Niedrige Priorität: Korrekte Berechnung des Gesundheits-Offsets implementieren. |
 
 
@@ -75,7 +75,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [92](cl_dll/hud_msg.cpp#L92) | `TODO` | TODO: needs to be called on every map change, not just when starting a new game | TODO: Muss bei jedem Kartenwechsel aufgerufen werden, nicht nur beim Spielstart | Mittlere Priorität: Aufruf bei Kartenwechsel-Events ergänzen. |
+| [92](cl_dll/hud_msg.cpp#L92) | `TODO` | TODO: needs to be called on every map change, not just when starting a new game | TODO: Muss bei jedem Kartenwechsel aufgerufen werden, nicht nur beim Spielstart | ~~Mittlere Priorität: Aufruf bei Kartenwechsel-Events ergänzen.~~ ✅ Erledigt: Partikel-, Strahl- und Shiny-Surface-Reset aus `MsgFunc_InitHUD` nach `MsgFunc_ResetHUD` verschoben; `ResetHUD` wird bei jedem Kartenwechsel gesendet. |
 | [117](cl_dll/hud_msg.cpp#L117) | `TODO` | TODO: define game mode constants | TODO: Spielmodus-Konstanten definieren | Niedrige Priorität: Magic-Numbers durch benannte Konstanten ersetzen. |
 | [163](cl_dll/hud_msg.cpp#L163) | `TODO` | TODO: kick viewangles,  show damage visually | TODO: Kamerawinkel-Anpassung, Schaden visuell darstellen | Mittlere Priorität: Visuelles Feedback bei Treffern implementieren. |
 
@@ -93,7 +93,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [121](cl_dll/hud_spectator.cpp#L121) | `TODO` | TODO: none of this spectator stuff exists in Op4 | TODO: Nichts von diesem Spectator-Zeug existiert in Op4 | Mittlere Priorität: Op4-spezifischen Spectator-Code implementieren oder Dead-Code entfernen. |
+| [121](cl_dll/hud_spectator.cpp#L121) | `TODO` | TODO: none of this spectator stuff exists in Op4 | TODO: Nichts von diesem Spectator-Zeug existiert in Op4 | ~~Mittlere Priorität: Op4-spezifischen Spectator-Code implementieren oder Dead-Code entfernen.~~ ✅ Erledigt: Toten `if (gViewPort)`-Branch entfernt; `SpectatorHelp()` gibt jetzt direkt den lokalisierten `#Spec_Help_Text` aus. |
 | [407](cl_dll/hud_spectator.cpp#L407) | `TODO` | TODO: this flags check is incorrect, fix it. Comment contains original code before bool fix. | TODO: Diese Flags-Prüfung ist falsch, bitte korrigieren | ~~Hohe Priorität: Flags-Prüfung korrigieren, um Spectator-Logik-Fehler zu beheben.~~ ✅ Erledigt: `flags == 0` war bereits korrekt; stale TODO-Kommentar entfernt. |
 | [668](cl_dll/hud_spectator.cpp#L668) | `TODO` | TODO: this is pretty ugly, need a better way. | TODO: Ziemlich hässlich, besser lösen | Niedrige Priorität: Code refaktorieren für bessere Lesbarkeit. |
 
@@ -124,7 +124,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [101](cl_dll/particleman/CBaseParticle.cpp#L101) | `TODO` | TODO: not sure if these are correct. If low left is half of the scaled directions then the full direction * 2 results... | TODO: Nicht sicher ob diese Werte korrekt sind | Mittlere Priorität: Partikelrichtungsberechnungen überprüfen und dokumentieren. |
+| [101](cl_dll/particleman/CBaseParticle.cpp#L101) | `TODO` | TODO: not sure if these are correct. If low left is half of the scaled directions then the full direction * 2 results... | TODO: Nicht sicher ob diese Werte korrekt sind | ~~Mittlere Priorität: Partikelrichtungsberechnungen überprüfen und dokumentieren.~~ ✅ Erledigt: Verdoppeltes `scaledRight + scaledRight` → `scaledRight` und `scaledUp + scaledUp` → `scaledUp` korrigiert; Partikelgröße war 2× zu groß. |
 | [209](cl_dll/particleman/CBaseParticle.cpp#L209) | `TODO` | TODO: shouldn't this be accounting for stretch Y? | TODO: Sollte hier Y-Stretching berücksichtigt werden? | Niedrige Priorität: Partikelskalierung auf Y-Achse prüfen. |
 
 
@@ -182,7 +182,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [128](cl_dll/vgui_StatsMenuPanel.cpp#L128) | `BUG` | TODO: this is using YRES for an X coord. Bugged in vanilla | TODO: YRES wird für X-Koordinate verwendet – Vanilla-Bug | Mittlere Priorität: Koordinatenfehler korrigieren (XRES statt YRES verwenden). |
+| [128](cl_dll/vgui_StatsMenuPanel.cpp#L128) | `BUG` | TODO: this is using YRES for an X coord. Bugged in vanilla | TODO: YRES wird für X-Koordinate verwendet – Vanilla-Bug | ~~Mittlere Priorität: Koordinatenfehler korrigieren (XRES statt YRES verwenden).~~ ✅ Erledigt: `STATSMENU_BUTTON_SPACER_Y` (YRES) in der X-Positions-Berechnung durch `XRES(8)` ersetzt. |
 | [368](cl_dll/vgui_StatsMenuPanel.cpp#L368) | `TODO` | TODO: this passes an arbitrary string as the format string which is incredibly dangerous (also in vanilla) | TODO: Beliebiger String als Format-String – sehr gefährlich | Kritisch: Format-String-Injection verhindern durch Verwendung von "%s" als Formatstring. |
 | [416](cl_dll/vgui_StatsMenuPanel.cpp#L416) | `TODO` | TODO: missing from vanilla | TODO: Fehlt in Vanilla | Niedrige Priorität: Fehlende Funktionalität prüfen und ggf. ergänzen. |
 | [453](cl_dll/vgui_StatsMenuPanel.cpp#L453) | `TODO` | TODO: this passes an arbitrary string as the format string which is incredibly dangerous (also in vanilla) | TODO: Beliebiger String als Format-String – sehr gefährlich | Kritisch: Format-String-Injection verhindern durch Verwendung von "%s" als Formatstring. |
@@ -193,7 +193,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [2193](cl_dll/vgui_TeamFortressViewport.cpp#L2193) | `TODO` | TODO: not written by Op4 | TODO: Nicht von Op4 geschrieben | Mittlere Priorität: Op4-spezifische Implementierung einfügen. |
+| [2193](cl_dll/vgui_TeamFortressViewport.cpp#L2193) | `TODO` | TODO: not written by Op4 | TODO: Nicht von Op4 geschrieben | ~~Mittlere Priorität: Op4-spezifische Implementierung einfügen.~~ ✅ Erledigt: Überflüssige `READ_SHORT()`-Aufrufe für `playerclass` und `teamnumber` entfernt, da Op4-Server diese Felder nicht schreibt (`gmsgScoreInfo` = 5 Bytes); Fix auch in `scoreboard.cpp` angewendet. |
 
 
 #### `cl_dll/vgui_TeamFortressViewport.h`
@@ -244,7 +244,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [205](dlls/baby_voltigore.cpp#L205) | `TODO` | TODO: use a filter based on attacker to identify self harm | TODO: Filter basierend auf Angreifer verwenden, um Selbstschaden zu identifizieren | Mittlere Priorität: Attacker-Filter implementieren für korrekte Selbstschaden-Erkennung. |
+| [205](dlls/baby_voltigore.cpp#L205) | `TODO` | TODO: use a filter based on attacker to identify self harm | TODO: Filter basierend auf Angreifer verwenden, um Selbstschaden zu identifizieren | ~~Mittlere Priorität: Attacker-Filter implementieren für korrekte Selbstschaden-Erkennung.~~ ✅ Erledigt: Selbstschaden-Filter implementiert – Shock-Schaden wird nur ignoriert wenn `pevAttacker == pev` (Selbstschaden). |
 
 
 #### `dlls/basemonster.h`
@@ -258,8 +258,8 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [57](dlls/blowercannon.cpp#L57) | `TODO` | TODO: probably shadowing CBaseDelay | TODO: Überschattet wahrscheinlich CBaseDelay | Mittlere Priorität: Namenskonflikt mit CBaseDelay prüfen und beheben. |
-| [99](dlls/blowercannon.cpp#L99) | `TODO` | TODO: should call base | TODO: Sollte Basis aufrufen | Mittlere Priorität: super/base-Aufruf ergänzen für korrekte Vererbungskette. |
+| [57](dlls/blowercannon.cpp#L57) | `TODO` | TODO: probably shadowing CBaseDelay | TODO: Überschattet wahrscheinlich CBaseDelay | ~~Mittlere Priorität: Namenskonflikt mit CBaseDelay prüfen und beheben.~~ ✅ Erledigt: `m_flDelay` in `m_flCannonDelay` umbenannt, um Shadowing von `CBaseDelay::m_flDelay` zu vermeiden. |
+| [99](dlls/blowercannon.cpp#L99) | `TODO` | TODO: should call base | TODO: Sollte Basis aufrufen | ~~Mittlere Priorität: super/base-Aufruf ergänzen für korrekte Vererbungskette.~~ ✅ Erledigt: `CBaseToggle::KeyValue(pkvd)` wird jetzt als Fallback aufgerufen. |
 | [141](dlls/blowercannon.cpp#L141) | `TODO` | TODO: can crash if target has been removed | TODO: Kann abstürzen wenn das Ziel entfernt wurde | ~~Hohe Priorität: Gültigkeit des Ziels vor Verwendung prüfen (EHANDLE oder Null-Check).~~ ✅ Erledigt: Null-Check für `GetNextTarget()` vor Dereferenzierung hinzugefügt. |
 
 
@@ -297,7 +297,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [436](dlls/client.cpp#L436) | `TODO` | TODO: clamp cvar value so it can't be negative | TODO: Cvar-Wert begrenzen, darf nicht negativ sein | Mittlere Priorität: Cvar-Wert-Clamp einbauen, um ungültige Werte zu verhindern. |
+| [436](dlls/client.cpp#L436) | `TODO` | TODO: clamp cvar value so it can't be negative | TODO: Cvar-Wert begrenzen, darf nicht negativ sein | ~~Mittlere Priorität: Cvar-Wert-Clamp einbauen, um ungültige Werte zu verhindern.~~ ✅ Erledigt: `V_max(0.0f, spamdelay.value)` verhindert negative Chat-Timer. |
 | [754](dlls/client.cpp#L754) | `TODO` | TODO: in vanilla Op4 this code incorrectly skips the above validation logic if the player is already in a team | TODO: In Vanilla Op4 wird obige Validierungslogik fälschlicherweise übersprungen wenn Spieler bereits in einem Team ist | ~~Hohe Priorität: Validierungslogik immer ausführen, unabhängig vom Team-Status.~~ ✅ Erledigt: Code war bereits korrekt; stale TODO-Kommentar entfernt. |
 | [1513](dlls/client.cpp#L1513) | `HACK` | HACK:  Somewhat... | HACK: Etwas... [unvollständiger Kommentar] | Niedrige Priorität: Hack-Kommentar vervollständigen oder Lösung sauber implementieren. |
 
@@ -335,15 +335,15 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [84](dlls/ctf/CItemBackpackCTF.cpp#L84) | `TODO` | TODO: precache calls should be in Precache | TODO: Precache-Aufrufe sollten in Precache() stehen | Mittlere Priorität: Precache-Aufrufe in die richtige Methode verschieben. |
-| [93](dlls/ctf/CItemBackpackCTF.cpp#L93) | `TODO` | TODO: shouldn't this be using pev->model? | TODO: Sollte pev->model verwenden? | Mittlere Priorität: Modellreferenz einheitlich über pev->model setzen. |
+| [84](dlls/ctf/CItemBackpackCTF.cpp#L84) | `TODO` | TODO: precache calls should be in Precache | TODO: Precache-Aufrufe sollten in Precache() stehen | ~~Mittlere Priorität: Precache-Aufrufe in die richtige Methode verschieben.~~ ✅ Erledigt: Precache-Aufrufe in `Precache()` verschoben mit `CItemCTF::Precache()`-Kettenaufruf. |
+| [93](dlls/ctf/CItemBackpackCTF.cpp#L93) | `TODO` | TODO: shouldn't this be using pev->model? | TODO: Sollte pev->model verwenden? | ~~Mittlere Priorität: Modellreferenz einheitlich über pev->model setzen.~~ ✅ Erledigt: `SetModel` nutzt jetzt `pev->model` mit Fallback auf Default-Modell. |
 
 
 #### `dlls/ctf/CItemCTF.cpp`
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [37](dlls/ctf/CItemCTF.cpp#L37) | `TODO` | TODO: should invoke base class KeyValue here | TODO: Basisklassen-KeyValue hier aufrufen | Mittlere Priorität: Basis-KeyValue-Aufruf ergänzen für vollständige Schlüsselwert-Verarbeitung. |
+| [37](dlls/ctf/CItemCTF.cpp#L37) | `TODO` | TODO: should invoke base class KeyValue here | TODO: Basisklassen-KeyValue hier aufrufen | ~~Mittlere Priorität: Basis-KeyValue-Aufruf ergänzen für vollständige Schlüsselwert-Verarbeitung.~~ ✅ Erledigt: `CBaseEntity::KeyValue(pkvd)` wird jetzt als Fallback aufgerufen. |
 | [90](dlls/ctf/CItemCTF.cpp#L90) | `TODO` | TODO: already done above | TODO: Wurde bereits oben erledigt | Niedrige Priorität: Duplizierten Code entfernen. |
 | [240](dlls/ctf/CItemCTF.cpp#L240) | `TODO` | TODO: really shouldn't be using the index here tbh | TODO: Sollte Index hier wirklich nicht verwenden | Mittlere Priorität: Index-basierten Zugriff durch sicheren Bezeichner ersetzen. |
 
@@ -352,23 +352,23 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [78](dlls/ctf/CItemLongJumpCTF.cpp#L78) | `TODO` | TODO: precache calls should be in Precache | TODO: Precache-Aufrufe sollten in Precache() stehen | Mittlere Priorität: Precache-Aufrufe in die richtige Methode verschieben. |
-| [87](dlls/ctf/CItemLongJumpCTF.cpp#L87) | `TODO` | TODO: shouldn't this be using pev->model? | TODO: Sollte pev->model verwenden? | Mittlere Priorität: Modellreferenz einheitlich über pev->model setzen. |
+| [78](dlls/ctf/CItemLongJumpCTF.cpp#L78) | `TODO` | TODO: precache calls should be in Precache | TODO: Precache-Aufrufe sollten in Precache() stehen | ~~Mittlere Priorität: Precache-Aufrufe in die richtige Methode verschieben.~~ ✅ Erledigt: Precache-Aufrufe in `Precache()` verschoben mit `CItemCTF::Precache()`-Kettenaufruf. |
+| [87](dlls/ctf/CItemLongJumpCTF.cpp#L87) | `TODO` | TODO: shouldn't this be using pev->model? | TODO: Sollte pev->model verwenden? | ~~Mittlere Priorität: Modellreferenz einheitlich über pev->model setzen.~~ ✅ Erledigt: `SetModel` nutzt jetzt `pev->model` mit Fallback auf Default-Modell. |
 
 
 #### `dlls/ctf/CItemPortableHEVCTF.cpp`
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [81](dlls/ctf/CItemPortableHEVCTF.cpp#L81) | `TODO` | TODO: shouldn't this be using pev->model? | TODO: Sollte pev->model verwenden? | Mittlere Priorität: Modellreferenz einheitlich über pev->model setzen. |
+| [81](dlls/ctf/CItemPortableHEVCTF.cpp#L81) | `TODO` | TODO: shouldn't this be using pev->model? | TODO: Sollte pev->model verwenden? | ~~Mittlere Priorität: Modellreferenz einheitlich über pev->model setzen.~~ ✅ Erledigt: `SetModel` nutzt jetzt `pev->model` mit Fallback auf Default-Modell. |
 
 
 #### `dlls/ctf/CItemRegenerationCTF.cpp`
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [80](dlls/ctf/CItemRegenerationCTF.cpp#L80) | `TODO` | TODO: precache calls should be in Precache | TODO: Precache-Aufrufe sollten in Precache() stehen | Mittlere Priorität: Precache-Aufrufe in die richtige Methode verschieben. |
-| [89](dlls/ctf/CItemRegenerationCTF.cpp#L89) | `TODO` | TODO: shouldn't this be using pev->model? | TODO: Sollte pev->model verwenden? | Mittlere Priorität: Modellreferenz einheitlich über pev->model setzen. |
+| [80](dlls/ctf/CItemRegenerationCTF.cpp#L80) | `TODO` | TODO: precache calls should be in Precache | TODO: Precache-Aufrufe sollten in Precache() stehen | ~~Mittlere Priorität: Precache-Aufrufe in die richtige Methode verschieben.~~ ✅ Erledigt: Precache-Aufrufe in `Precache()` verschoben mit `CItemCTF::Precache()`-Kettenaufruf. |
+| [89](dlls/ctf/CItemRegenerationCTF.cpp#L89) | `TODO` | TODO: shouldn't this be using pev->model? | TODO: Sollte pev->model verwenden? | ~~Mittlere Priorität: Modellreferenz einheitlich über pev->model setzen.~~ ✅ Erledigt: `SetModel` nutzt jetzt `pev->model` mit Fallback auf Default-Modell. |
 
 
 #### `dlls/ctf/ctfplay_gamerules.cpp`
@@ -376,7 +376,7 @@
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
 | [70](dlls/ctf/ctfplay_gamerules.cpp#L70) | `TODO` | TODO: rework so it's 2 separate lists | TODO: Als 2 separate Listen umstrukturieren | Mittlere Priorität: Datenstruktur aufteilen für bessere Übersichtlichkeit. |
-| [129](dlls/ctf/ctfplay_gamerules.cpp#L129) | `TODO` | TODO: doesn't really make sense, if team 0 is losing the score difference is 0 | TODO: Macht wenig Sinn – wenn Team 0 verliert ist der Punktunterschied 0 | Mittlere Priorität: Verlier-Logik überarbeiten für korrekte Auswertung. |
+| [129](dlls/ctf/ctfplay_gamerules.cpp#L129) | `TODO` | TODO: doesn't really make sense, if team 0 is losing the score difference is 0 | TODO: Macht wenig Sinn – wenn Team 0 verliert ist der Punktunterschied 0 | ~~Mittlere Priorität: Verlier-Logik überarbeiten für korrekte Auswertung.~~ ✅ Erledigt: `GetLosingTeam()` erkennt jetzt korrekt sowohl BlackMesa als auch OpposingForce als verlierende Teams. |
 | [438](dlls/ctf/ctfplay_gamerules.cpp#L438) | `TODO` | TODO: this can probably be optimized by finding the last item that the player is carrying and only sending that | TODO: Kann optimiert werden – nur letztes getragenes Item des Spielers senden | Niedrige Priorität: Netzwerkeffizienz durch inkrementelle Item-Updates verbessern. |
 | [505](dlls/ctf/ctfplay_gamerules.cpp#L505) | `TODO` | TODO: checks against an index that may not have been sent | TODO: Prüft Index der möglicherweise nicht gesendet wurde | Hohe Priorität: Sicherheitscheck für ungesendete Indizes einbauen. |
 | [702](dlls/ctf/ctfplay_gamerules.cpp#L702) | `TODO` | TODO: doesn't seem to be used | TODO: Scheint nicht verwendet zu werden | Niedrige Priorität: Toten Code entfernen. |
@@ -436,7 +436,7 @@
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
 | [166](dlls/geneworm.cpp#L166) | `TODO` | TODO: the original code looks like it may be ignoring the modulo, verify this | TODO: Original-Code ignoriert möglicherweise den Modulo, prüfen | Mittlere Priorität: Modulo-Verhalten prüfen und angleichen. |
-| [1137](dlls/geneworm.cpp#L1137) | `TODO` | TODO: this really shouldn't be hardcoded | TODO: Sollte nicht hart codiert sein | Mittlere Priorität: Hardcoded-Wert als Konstante oder Konfigurationsparameter definieren. |
+| [1137](dlls/geneworm.cpp#L1137) | `TODO` | TODO: this really shouldn't be hardcoded | TODO: Sollte nicht hart codiert sein | ~~Mittlere Priorität: Hardcoded-Wert als Konstante oder Konfigurationsparameter definieren.~~ ✅ Erledigt: `"GeneWormTeleport"` als `GENEWORM_TELEPORT_TARGET`-Konstante extrahiert; `ALERT` → `LOG_DEBUG`. |
 | [1202](dlls/geneworm.cpp#L1202) | `TODO` | TODO: maybe determine direction of velocity to apply? | TODO: Vielleicht Richtung der anzuwendenden Geschwindigkeit ermitteln? | Niedrige Priorität: Physikalisch korrekte Geschwindigkeitsrichtung berechnen. |
 | [1336](dlls/geneworm.cpp#L1336) | `TODO` | TODO: never used? | TODO: Niemals verwendet? | Niedrige Priorität: Toten Code prüfen und ggf. entfernen. |
 
@@ -469,7 +469,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [417](dlls/headcrab.cpp#L417) | `BUG` | BUGBUG: Why is this code here?  There is no ACT_RANGE_ATTACK2 animation.  I've disabled it for now. | BUGBUG: Warum ist dieser Code hier? Es gibt keine ACT_RANGE_ATTACK2-Animation | Mittlere Priorität: Toten Animationscode entfernen oder passende Animation ergänzen. |
+| [417](dlls/headcrab.cpp#L417) | `BUG` | BUGBUG: Why is this code here?  There is no ACT_RANGE_ATTACK2 animation.  I've disabled it for now. | BUGBUG: Warum ist dieser Code hier? Es gibt keine ACT_RANGE_ATTACK2-Animation | ~~Mittlere Priorität: Toten Animationscode entfernen oder passende Animation ergänzen.~~ ✅ Erledigt: Toter `#if 0`-Block für `ACT_RANGE_ATTACK2` entfernt; Funktion gibt direkt `false` zurück. |
 
 
 #### `dlls/healthkit.cpp`
@@ -492,10 +492,10 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [405](dlls/hgrunt_medic.cpp#L405) | `TODO` | TODO: probably the wrong logic, but it was in the original | TODO: Wahrscheinlich falsche Logik, war aber im Original | Mittlere Priorität: Logik überprüfen und korrigieren. |
+| [405](dlls/hgrunt_medic.cpp#L405) | `TODO` | TODO: probably the wrong logic, but it was in the original | TODO: Wahrscheinlich falsche Logik, war aber im Original | ~~Mittlere Priorität: Logik überprüfen und korrigieren.~~ ✅ Erledigt: Nicht initialisierte Variable `pGun` mit `nullptr` initialisiert, um UB zu vermeiden wenn keines der Waffen-Flags gesetzt ist. |
 | [586](dlls/hgrunt_medic.cpp#L586) | `TODO` | TODO: kinda odd that this doesn't use GetGunPosition like the original | TODO: Eigenartig, dass GetGunPosition nicht wie im Original verwendet wird | Niedrige Priorität: GetGunPosition einheitlich nutzen. |
 | [746](dlls/hgrunt_medic.cpp#L746) | `TODO` | TODO: disabled for ally | TODO: Für Ally deaktiviert | Niedrige Priorität: Funktion für Ally-Variante prüfen. |
-| [2937](dlls/hgrunt_medic.cpp#L2937) | `TODO` | TODO: missing from medic? | TODO: Fehlt beim Medic? | Mittlere Priorität: Fehlende Funktionalität für Medic ergänzen. |
+| [2937](dlls/hgrunt_medic.cpp#L2937) | `TODO` | TODO: missing from medic? | TODO: Fehlt beim Medic? | ~~Mittlere Priorität: Fehlende Funktionalität für Medic ergänzen.~~ ✅ Erledigt: Provokations-Check (`bits_MEMORY_PROVOKED`, `StopFollowing`) in `Killed()` aktiviert, analog zu anderen Talk-Monstern. |
 | [2961](dlls/hgrunt_medic.cpp#L2961) | `TODO` | TODO: not suited for multiplayer | TODO: Nicht für Multiplayer geeignet | Mittlere Priorität: Multiplayer-Kompatibilität implementieren. |
 | [3039](dlls/hgrunt_medic.cpp#L3039) | `TODO` | TODO: could just change the type of pTarget since this is the only type passed in | TODO: Könnte einfach den Typ von pTarget ändern, da das der einzige übergebene Typ ist | Niedrige Priorität: Typumwandlung vereinfachen. |
 
@@ -521,7 +521,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [811](dlls/monsters.cpp#L811) | `TODO` | TODO: verify this this needs to be a comparison and not a bit check | TODO: Prüfen ob das ein Vergleich oder ein Bit-Check sein muss | Mittlere Priorität: Bitoperation vs. Vergleich analysieren und korrigieren. |
+| [811](dlls/monsters.cpp#L811) | `TODO` | TODO: verify this this needs to be a comparison and not a bit check | TODO: Prüfen ob das ein Vergleich oder ein Bit-Check sein muss | ~~Mittlere Priorität: Bitoperation vs. Vergleich analysieren und korrigieren.~~ ✅ Erledigt: Gleichheitsvergleich `routeType == bits_MF_TO_PATHCORNER` durch Bit-Check `(routeType & bits_MF_TO_PATHCORNER) != 0` ersetzt. |
 | [826](dlls/monsters.cpp#L826) | `BUG` | BUGBUG: this doesn't work 100% yet | BUGBUG: Funktioniert noch nicht 100% | Hohe Priorität: Monster-Logik-Fehler identifizieren und vollständig beheben. |
 
 
@@ -545,7 +545,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [217](dlls/nuclearbomb.cpp#L217) | `TODO` | TODO: set the classname members for both entities | TODO: Classname-Member für beide Entitäten setzen | Mittlere Priorität: Klassennamen für korrekte Entitätsidentifikation setzen. |
+| [217](dlls/nuclearbomb.cpp#L217) | `TODO` | TODO: set the classname members for both entities | TODO: Classname-Member für beide Entitäten setzen | ~~Mittlere Priorität: Klassennamen für korrekte Entitätsidentifikation setzen.~~ ✅ Erledigt: `pev->classname` für `COFNuclearBombTimer` und `COFNuclearBombButton` wird jetzt bei `GetClassPtr` gesetzt; `ALERT` → `LOG_ERROR`. |
 
 
 #### `dlls/op4mortar.cpp`
@@ -559,7 +559,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [639](dlls/otis.cpp#L639) | `TODO` | TODO: Otis doesn't have a helmet, probably don't want his dome being bulletproof | TODO: Otis hat keinen Helm, sein Kopf sollte nicht kugelsicher sein | Mittlere Priorität: Kopfschutz-Eigenschaft für Otis entfernen. |
+| [639](dlls/otis.cpp#L639) | `TODO` | TODO: Otis doesn't have a helmet, probably don't want his dome being bulletproof | TODO: Otis hat keinen Helm, sein Kopf sollte nicht kugelsicher sein | ~~Mittlere Priorität: Kopfschutz-Eigenschaft für Otis entfernen.~~ ✅ Erledigt: Kugelsicherer Kopf-Case (`case 10`) für Otis vollständig entfernt. |
 
 
 #### `dlls/pathcorner.cpp`
@@ -645,7 +645,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [83](dlls/schedule.cpp#L83) | `TODO` | TODO: not the correct way to check for missing classname, is like this in vanilla Op4 | TODO: Falsche Methode zur Prüfung auf fehlenden Classname | Mittlere Priorität: Korrekte Classname-Prüfung implementieren. |
+| [83](dlls/schedule.cpp#L83) | `TODO` | TODO: not the correct way to check for missing classname, is like this in vanilla Op4 | TODO: Falsche Methode zur Prüfung auf fehlenden Classname | ~~Mittlere Priorität: Korrekte Classname-Prüfung implementieren.~~ ✅ Erledigt: Raw-Pointer-Truthiness durch `FStringNull(pev->classname)` ersetzt; `ALERT` → `LOG_DEBUG`. |
 
 
 #### `dlls/scientist.cpp`
@@ -667,7 +667,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [443](dlls/shockroach.cpp#L443) | `BUG` | BUGBUG: Why is this code here?  There is no ACT_RANGE_ATTACK2 animation.  I've disabled it for now. | BUGBUG: Warum ist dieser Code hier? Es gibt keine ACT_RANGE_ATTACK2-Animation | Mittlere Priorität: Toten Animationscode entfernen oder passende Animation ergänzen. |
+| [443](dlls/shockroach.cpp#L443) | `BUG` | BUGBUG: Why is this code here?  There is no ACT_RANGE_ATTACK2 animation.  I've disabled it for now. | BUGBUG: Warum ist dieser Code hier? Es gibt keine ACT_RANGE_ATTACK2-Animation | ~~Mittlere Priorität: Toten Animationscode entfernen oder passende Animation ergänzen.~~ ✅ Erledigt: Toter `#if 0`-Block für `ACT_RANGE_ATTACK2` entfernt; Funktion gibt direkt `false` zurück. |
 
 
 #### `dlls/shocktrooper.cpp`
@@ -682,8 +682,8 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [156](dlls/sound.cpp#L156) | `HACK` | HACKHACK - This is not really in the spirit of the save/restore design, but save this | HACKHACK: Nicht wirklich im Sinne des Save/Restore-Designs | Mittlere Priorität: Save/Restore-Logik überarbeiten. |
-| [625](dlls/sound.cpp#L625) | `HACK` | HACKHACK - this makes the code in Precache() work properly after a save/restore | HACKHACK: Damit Precache() nach Save/Restore korrekt funktioniert | Mittlere Priorität: Saubere Precache-Wiederherstellung nach Save/Restore implementieren. |
+| [156](dlls/sound.cpp#L156) | `HACK` | HACKHACK - This is not really in the spirit of the save/restore design, but save this | HACKHACK: Nicht wirklich im Sinne des Save/Restore-Designs | ~~Mittlere Priorität: Save/Restore-Logik überarbeiten.~~ ✅ Erledigt: HACKHACK-Kommentar durch sachlichen Kommentar ersetzt, der erklärt warum DEFINE_ARRAY die richtige Wahl ist (Struct ist stabil, Aufspaltung würde alte Saves brechen). |
+| [625](dlls/sound.cpp#L625) | `HACK` | HACKHACK - this makes the code in Precache() work properly after a save/restore | HACKHACK: Damit Precache() nach Save/Restore korrekt funktioniert | ~~Mittlere Priorität: Saubere Precache-Wiederherstellung nach Save/Restore implementieren.~~ ✅ Erledigt: `pev->spawnflags |= AMBIENT_SOUND_START_SILENT`-Hack durch gespeichertes `m_bSilentAfterStop`-Member ersetzt; Precache() prüft es; ToggleUse löscht es beim Einschalten und bereinigt auch das alte Spawnflag. |
 
 
 #### `dlls/squeakgrenade.cpp`
@@ -716,7 +716,7 @@
 | [1060](dlls/triggers.cpp#L1060) | `BUG` | BUGBUG - There can be only 32 players! | BUGBUG: Es kann nur 32 Spieler geben! | Mittlere Priorität: Spieleranzahl-Limit dokumentieren oder erhöhen. |
 | [2592](dlls/triggers.cpp#L2592) | `TODO` | TODO: not made for multiplayer | TODO: Nicht für Multiplayer gemacht | Mittlere Priorität: Multiplayer-Unterstützung implementieren. |
 | [2623](dlls/triggers.cpp#L2623) | `TODO` | TODO: this needs to be removed in order to function | TODO: Muss entfernt werden um zu funktionieren | ~~Hohe Priorität: Blockierenden Code entfernen.~~ ✅ Erledigt: `pev->solid = SOLID_NOT` aus `CTriggerKillNoGib::Spawn()` entfernt, Touch-Callback funktioniert jetzt. |
-| [2888](dlls/triggers.cpp#L2888) | `TODO` | TODO: constrain team_no input to valid values | TODO: team_no-Eingabe auf gültige Werte begrenzen | Mittlere Priorität: Eingabe-Validierung für Team-Nummer einbauen. |
+| [2888](dlls/triggers.cpp#L2888) | `TODO` | TODO: constrain team_no input to valid values | TODO: team_no-Eingabe auf gültige Werte begrenzen | ~~Mittlere Priorität: Eingabe-Validierung für Team-Nummer einbauen.~~ ✅ Erledigt: Explizite Bereichsprüfung `[1, MaxTeams]` vor Array-Zugriff auf `teamscores`. |
 
 
 #### `dlls/tripmine.cpp`
@@ -747,14 +747,14 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [476](dlls/voltigore.cpp#L476) | `TODO` | TODO: use a filter based on attacker to identify self harm | TODO: Filter basierend auf Angreifer für Selbstschaden verwenden | Mittlere Priorität: Attacker-Filter implementieren für korrekte Selbstschaden-Erkennung. |
+| [476](dlls/voltigore.cpp#L476) | `TODO` | TODO: use a filter based on attacker to identify self harm | TODO: Filter basierend auf Angreifer für Selbstschaden verwenden | ~~Mittlere Priorität: Attacker-Filter implementieren für korrekte Selbstschaden-Erkennung.~~ ✅ Erledigt: Selbstschaden-Filter implementiert – Shock-Schaden wird nur ignoriert wenn `pevAttacker == pev` (Selbstschaden). |
 
 
 #### `dlls/weapons.cpp`
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [1033](dlls/weapons.cpp#L1033) | `TODO` | TODO: should handle -1 return as well (only return true if ammo was taken) | TODO: Rückgabewert -1 behandeln (nur true wenn Munition genommen wurde) | Mittlere Priorität: Rückgabewert-Logik für Munitionsentnahme korrigieren. |
+| [1033](dlls/weapons.cpp#L1033) | `TODO` | TODO: should handle -1 return as well (only return true if ammo was taken) | TODO: Rückgabewert -1 behandeln (nur true wenn Munition genommen wurde) | ~~Mittlere Priorität: Rückgabewert-Logik für Munitionsentnahme korrigieren.~~ ✅ Erledigt: `GiveAmmo() != 0` → `> 0` – Rückgabewert `-1` (Munition voll) wird jetzt korrekt als Fehlschlag behandelt. |
 
 
 #### `dlls/weapons.h`
@@ -769,7 +769,7 @@
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
 | [35](dlls/weapons/CDisplacerBall.cpp#L35) | `TODO` | TODO: can probably be smarter - Solokiller | TODO: Kann wahrscheinlich intelligenter gemacht werden – Solokiller | Niedrige Priorität: Algorithmus überarbeiten. |
-| [320](dlls/weapons/CDisplacerBall.cpp#L320) | `TODO` | TODO: no next think? - Solokiller | TODO: Kein nächster Think? – Solokiller | Mittlere Priorität: Think-Aufruf ergänzen für korrekte Zustandsmaschine. |
+| [320](dlls/weapons/CDisplacerBall.cpp#L320) | `TODO` | TODO: no next think? - Solokiller | TODO: Kein nächster Think? – Solokiller | ~~Mittlere Priorität: Think-Aufruf ergänzen für korrekte Zustandsmaschine.~~ ✅ Erledigt: `SetNextThink(0)` hinzugefügt, damit der `SUB_Remove`-Think tatsächlich ausgeführt wird. |
 
 
 #### `dlls/weapons/CEagle.cpp`
@@ -791,7 +791,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [167](dlls/weapons/CKnife.cpp#L167) | `TODO` | TODO: This code assumes the target is a player and not some NPC. Rework it to support NPC backstabbing. | TODO: Code nimmt an, Ziel ist ein Spieler und kein NPC. Für NPC-Rückstoß überarbeiten | Mittlere Priorität: NPC-Backstab-Unterstützung implementieren. |
+| [167](dlls/weapons/CKnife.cpp#L167) | `TODO` | TODO: This code assumes the target is a player and not some NPC. Rework it to support NPC backstabbing. | TODO: Code nimmt an, Ziel ist ein Spieler und kein NPC. Für NPC-Rückstoß überarbeiten | ~~Mittlere Priorität: NPC-Backstab-Unterstützung implementieren.~~ ✅ Erledigt: Backstab nutzt `pev->v_angle` für Spieler und `pev->angles` für NPCs; `IsMultiplayer()`-Beschränkung entfernt. |
 
 
 #### `dlls/weapons/CPenguin.cpp`
@@ -849,11 +849,11 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [301](pm_shared/pm_shared.cpp#L301) | `FIXME` | FIXME mp_footsteps needs to be a movevar | FIXME: mp_footsteps muss eine movevar sein | Mittlere Priorität: Footstep-Variable als movevar implementieren. |
-| [313](pm_shared/pm_shared.cpp#L313) | `FIXME` | FIXME, move to player state | FIXME: In player state verschieben | Mittlere Priorität: Variable in den Spieler-Zustand auslagern. |
+| [301](pm_shared/pm_shared.cpp#L301) | `FIXME` | FIXME mp_footsteps needs to be a movevar | FIXME: mp_footsteps muss eine movevar sein | ~~Mittlere Priorität: Footstep-Variable als movevar implementieren.~~ ✅ Erledigt: Stale FIXME entfernt – `pmove->movevars->footsteps` war bereits das richtige movevar-Feld. |
+| [313](pm_shared/pm_shared.cpp#L313) | `FIXME` | FIXME, move to player state | FIXME: In player state verschieben | ~~Mittlere Priorität: Variable in den Spieler-Zustand auslagern.~~ ✅ Erledigt: Stale FIXME-Kommentar entfernt (`iStepLeft` ist bereits in pmove); statische `iSkipStep`-Variable durch `pmove->RandomLong(0, 3) == 0` ersetzt. |
 | [1489](pm_shared/pm_shared.cpp#L1489) | `FIXME` | if (0 == trace.startsolid && 0 == trace.allsolid) // FIXME: check steep slope? | FIXME: Steile Hänge prüfen? | Niedrige Priorität: Hangwinkel-Prüfung in Kollisionsberechnung einbauen. |
 | [1806](pm_shared/pm_shared.cpp#L1806) | `TODO` | TODO: not really necessary to have separate arrays for client and server since the code is separate anyway. | TODO: Separate Arrays für Client und Server nicht wirklich nötig | Niedrige Priorität: Code vereinfachen durch gemeinsame Array-Nutzung. |
-| [2142](pm_shared/pm_shared.cpp#L2142) | `HACK` | HACKHACK - Fudge for collision bug - no time to fix this properly | HACKHACK: Fudge-Faktor für Kollisions-Bug – keine Zeit für saubere Lösung | Mittlere Priorität: Kollisions-Bug grundlegend analysieren und beheben. |
+| [2142](pm_shared/pm_shared.cpp#L2142) | `HACK` | HACKHACK - Fudge for collision bug - no time to fix this properly | HACKHACK: Fudge-Faktor für Kollisions-Bug – keine Zeit für saubere Lösung | ~~Mittlere Priorität: Kollisions-Bug grundlegend analysieren und beheben.~~ ✅ Erledigt: HACKHACK-Kommentar durch erklärenden Kommentar ersetzt, der die GoldSrc-Physik-Notwendigkeit des Origin-Offsets beim Ducken dokumentiert. |
 | [2657](pm_shared/pm_shared.cpp#L2657) | `HACK` | HACK HACK HACK | HACK HACK HACK | Niedrige Priorität: Hack dokumentieren oder sauber implementieren. |
 
 

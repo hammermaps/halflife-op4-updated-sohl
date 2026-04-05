@@ -126,12 +126,22 @@ void GetLosingTeam(int& iTeamNum, int& iScoreDiff)
 	iTeamNum = 0;
 	iScoreDiff = 0;
 
-	//TODO: doesn't really make sense, if team 0 is losing the score difference is 0
 	if (teamscores[1] < teamscores[0])
 	{
+		// OpposingForce (index 1) is losing
 		iTeamNum = 1;
 
 		const auto difference = teamscores[0] - teamscores[1];
+
+		if (iScoreDiff < difference)
+			iScoreDiff = difference;
+	}
+	else if (teamscores[0] < teamscores[1])
+	{
+		// BlackMesa (index 0) is losing
+		iTeamNum = 0;
+
+		const auto difference = teamscores[1] - teamscores[0];
 
 		if (iScoreDiff < difference)
 			iScoreDiff = difference;

@@ -407,7 +407,7 @@ void COFMedicAlly::GibMonster()
 	{ // throw a gun if the grunt has one
 		GetAttachment(0, vecGunPos, vecGunAngles);
 
-		CBaseEntity* pGun;
+		CBaseEntity* pGun = nullptr;
 
 		if ((pev->weapons & MedicAllyWeaponFlag::Glock) != 0)
 		{
@@ -2935,17 +2935,15 @@ void COFMedicAlly::Killed(entvars_t* pevAttacker, int iGib)
 	}
 
 	//TODO: missing from medic?
-	/*
-	if( m_MonsterState != MONSTERSTATE_DEAD )
+	if (m_MonsterState != MONSTERSTATE_DEAD)
 	{
-		if( HasMemory( bits_MEMORY_SUSPICIOUS ) || IsFacing( pevAttacker, pev->origin ) )
+		if (HasMemory(bits_MEMORY_SUSPICIOUS) || IsFacing(pevAttacker, pev->origin))
 		{
-			Remember( bits_MEMORY_PROVOKED );
+			Remember(bits_MEMORY_PROVOKED);
 
-			StopFollowing( true );
+			StopFollowing(true);
 		}
 	}
-	*/
 
 	SetUse(nullptr);
 

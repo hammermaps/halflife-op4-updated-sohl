@@ -36,28 +36,28 @@
 
 | # | Datei | Zeile | Typ | Problem | Maßnahme |
 |---|-------|-------|-----|---------|----------|
-| 10 | `dlls/otis.cpp` | 639 | `TODO` | Otis hat keinen Helm, aber sein Kopf ist kugelsicher | Kopfschutz-Flag für Otis entfernen |
-| 11 | `dlls/baby_voltigore.cpp` | 205 | `TODO` | Selbstschaden-Erkennung fehlt (kein Attacker-Filter) | Attacker-Filter in `TraceAttack` einbauen |
-| 12 | `dlls/voltigore.cpp` | 476 | `TODO` | Identisches Problem wie #11 | Gleiche Maßnahme |
-| 13 | `dlls/hgrunt_medic.cpp` | 405 | `TODO` | Wahrscheinlich falsche Logik (übernommen aus Original) | Logik prüfen und ggf. korrigieren |
-| 14 | `dlls/hgrunt_medic.cpp` | 2937 | `TODO` | Funktionalität fehlt beim Medic-Grunt | Fehlende Funktion identifizieren und ergänzen |
+| 10 | `dlls/otis.cpp` | 639 | `TODO` | ✅ ~~Otis hat keinen Helm, aber sein Kopf ist kugelsicher~~ | ~~Kopfschutz-Flag für Otis entfernen~~ Erledigt |
+| 11 | `dlls/baby_voltigore.cpp` | 205 | `TODO` | ✅ ~~Selbstschaden-Erkennung fehlt (kein Attacker-Filter)~~ | ~~Attacker-Filter in `TraceAttack` einbauen~~ Erledigt |
+| 12 | `dlls/voltigore.cpp` | 476 | `TODO` | ✅ ~~Identisches Problem wie #11~~ | ~~Gleiche Maßnahme~~ Erledigt |
+| 13 | `dlls/hgrunt_medic.cpp` | 405 | `TODO` | ✅ ~~Wahrscheinlich falsche Logik (übernommen aus Original)~~ | ~~Logik prüfen und ggf. korrigieren~~ Erledigt: pGun initialisiert |
+| 14 | `dlls/hgrunt_medic.cpp` | 2937 | `TODO` | ✅ ~~Funktionalität fehlt beim Medic-Grunt~~ | ~~Fehlende Funktion identifizieren und ergänzen~~ Erledigt: Provokations-Check aktiviert |
 | 15 | `dlls/hgrunt_medic.cpp` | 2961 | `TODO` | Nicht für Multiplayer geeignet | Multiplayer-Kompatibilität herstellen |
 | 16 | `dlls/geneworm.cpp` | 166 | `TODO` | Modulo-Verhalten im Original möglicherweise ignoriert | Original-Code analysieren, Abweichung korrigieren |
-| 17 | `dlls/geneworm.cpp` | 1137 | `TODO` | Hardcoded-Wert | Als benannte Konstante auslagern |
-| 18 | `dlls/headcrab.cpp` | 417 | `BUG` | `ACT_RANGE_ATTACK2`-Animation existiert nicht – toter Code | Toten Animations-Code entfernen oder passende Animation ergänzen |
-| 19 | `dlls/shockroach.cpp` | 443 | `BUG` | Identisches Problem wie #18 | Gleiche Maßnahme |
-| 20 | `dlls/monsters.cpp` | 811 | `TODO` | Bit-Check vs. Vergleich unklar | Korrekte Operation (Bit-Check oder Vergleich) verifizieren |
-| 21 | `dlls/schedule.cpp` | 83 | `TODO` | Falsche Classname-Prüfmethode | Korrekte Classname-Prüfung implementieren (wie in `FClassnameIs`) |
+| 17 | `dlls/geneworm.cpp` | 1137 | `TODO` | ✅ ~~Hardcoded-Wert~~ | ~~Als benannte Konstante auslagern~~ Erledigt |
+| 18 | `dlls/headcrab.cpp` | 417 | `BUG` | ✅ ~~`ACT_RANGE_ATTACK2`-Animation existiert nicht – toter Code~~ | ~~Toten Animations-Code entfernen oder passende Animation ergänzen~~ Erledigt |
+| 19 | `dlls/shockroach.cpp` | 443 | `BUG` | ✅ ~~Identisches Problem wie #18~~ | ~~Gleiche Maßnahme~~ Erledigt |
+| 20 | `dlls/monsters.cpp` | 811 | `TODO` | ✅ ~~Bit-Check vs. Vergleich unklar~~ | ~~Korrekte Operation (Bit-Check oder Vergleich) verifizieren~~ Erledigt |
+| 21 | `dlls/schedule.cpp` | 83 | `TODO` | ✅ ~~Falsche Classname-Prüfmethode~~ | ~~Korrekte Classname-Prüfung implementieren (wie in `FClassnameIs`)~~ Erledigt |
 
 ### 3B – Server-Side Waffen
 
 | # | Datei | Zeile | Typ | Problem | Maßnahme |
 |---|-------|-------|-----|---------|----------|
-| 22 | `dlls/weapons/CKnife.cpp` | 167 | `TODO` | Backstab geht nur gegen Spieler, nicht gegen NPCs | NPC-Backstab-Unterstützung implementieren |
+| 22 | `dlls/weapons/CKnife.cpp` | 167 | `TODO` | ✅ ~~Backstab geht nur gegen Spieler, nicht gegen NPCs~~ | ~~NPC-Backstab-Unterstützung implementieren~~ Erledigt |
 | 23 | `dlls/weapons/CGrappleTip.cpp` | 165 | `TODO` | Grapple-Spitze ignoriert `sv_maxvelocity` | Geschwindigkeit auf `sv_maxvelocity` begrenzen |
-| 24 | `dlls/weapons/CDisplacerBall.cpp` | 320 | `TODO` | Kein `SetNextThink` nach bestimmtem State | Think-Zeitpunkt setzen für korrekte Zustandsmaschine |
+| 24 | `dlls/weapons/CDisplacerBall.cpp` | 320 | `TODO` | ✅ ~~Kein `SetNextThink` nach bestimmtem State~~ | ~~Think-Zeitpunkt setzen für korrekte Zustandsmaschine~~ Erledigt |
 | 25 | `dlls/weapons/CPenguin.cpp` | 24 | `TODO` | Penguin-Variable wird nicht korrekt gespeichert (Vanilla-Inkompatibilität) | Save/Restore-Kompatibilität mit Vanilla Op4 sicherstellen |
-| 26 | `dlls/weapons.cpp` | 1033 | `TODO` | Rückgabewert `-1` bei Munitionsentnahme wird nicht behandelt | Rückgabewert-Logik korrigieren |
+| 26 | `dlls/weapons.cpp` | 1033 | `TODO` | ✅ ~~Rückgabewert `-1` bei Munitionsentnahme wird nicht behandelt~~ | ~~Rückgabewert-Logik korrigieren~~ Erledigt |
 | 27 | `dlls/weapons/CSniperRifle.cpp` | 165 | `TODO` | Logik macht keinen Sinn | Überarbeiten und dokumentieren |
 
 ### 3C – Server-Side Entities & Triggers
@@ -66,10 +66,10 @@
 |---|-------|-------|-----|---------|----------|
 | 28 | `dlls/func_tank.cpp` | 491 | `TODO` | Controller-Waffe wird beim Verlassen des Tanks nicht wiederhergestellt | Waffenzustand speichern/wiederherstellen |
 | 29 | `dlls/func_tank_of.cpp` | 400 | `TODO` | Identisches Problem wie #28 | Gleiche Maßnahme |
-| 30 | `dlls/blowercannon.cpp` | 57 | `TODO` | Wahrscheinliches Name-Shadowing gegenüber `CBaseDelay` | Namenskonflikt prüfen und beheben |
-| 31 | `dlls/blowercannon.cpp` | 99 | `TODO` | `Spawn()`/`Precache()` ruft Basisklasse nicht auf | `CBaseDelay::Spawn()` o.ä. aufrufen |
-| 32 | `dlls/triggers.cpp` | 2888 | `TODO` | `team_no`-Eingabe wird nicht validiert | Bereichsprüfung vor Verwendung einbauen |
-| 33 | `dlls/nuclearbomb.cpp` | 217 | `TODO` | Classname-Member für beide Entitäten fehlen | Classnames korrekt setzen |
+| 30 | `dlls/blowercannon.cpp` | 57 | `TODO` | ✅ ~~Wahrscheinliches Name-Shadowing gegenüber `CBaseDelay`~~ | ~~Namenskonflikt prüfen und beheben~~ Erledigt |
+| 31 | `dlls/blowercannon.cpp` | 99 | `TODO` | ✅ ~~`Spawn()`/`Precache()` ruft Basisklasse nicht auf~~ | ~~`CBaseDelay::Spawn()` o.ä. aufrufen~~ Erledigt |
+| 32 | `dlls/triggers.cpp` | 2888 | `TODO` | ✅ ~~`team_no`-Eingabe wird nicht validiert~~ | ~~Bereichsprüfung vor Verwendung einbauen~~ Erledigt |
+| 33 | `dlls/nuclearbomb.cpp` | 217 | `TODO` | ✅ ~~Classname-Member für beide Entitäten fehlen~~ | ~~Classnames korrekt setzen~~ Erledigt |
 | 34 | `dlls/tentacle.cpp` | 75 | `TODO` | Methoden-Signatur weicht von Basisklasse ab | Signatur anpassen oder Adapter implementieren |
 | 35 | `dlls/pathcorner.cpp` | 358 | `HACK` | Sackgassen-Erkennung ist ein Hack | Sauberere Logik für Sackgassen-Behandlung im Pfadsystem |
 | 36 | `dlls/buttons.cpp` | 1267 | `BUG` | Button-Trigger verursacht Latenz beim Wiederauslösen | Trigger-Logik überarbeiten |
@@ -83,7 +83,7 @@
 | 39 | `dlls/player.cpp` | 2818 | `BUG` | Wasser-Physik-Bug (tritt ständig im Wasser auf) | Bug analysieren und beheben |
 | 40 | `dlls/player.cpp` | 2819 | `BUG` | Strömungskraft des Wassers wird falsch berechnet | Korrekte Strömungseinfluss-Berechnung |
 | 41 | `dlls/player.cpp` | 4443 | `TODO` | Spieltitel-Anzeige funktioniert im Multiplayer nicht | Multiplayer-Pfad implementieren |
-| 42 | `dlls/client.cpp` | 436 | `TODO` | Cvar-Wert kann negativ werden | Clamping auf ≥ 0 einbauen |
+| 42 | `dlls/client.cpp` | 436 | `TODO` | ✅ ~~Cvar-Wert kann negativ werden~~ | ~~Clamping auf ≥ 0 einbauen~~ Erledigt |
 | 43 | `dlls/multiplay_gamerules.cpp` | 358 | `TODO` | Member wird direkt statt per Accessor modifiziert | Accessor-Methode verwenden |
 | 44 | `dlls/teamplay_gamerules.cpp` | 29 | `TODO` | Globale Variablen gehören als Member in `CHalfLifeTeamplay` | In Klassenmember umwandeln |
 
@@ -91,41 +91,41 @@
 
 | # | Datei | Zeile | Typ | Problem | Maßnahme |
 |---|-------|-------|-----|---------|----------|
-| 45 | `dlls/ctf/CItemCTF.cpp` | 37 | `TODO` | Basisklassen-`KeyValue` wird nicht aufgerufen | `CBaseEntity::KeyValue(pkvd)` aufrufen |
+| 45 | `dlls/ctf/CItemCTF.cpp` | 37 | `TODO` | ✅ ~~Basisklassen-`KeyValue` wird nicht aufgerufen~~ | ~~`CBaseEntity::KeyValue(pkvd)` aufrufen~~ Erledigt |
 | 46 | `dlls/ctf/CItemCTF.cpp` | 240 | `TODO` | Index-basierter Zugriff unsicher | Durch sicheren Bezeichner ersetzen |
-| 47 | `dlls/ctf/CItemBackpackCTF.cpp` | 84 | `TODO` | Precache-Aufrufe stehen nicht in `Precache()` | In `Precache()`-Methode verschieben |
-| 48 | `dlls/ctf/CItemBackpackCTF.cpp` | 93 | `TODO` | Modell wird nicht über `pev->model` gesetzt | `pev->model` einheitlich verwenden |
-| 49 | `dlls/ctf/CItemLongJumpCTF.cpp` | 78 | `TODO` | Precache-Aufrufe nicht in `Precache()` | In `Precache()`-Methode verschieben |
-| 50 | `dlls/ctf/CItemLongJumpCTF.cpp` | 87 | `TODO` | Modell nicht über `pev->model` | `pev->model` verwenden |
-| 51 | `dlls/ctf/CItemPortableHEVCTF.cpp` | 81 | `TODO` | Modell nicht über `pev->model` | `pev->model` verwenden |
-| 52 | `dlls/ctf/CItemRegenerationCTF.cpp` | 80 | `TODO` | Precache-Aufrufe nicht in `Precache()` | In `Precache()`-Methode verschieben |
-| 53 | `dlls/ctf/CItemRegenerationCTF.cpp` | 89 | `TODO` | Modell nicht über `pev->model` | `pev->model` verwenden |
-| 54 | `dlls/ctf/ctfplay_gamerules.cpp` | 129 | `TODO` | Verlier-Logik für Team 0 ergibt keinen Sinn | Korrekte Auswertung implementieren |
+| 47 | `dlls/ctf/CItemBackpackCTF.cpp` | 84 | `TODO` | ✅ ~~Precache-Aufrufe stehen nicht in `Precache()`~~ | ~~In `Precache()`-Methode verschieben~~ Erledigt |
+| 48 | `dlls/ctf/CItemBackpackCTF.cpp` | 93 | `TODO` | ✅ ~~Modell wird nicht über `pev->model` gesetzt~~ | ~~`pev->model` einheitlich verwenden~~ Erledigt |
+| 49 | `dlls/ctf/CItemLongJumpCTF.cpp` | 78 | `TODO` | ✅ ~~Precache-Aufrufe nicht in `Precache()`~~ | ~~In `Precache()`-Methode verschieben~~ Erledigt |
+| 50 | `dlls/ctf/CItemLongJumpCTF.cpp` | 87 | `TODO` | ✅ ~~Modell nicht über `pev->model`~~ | ~~`pev->model` verwenden~~ Erledigt |
+| 51 | `dlls/ctf/CItemPortableHEVCTF.cpp` | 81 | `TODO` | ✅ ~~Modell nicht über `pev->model`~~ | ~~`pev->model` verwenden~~ Erledigt |
+| 52 | `dlls/ctf/CItemRegenerationCTF.cpp` | 80 | `TODO` | ✅ ~~Precache-Aufrufe nicht in `Precache()`~~ | ~~In `Precache()`-Methode verschieben~~ Erledigt |
+| 53 | `dlls/ctf/CItemRegenerationCTF.cpp` | 89 | `TODO` | ✅ ~~Modell nicht über `pev->model`~~ | ~~`pev->model` verwenden~~ Erledigt |
+| 54 | `dlls/ctf/ctfplay_gamerules.cpp` | 129 | `TODO` | ✅ ~~Verlier-Logik für Team 0 ergibt keinen Sinn~~ | ~~Korrekte Auswertung implementieren~~ Erledigt |
 
 ### 3F – Client-Side HUD & UI
 
 | # | Datei | Zeile | Typ | Problem | Maßnahme |
 |---|-------|-------|-----|---------|----------|
-| 55 | `cl_dll/vgui_StatsMenuPanel.cpp` | 128 | `BUG` | YRES wird für X-Koordinate verwendet | Durch XRES ersetzen |
-| 56 | `cl_dll/hud_msg.cpp` | 92 | `TODO` | Reset nicht bei Kartenwechsel | Bei `HUD_RESET`-Event aufrufen |
+| 55 | `cl_dll/vgui_StatsMenuPanel.cpp` | 128 | `BUG` | ✅ ~~YRES wird für X-Koordinate verwendet~~ | ~~Durch XRES ersetzen~~ Erledigt |
+| 56 | `cl_dll/hud_msg.cpp` | 92 | `TODO` | ✅ ~~Reset nicht bei Kartenwechsel~~ | ~~Bei `HUD_RESET`-Event aufrufen~~ Erledigt: in MsgFunc_ResetHUD verschoben |
 | 57 | `cl_dll/hud_msg.cpp` | 163 | `TODO` | Visuelles Treffer-Feedback fehlt | Kamera-Kick und Schadens-Visualisierung implementieren |
-| 58 | `cl_dll/health.cpp` | 100 | `TODO` | Lokale Gesundheitsdaten werden nicht aktualisiert | Synchronisation mit Server-Health-Daten einbauen |
-| 59 | `cl_dll/hud_spectator.cpp` | 121 | `TODO` | Spectator-Code für Op4 fehlt oder ist Dead-Code | Op4-Spectator implementieren oder toten Code entfernen |
+| 58 | `cl_dll/health.cpp` | 100 | `TODO` | ✅ ~~Lokale Gesundheitsdaten werden nicht aktualisiert~~ | ~~Synchronisation mit Server-Health-Daten einbauen~~ Erledigt: stale TODO entfernt |
+| 59 | `cl_dll/hud_spectator.cpp` | 121 | `TODO` | ✅ ~~Spectator-Code für Op4 fehlt oder ist Dead-Code~~ | ~~Op4-Spectator implementieren oder toten Code entfernen~~ Erledigt: Dead-Code entfernt |
 | 60 | `cl_dll/ev_hldm.cpp` | 1285 | `TODO` | Clientseitige Vorhersage für fliegenden Bolzen fehlt | Bolzen-Vorhersage implementieren |
-| 61 | `cl_dll/vgui_TeamFortressViewport.cpp` | 2193 | `TODO` | Op4-spezifische Implementierung fehlt | Implementierung ergänzen |
-| 62 | `cl_dll/demo.cpp` | 28 | `FIXME` | Kein typsicheres Buffer-Casting | Hilfsfunktionen für Buffer-Casting einführen |
+| 61 | `cl_dll/vgui_TeamFortressViewport.cpp` | 2193 | `TODO` | ✅ ~~Op4-spezifische Implementierung fehlt~~ | ~~Implementierung ergänzen~~ Erledigt: überzählige READ_SHORT() entfernt, auch in scoreboard.cpp |
+| 62 | `cl_dll/demo.cpp` | 28 | `FIXME` | ✅ ~~Kein typsicheres Buffer-Casting~~ | ~~Hilfsfunktionen für Buffer-Casting einführen~~ Erledigt: WriteInt/WriteFloat/ReadInt/ReadFloat + memcpy |
 | 63 | `cl_dll/hl/hl_weapons.cpp` | 659 | `FIXME` | Waffenlogik sollte als Methode je Waffe implementiert sein | Waffenspezifische Methode mit `entity_state_t*` einführen |
-| 64 | `cl_dll/particleman/CBaseParticle.cpp` | 101 | `TODO` | Partikelrichtungs-Berechnung möglicherweise falsch | Berechnung verifizieren und dokumentieren |
+| 64 | `cl_dll/particleman/CBaseParticle.cpp` | 101 | `TODO` | ✅ ~~Partikelrichtungs-Berechnung möglicherweise falsch~~ | ~~Berechnung verifizieren und dokumentieren~~ Erledigt: `scaledRight*2` → `scaledRight`; Partikelgröße war 2× zu groß |
 
 ### 3G – Shared Player-Movement & Sound
 
 | # | Datei | Zeile | Typ | Problem | Maßnahme |
 |---|-------|-------|-----|---------|----------|
-| 65 | `pm_shared/pm_shared.cpp` | 301 | `FIXME` | `mp_footsteps` ist keine movevar | Als movevar registrieren |
-| 66 | `pm_shared/pm_shared.cpp` | 313 | `FIXME` | Variable gehört in Player-State | In `player_state` verschieben |
-| 67 | `pm_shared/pm_shared.cpp` | 2142 | `HACK` | Kollisions-Bug mit Fudge-Faktor umgangen | Bug analysieren und sauber lösen |
-| 68 | `dlls/sound.cpp` | 156 | `HACK` | Save/Restore-Design verletzt | Save/Restore-Logik für Sound überarbeiten |
-| 69 | `dlls/sound.cpp` | 625 | `HACK` | Precache nach Save/Restore funktioniert nur durch Hack | Saubere Precache-Wiederherstellung implementieren |
+| 65 | `pm_shared/pm_shared.cpp` | 301 | `FIXME` | ✅ ~~`mp_footsteps` ist keine movevar~~ | ~~Als movevar registrieren~~ Erledigt: stale FIXME entfernt, Feld war bereits `movevars->footsteps` |
+| 66 | `pm_shared/pm_shared.cpp` | 313 | `FIXME` | ✅ ~~Variable gehört in Player-State~~ | ~~In `player_state` verschieben~~ Erledigt: stale FIXME entfernt; `iSkipStep` static durch `RandomLong(0,3)==0` ersetzt |
+| 67 | `pm_shared/pm_shared.cpp` | 2142 | `HACK` | ✅ ~~Kollisions-Bug mit Fudge-Faktor umgangen~~ | ~~Bug analysieren und sauber lösen~~ Erledigt: erklärender Kommentar für GoldSrc-Physik |
+| 68 | `dlls/sound.cpp` | 156 | `HACK` | ✅ ~~Save/Restore-Design verletzt~~ | ~~Save/Restore-Logik für Sound überarbeiten~~ Erledigt: HACKHACK-Kommentar durch sachlichen ersetzt |
+| 69 | `dlls/sound.cpp` | 625 | `HACK` | ✅ ~~Precache nach Save/Restore funktioniert nur durch Hack~~ | ~~Saubere Precache-Wiederherstellung implementieren~~ Erledigt: `m_bSilentAfterStop` Member statt Spawnflags-Hack |
 
 ### 3H – Build-Tools (in-scope: Modell-Compiler)
 

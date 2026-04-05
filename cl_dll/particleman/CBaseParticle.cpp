@@ -98,9 +98,9 @@ void CBaseParticle::InitializeSprite(Vector org, Vector normal, model_s* sprite,
 
 	m_vLowLeft = org - scaledRight * 0.5 - scaledUp * 0.5;
 
-	//TODO: not sure if these are correct. If low left is half of the scaled directions then the full direction * 2 results in double size particles.
-	m_vLowRight = m_vLowLeft + scaledRight + scaledRight;
-	m_vTopLeft = m_vLowLeft + scaledUp + scaledUp;
+	// LowRight is one full scaledRight step to the right; TopLeft is one full scaledUp step up.
+	m_vLowRight = m_vLowLeft + scaledRight;
+	m_vTopLeft = m_vLowLeft + scaledUp;
 }
 
 bool CBaseParticle::CheckVisibility()

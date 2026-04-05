@@ -140,6 +140,9 @@ public:
 
 	bool m_fLooping; // true when the sound played will loop
 
+	bool m_bSilentAfterStop; // true when the sound was explicitly stopped via ToggleUse; persisted
+							 // through save/restore so Precache() does not restart a stopped sound.
+
 	edict_t* m_pPlayFrom; // LRC - entity to play sound from
 	int m_iChannel;       // LRC - channel to play on
 };
@@ -150,14 +153,14 @@ TYPEDESCRIPTION CAmbientGeneric::m_SaveData[] =
 		DEFINE_FIELD(CAmbientGeneric, m_flAttenuation, FIELD_FLOAT),
 		DEFINE_FIELD(CAmbientGeneric, m_iState, FIELD_INTEGER),
 		DEFINE_FIELD(CAmbientGeneric, m_fLooping, FIELD_BOOLEAN),
+		DEFINE_FIELD(CAmbientGeneric, m_bSilentAfterStop, FIELD_BOOLEAN),
 		DEFINE_FIELD(CAmbientGeneric, m_iChannel, FIELD_INTEGER),  // LRC
 		DEFINE_FIELD(CAmbientGeneric, m_pPlayFrom, FIELD_EDICT),   // LRC
 
-		// HACKHACK - This is not really in the spirit of the save/restore design, but save this
-		// out as a binary data block.  If the dynpitchvol_t is changed, old saved games will NOT
-		// load these correctly, so bump the save/restore version if you change the size of the struct
-		// The right way to do this is to split the input parms (read in keyvalue) into members and re-init this
-		// struct in Precache(), but it's unlikely that the struct will change, so it's not worth the time right now.
+		// The dynpitchvol_t struct is saved as a raw byte array for compactness. The alternative
+		// would be a DEFINE_FIELD for each of the 25 int members, which would change the save
+		// layout and break existing saved games.  The struct carries a "do not change the order"
+		// note (see the struct definition), so the binary representation is stable across builds.
 		DEFINE_ARRAY(CAmbientGeneric, m_dpv, FIELD_CHARACTER, sizeof(dynpitchvol_t)),
 };
 
@@ -245,7 +248,7 @@ void CAmbientGeneric::Precache()
 	// init all dynamic modulation parms
 	InitModulationParms();
 
-	if (!FBitSet(pev->spawnflags, AMBIENT_SOUND_START_SILENT))
+	if (!FBitSet(pev->spawnflags, AMBIENT_SOUND_START_SILENT) && !m_bSilentAfterStop)
 	{
 		// start the sound ASAP
 		if (m_fLooping)
@@ -622,8 +625,10 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 		{
 			m_iState = STATE_OFF; // LRC
 
-			// HACKHACK - this makes the code in Precache() work properly after a save/restore
-			pev->spawnflags |= AMBIENT_SOUND_START_SILENT;
+			// Track that the sound was explicitly stopped so Precache() does not
+			// restart it after a save/restore.  (Old saves set AMBIENT_SOUND_START_SILENT
+			// in spawnflags for the same purpose; new saves use this flag instead.)
+			m_bSilentAfterStop = true;
 
 			if (0 != m_dpv.spindownsav || 0 != m_dpv.fadeoutsav)
 			{
@@ -641,6 +646,12 @@ void CAmbientGeneric::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 	}
 	else
 	{ // turn sound on
+
+		// Clear the stop-silence flag so Precache() will restart the sound after the
+		// next save/restore.  Also clear the old-save spawnflag bit in case this entity
+		// was loaded from a save that used the legacy spawnflags-hack approach.
+		m_bSilentAfterStop = false;
+		pev->spawnflags &= ~AMBIENT_SOUND_START_SILENT;
 
 		// only toggle if this is a looping sound.  If not looping, each
 		// trigger will cause the sound to play.  If the sound is still

@@ -54,8 +54,7 @@ public:
 	void EXPORT BlowerCannonStop(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
 	void EXPORT BlowerCannonThink();
 
-	//TODO: probably shadowing CBaseDelay
-	float m_flDelay;
+	float m_flCannonDelay;
 	int m_iZOffset;
 	WeaponType m_iWeaponType;
 	FireType m_iFireType;
@@ -63,7 +62,7 @@ public:
 
 TYPEDESCRIPTION CBlowerCannon::m_SaveData[] =
 	{
-		DEFINE_FIELD(CBlowerCannon, m_flDelay, FIELD_FLOAT),
+		DEFINE_FIELD(CBlowerCannon, m_flCannonDelay, FIELD_FLOAT),
 		DEFINE_FIELD(CBlowerCannon, m_iZOffset, FIELD_INTEGER),
 		DEFINE_FIELD(CBlowerCannon, m_iWeaponType, FIELD_INTEGER),
 		DEFINE_FIELD(CBlowerCannon, m_iFireType, FIELD_INTEGER),
@@ -77,7 +76,7 @@ bool CBlowerCannon::KeyValue(KeyValueData* pkvd)
 {
 	if (FStrEq(pkvd->szKeyName, "delay"))
 	{
-		m_flDelay = atof(pkvd->szValue);
+		m_flCannonDelay = atof(pkvd->szValue);
 		return true;
 	}
 	else if (FStrEq(pkvd->szKeyName, "weaptype"))
@@ -96,8 +95,7 @@ bool CBlowerCannon::KeyValue(KeyValueData* pkvd)
 		return true;
 	}
 
-	//TODO: should call base
-	return false;
+	return CBaseToggle::KeyValue(pkvd);
 }
 
 void CBlowerCannon::Precache()
@@ -114,9 +112,9 @@ void CBlowerCannon::Spawn()
 
 	SetNextThink(0.1);
 
-	if (m_flDelay < 0)
+	if (m_flCannonDelay < 0)
 	{
-		m_flDelay = 1;
+		m_flCannonDelay = 1;
 	}
 
 	Precache();
@@ -127,7 +125,7 @@ void CBlowerCannon::BlowerCannonStart(CBaseEntity* pActivator, CBaseEntity* pCal
 	SetUse(&CBlowerCannon::BlowerCannonStop);
 	SetThink(&CBlowerCannon::BlowerCannonThink);
 
-	SetNextThink(m_flDelay);
+	SetNextThink(m_flCannonDelay);
 }
 
 void CBlowerCannon::BlowerCannonStop(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
@@ -176,5 +174,5 @@ void CBlowerCannon::BlowerCannonThink()
 		SetThink(nullptr);
 	}
 
-	SetNextThink(m_flDelay);
+	SetNextThink(m_flCannonDelay);
 }

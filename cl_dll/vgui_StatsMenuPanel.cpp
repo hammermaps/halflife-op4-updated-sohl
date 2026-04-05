@@ -181,8 +181,7 @@ CStatsMenuPanel::CStatsMenuPanel(int iTrans, bool iRemoveMe, int x, int y, int w
 	for (int i = 0; i < StatsTeamsCount; ++i)
 	{
 		char sz[256];
-		//TODO: this is using YRES for an X coord. Bugged in vanilla
-		int iXPos = STATSMENU_TOPLEFT_BUTTON_X + ((STATSMENU_BUTTON_SIZE_X + STATSMENU_BUTTON_SPACER_Y) * i);
+		int iXPos = STATSMENU_TOPLEFT_BUTTON_X + ((STATSMENU_BUTTON_SIZE_X + XRES(8)) * i);
 
 		strcpy(sz, CHudTextMessage::BufferedLocaliseTextString(sLocalisedStatsTeams[i]));
 		m_pButtons[i] = new CommandButton(sz, iXPos, STATSMENU_TOPLEFT_BUTTON_Y, STATSMENU_BUTTON_SIZE_X, STATSMENU_BUTTON_SIZE_Y, true);

@@ -285,7 +285,6 @@ char PM_FindTextureType(const char* name)
 
 void PM_PlayStepSound(int step, float fvol)
 {
-	static int iSkipStep = 0;
 	int irand;
 	Vector hvel;
 
@@ -298,7 +297,6 @@ void PM_PlayStepSound(int step, float fvol)
 
 	irand = pmove->RandomLong(0, 1) + (pmove->iStepLeft * 2);
 
-	// FIXME mp_footsteps needs to be a movevar
 	if (0 != pmove->multiplayer && 0 == pmove->movevars->footsteps)
 		return;
 
@@ -309,8 +307,7 @@ void PM_PlayStepSound(int step, float fvol)
 		return;
 
 	// irand - 0,1 for right foot, 2,3 for left foot
-	// used to alternate left and right foot
-	// FIXME, move to player state
+	// used to alternate left and right foot; iStepLeft is tracked in player state (pmove->iStepLeft)
 
 	switch (step)
 	{
@@ -454,16 +451,9 @@ void PM_PlayStepSound(int step, float fvol)
 		}
 		break;
 	case STEP_WADE:
-		if (iSkipStep == 0)
-		{
-			iSkipStep++;
+		// Skip 25% of wade steps to avoid monotony; use RandomLong so no shared static state is needed.
+		if (pmove->RandomLong(0, 3) == 0)
 			break;
-		}
-
-		if (iSkipStep++ == 3)
-		{
-			iSkipStep = 0;
-		}
 
 		switch (irand)
 		{
@@ -2139,7 +2129,10 @@ void PM_Duck()
 					pmove->flags |= FL_DUCKING;
 					pmove->bInDuck = 0;
 
-					// HACKHACK - Fudge for collision bug - no time to fix this properly
+					// When ducking completes, switch to the ducked hull (hull 1) and shift the
+					// player's origin down by the hull-min difference so the player does not
+					// clip through the floor.  PM_FixPlayerCrouchStuck then resolves any
+					// remaining overlap that would otherwise trap the player inside geometry.
 					if (pmove->onground != -1)
 					{
 						for (i = 0; i < 3; i++)

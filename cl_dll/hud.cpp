@@ -728,8 +728,8 @@ float HUD_GetFOV()
 		unsigned char buf[100];
 
 		// Active
-		*(float*)&buf[i] = g_lastFOV;
-		i += sizeof(float);
+		memcpy(&buf[i], &g_lastFOV, sizeof(g_lastFOV));
+		i += sizeof(g_lastFOV);
 
 		Demo_WriteBuffer(TYPE_ZOOM, i, buf);
 	}

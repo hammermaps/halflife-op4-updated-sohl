@@ -15,6 +15,7 @@
 #include "extdll.h"
 #include "util.h"
 #include "cbase.h"
+#include "logger.h"
 
 class COFNuclearBombButton : public CBaseEntity
 {
@@ -50,7 +51,7 @@ void COFNuclearBombButton::Spawn()
 
 	if (DROP_TO_FLOOR(edict()) == 0)
 	{
-		ALERT(at_error, "Nuclear Bomb Button fell out of level at %f,%f,%f", pev->origin.x, pev->origin.y, pev->origin.z);
+		LOG_ERROR("Nuclear Bomb Button fell out of level at %f,%f,%f", pev->origin.x, pev->origin.y, pev->origin.z);
 		UTIL_Remove(this);
 	}
 	else
@@ -104,7 +105,7 @@ void COFNuclearBombTimer::Spawn()
 
 	if (DROP_TO_FLOOR(edict()) == 0)
 	{
-		ALERT(at_error, "Nuclear Bomb Timer fell out of level at %f,%f,%f", pev->origin.x, pev->origin.y, pev->origin.z);
+		LOG_ERROR("Nuclear Bomb Timer fell out of level at %f,%f,%f", pev->origin.x, pev->origin.y, pev->origin.z);
 		UTIL_Remove(this);
 	}
 	else
@@ -214,8 +215,8 @@ void COFNuclearBomb::Precache()
 	PrecacheSound("buttons/button6.wav");
 
 	//The other entities are created here since a restore only calls Precache
-	//TODO: set the classname members for both entities
 	m_pTimer = GetClassPtr<COFNuclearBombTimer>(nullptr);
+	m_pTimer->pev->classname = MAKE_STRING("item_nuclearbombtimer");
 
 	m_pTimer->pev->origin = pev->origin;
 	m_pTimer->pev->angles = pev->angles;
@@ -225,6 +226,7 @@ void COFNuclearBomb::Precache()
 	m_pTimer->SetNuclearBombTimer(m_fOn);
 
 	m_pButton = GetClassPtr<COFNuclearBombButton>(nullptr);
+	m_pButton->pev->classname = MAKE_STRING("item_nuclearbombbutton");
 
 	m_pButton->pev->origin = pev->origin;
 	m_pButton->pev->angles = pev->angles;

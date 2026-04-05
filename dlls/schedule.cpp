@@ -25,6 +25,7 @@
 #include "nodes.h"
 #include "defaultai.h"
 #include "soundent.h"
+#include "logger.h"
 
 //=========================================================
 // FHaveSchedule - Returns true if monster's m_pSchedule
@@ -78,16 +79,13 @@ void CBaseMonster::ChangeSchedule(Schedule_t* pNewSchedule)
 
 	if (m_pSchedule && m_pSchedule->pTasklist && m_pSchedule->pTasklist[m_iScheduleIndex].iTask == TASK_DIE)
 	{
-		const char* className = STRING(pev->classname);
-
-		//TODO: not the correct way to check for missing classname, is like this in vanilla Op4
-		if (className)
+		if (!FStringNull(pev->classname))
 		{
-			ALERT(at_aiconsole, "ChangeSchedule called for dead monster class %s\n", className);
+			LOG_DEBUG("ChangeSchedule called for dead monster class %s", STRING(pev->classname));
 		}
 		else
 		{
-			ALERT(at_console, "ChangeSchedule called for dead monster\n");
+			LOG_DEBUG("ChangeSchedule called for dead monster");
 		}
 
 		return;

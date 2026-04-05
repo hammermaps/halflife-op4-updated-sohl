@@ -35,7 +35,7 @@ bool CItemCTF::KeyValue(KeyValueData* pkvd)
 	}
 
 	//TODO: should invoke base class KeyValue here
-	return false;
+	return CBaseEntity::KeyValue(pkvd);
 }
 
 void CItemCTF::Precache()

@@ -116,23 +116,15 @@ void SpectatorSpray()
 }
 void SpectatorHelp()
 {
-	if (gViewPort)
-	{
-		//TODO: none of this spectator stuff exists in Op4
-		//gViewPort->ShowVGUIMenu( MENU_SPECHELP );
-	}
-	else
-	{
-		char* text = CHudTextMessage::BufferedLocaliseTextString("#Spec_Help_Text");
+	char* text = CHudTextMessage::BufferedLocaliseTextString("#Spec_Help_Text");
 
-		if (text)
+	if (text)
+	{
+		while ('\0' != *text)
 		{
-			while ('\0' != *text)
-			{
-				if (*text != 13)
-					gEngfuncs.Con_Printf("%c", *text);
-				text++;
-			}
+			if (*text != 13)
+				gEngfuncs.Con_Printf("%c", *text);
+			text++;
 		}
 	}
 }
