@@ -197,7 +197,7 @@ void CGameRules::RefreshSkillData()
 
 	gSkillData.iSkillLevel = iSkill;
 
-	LOG_INFO("\nGAME SKILL LEVEL:%d", iSkill);
+	LOG_INFO("GAME SKILL LEVEL:%d", iSkill);
 
 	//Agrunt
 	gSkillData.agruntHealth = GetSkillCvar("sk_agrunt_health");

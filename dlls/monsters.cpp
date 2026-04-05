@@ -2911,15 +2911,19 @@ void CBaseMonster::ReportAIState()
 {
 	static const char* pStateNames[] = {"None", "Idle", "Combat", "Alert", "Hunt", "Prone", "Scripted", "PlayDead", "Dead"};
 
-	LOG_INFO("%s: ", STRING(pev->classname));
+	char szBuf[512];
+	int len = 0;
+
+	len += snprintf(szBuf + len, sizeof(szBuf) - len, "%s: ", STRING(pev->classname));
 	if ((int)m_MonsterState < ARRAYSIZE(pStateNames))
-		LOG_INFO("State: %s, ", pStateNames[m_MonsterState]);
+		len += snprintf(szBuf + len, sizeof(szBuf) - len, "State: %s, ", pStateNames[m_MonsterState]);
+
 	int i = 0;
 	while (activity_map[i].type != 0)
 	{
 		if (activity_map[i].type == (int)m_Activity)
 		{
-			LOG_INFO("Activity %s, ", activity_map[i].name);
+			len += snprintf(szBuf + len, sizeof(szBuf) - len, "Activity %s, ", activity_map[i].name);
 			break;
 		}
 		i++;
@@ -2927,56 +2931,47 @@ void CBaseMonster::ReportAIState()
 
 	if (m_pSchedule)
 	{
-		const char* pName = NULL;
-		pName = m_pSchedule->pName;
-		if (!pName)
-			pName = "Unknown";
-		LOG_INFO("Schedule %s, ", pName);
+		const char* pName = m_pSchedule->pName ? m_pSchedule->pName : "Unknown";
+		len += snprintf(szBuf + len, sizeof(szBuf) - len, "Schedule %s, ", pName);
 		Task_t* pTask = GetTask();
 		if (pTask)
-			LOG_INFO("Task %d (#%d), ", pTask->iTask, m_iScheduleIndex);
+			len += snprintf(szBuf + len, sizeof(szBuf) - len, "Task %d (#%d), ", pTask->iTask, m_iScheduleIndex);
 	}
 	else
-		LOG_INFO("No Schedule, ");
+		len += snprintf(szBuf + len, sizeof(szBuf) - len, "No Schedule, ");
 
 	if (m_hEnemy != NULL)
-		LOG_INFO("Enemy is %s", STRING(m_hEnemy->pev->classname));
+		len += snprintf(szBuf + len, sizeof(szBuf) - len, "Enemy is %s", STRING(m_hEnemy->pev->classname));
 	else
-		LOG_INFO("No enemy");
+		len += snprintf(szBuf + len, sizeof(szBuf) - len, "No enemy");
 
 	if (IsMoving())
 	{
-		LOG_INFO(" Moving ");
+		len += snprintf(szBuf + len, sizeof(szBuf) - len, " Moving");
 		if (m_flMoveWaitFinished > gpGlobals->time)
-			LOG_INFO(": Stopped for %.2f. ", m_flMoveWaitFinished - gpGlobals->time);
+			len += snprintf(szBuf + len, sizeof(szBuf) - len, ": Stopped for %.2f. ", m_flMoveWaitFinished - gpGlobals->time);
 		else if (m_IdealActivity == GetStoppedActivity())
-			LOG_INFO(": In stopped anim. ");
+			len += snprintf(szBuf + len, sizeof(szBuf) - len, ": In stopped anim. ");
 	}
+
+	LOG_INFO("%s", szBuf);
 
 	CSquadMonster* pSquadMonster = MySquadMonsterPointer();
 
 	if (pSquadMonster)
 	{
-		if (!pSquadMonster->InSquad())
-		{
-			LOG_INFO("not ");
-		}
-
-		LOG_INFO("In Squad, ");
-
-		if (!pSquadMonster->IsLeader())
-		{
-			LOG_INFO("not ");
-		}
-
-		LOG_INFO("Leader.");
+		bool inSquad = pSquadMonster->InSquad();
+		bool isLeader = pSquadMonster->IsLeader();
+		LOG_INFO("%sIn Squad, %sLeader.", inSquad ? "" : "not ", isLeader ? "" : "not ");
 	}
 
-	LOG_INFO("Yaw speed:%3.1f,Health: %3.1f", pev->yaw_speed, pev->health);
+	char szFlags[64] = "";
 	if ((pev->spawnflags & SF_MONSTER_PRISONER) != 0)
-		LOG_INFO(" PRISONER! ");
+		strncat(szFlags, " PRISONER!", sizeof(szFlags) - strlen(szFlags) - 1);
 	if ((pev->spawnflags & SF_MONSTER_PREDISASTER) != 0)
-		LOG_INFO(" Pre-Disaster! ");
+		strncat(szFlags, " Pre-Disaster!", sizeof(szFlags) - strlen(szFlags) - 1);
+
+	LOG_INFO("Yaw speed:%3.1f, Health: %3.1f%s", pev->yaw_speed, pev->health, szFlags);
 }
 
 //=========================================================

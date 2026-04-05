@@ -677,7 +677,7 @@ void CWorld::Precache()
 		}
 		else
 		{
-			LOG_INFO("\n*Graph Loaded!");
+			LOG_INFO("*Graph Loaded!");
 		}
 	}
 

@@ -36,7 +36,7 @@ float GetSkillCvar(const char* pName)
 
 	if (flValue <= 0)
 	{
-		LOG_INFO("\n\n** GetSkillCVar Got a zero for %s **\n", szBuffer);
+		LOG_INFO("** GetSkillCVar Got a zero for %s **", szBuffer);
 	}
 
 	return flValue;

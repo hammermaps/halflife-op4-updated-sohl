@@ -2617,7 +2617,7 @@ bool CGraph::CheckNODFile(const char* szMapName)
 	{
 		if (iCompare > 0)
 		{ // BSP file is newer.
-			LOG_DEBUG(".NOD File will be updated\n");
+			LOG_DEBUG(".NOD File will be updated");
 			retValue = false;
 		}
 	}
@@ -3427,7 +3427,7 @@ void CGraph::TestRoutingTables()
 							{
 								LOG_DEBUG("%d ", pMyPath[i]);
 							}
-							LOG_DEBUG("\n(%d to %d |%d/%d)2:", iFrom, iTo, iHull, iCap);
+							LOG_DEBUG("(%d to %d |%d/%d)2:", iFrom, iTo, iHull, iCap);
 							for (int i = 0; i < cPathSize2; i++)
 							{
 								LOG_DEBUG("%d ", pMyPath2[i]);
