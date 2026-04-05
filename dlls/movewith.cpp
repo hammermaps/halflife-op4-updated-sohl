@@ -328,6 +328,11 @@ void UTIL_AssignOrigin(CBaseEntity* pEnt, const Vector& vecOrigin, bool bInitiat
 			LOG_ERROR("MoveWith chain overflow in UTIL_AssignOrigin!");
 			break;
 		}
+		if (pChild->pev->flags & FL_KILLME)
+		{
+			pChild = pChild->m_pSiblingMoveWith;
+			continue;
+		}
 		Vector vecChildOrigin = vecOrigin + pChild->m_vecMoveWithOffset;
 		DEV_LOG(mw_debug, "  child %s offset (%.1f %.1f %.1f) -> origin (%.1f %.1f %.1f)",
 			STRING(pChild->pev->classname),
@@ -361,6 +366,11 @@ void UTIL_SetVelocity(CBaseEntity* pEnt, const Vector& vecSet)
 		{
 			LOG_ERROR("MoveWith chain overflow in UTIL_SetVelocity!");
 			break;
+		}
+		if (pChild->pev->flags & FL_KILLME)
+		{
+			pChild = pChild->m_pSiblingMoveWith;
+			continue;
 		}
 
 		// The engine ignores velocity on entities that aren't thinking.
@@ -431,6 +441,11 @@ void UTIL_SetAvelocity(CBaseEntity* pEnt, const Vector& vecSet)
 			LOG_ERROR("MoveWith chain overflow in UTIL_SetAvelocity!");
 			break;
 		}
+		if (pChild->pev->flags & FL_KILLME)
+		{
+			pChild = pChild->m_pSiblingMoveWith;
+			continue;
+		}
 		DEV_LOG(mw_debug, "  propagate avel to child %s", STRING(pChild->pev->classname));
 		UTIL_SetAvelocity(pChild, vecSet);
 		pChild = pChild->m_pSiblingMoveWith;
@@ -460,6 +475,11 @@ void UTIL_SetAngles(CBaseEntity* pEnt, const Vector& vecSet)
 		{
 			LOG_ERROR("MoveWith chain overflow in UTIL_SetAngles!");
 			break;
+		}
+		if (pChild->pev->flags & FL_KILLME)
+		{
+			pChild = pChild->m_pSiblingMoveWith;
+			continue;
 		}
 		Vector vecChildAngles = vecSet + pChild->m_vecRotWithOffset;
 		DEV_LOG(mw_debug, "  child %s rot-offset (%.1f %.1f %.1f) -> angles (%.1f %.1f %.1f)",
