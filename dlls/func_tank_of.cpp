@@ -20,6 +20,7 @@
 #include "explode.h"
 #include "monsters.h"
 #include "player.h"
+#include "logger.h"
 
 
 #define SF_TANK_ACTIVE 0x0001
@@ -376,7 +377,7 @@ bool COFFuncTank::StartControl(CBasePlayer* pController)
 			return false;
 	}
 
-	ALERT(at_console, "using TANK!\n");
+	LOG_INFO("using TANK!");
 
 	m_pController = pController;
 	if (m_pController->m_pActiveItem)
@@ -403,7 +404,7 @@ void COFFuncTank::StopControl()
 	if (m_pController->m_pActiveItem)
 		m_pController->m_pActiveItem->Deploy();
 
-	ALERT(at_console, "stopped using TANK\n");
+	LOG_INFO("stopped using TANK");
 
 	m_pController->m_iHideHUD &= ~HIDEHUD_WEAPONS;
 
@@ -935,7 +936,7 @@ void COFFuncTankLaser::Activate()
 	if (!GetLaser())
 	{
 		UTIL_Remove(this);
-		ALERT(at_error, "Laser tank with no env_laser!\n");
+		LOG_ERROR("Laser tank with no env_laser!");
 	}
 	else
 	{
@@ -1158,7 +1159,7 @@ void COFFuncTankControls::Think()
 
 	if (FNullEnt(pTarget))
 	{
-		ALERT(at_console, "No tank %s\n", STRING(pev->target));
+		LOG_INFO("No tank %s", STRING(pev->target));
 		return;
 	}
 

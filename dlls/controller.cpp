@@ -25,6 +25,7 @@
 #include "schedule.h"
 #include "weapons.h"
 #include "squadmonster.h"
+#include "logger.h"
 
 //=========================================================
 // Monster's Anim Events Go Here
@@ -508,7 +509,7 @@ void CController::StartTask(Task_t* pTask)
 		else
 		{
 			// no way to get there =(
-			ALERT(at_aiconsole, "GetPathToEnemyLKP failed!!\n");
+			LOG_DEBUG("GetPathToEnemyLKP failed!!");
 			TaskFail();
 		}
 		break;
@@ -530,7 +531,7 @@ void CController::StartTask(Task_t* pTask)
 		else
 		{
 			// no way to get there =(
-			ALERT(at_aiconsole, "GetPathToEnemy failed!!\n");
+			LOG_DEBUG("GetPathToEnemy failed!!");
 			TaskFail();
 		}
 		break;
@@ -903,7 +904,7 @@ void CController::Move(float flInterval)
 	// Don't move if no valid route
 	if (FRouteClear())
 	{
-		ALERT(at_aiconsole, "Tried to move with no route!\n");
+		LOG_DEBUG("Tried to move with no route!");
 		TaskFail();
 		return;
 	}
@@ -1006,7 +1007,7 @@ void CController::Move(float flInterval)
 				}
 				else
 				{
-					ALERT(at_aiconsole, "Couldn't Triangulate\n");
+					LOG_DEBUG("Couldn't Triangulate");
 					Stop();
 					if (m_moveWaitTime > 0)
 					{
@@ -1016,7 +1017,7 @@ void CController::Move(float flInterval)
 					else
 					{
 						TaskFail();
-						ALERT(at_aiconsole, "Failed to move!\n");
+						LOG_DEBUG("Failed to move!");
 						//ALERT( at_aiconsole, "%f, %f, %f\n", pev->origin.z, (pev->origin + (vecDir * flCheckDist)).z, m_Route[m_iRouteIndex].vecLocation.z );
 					}
 					return;

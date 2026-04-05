@@ -24,6 +24,7 @@
 #include "pm_shared.h"
 #include "movewith.h"
 #include "debug.h"
+#include "logger.h"
 
 void EntvarsKeyvalue(entvars_t* pev, KeyValueData* pkvd);
 
@@ -251,7 +252,7 @@ void DispatchThink(edict_t* pent)
 	if (pEntity)
 	{
 		if (FBitSet(pEntity->pev->flags, FL_DORMANT))
-			ALERT(at_error, "Dormant entity %s is thinking!!\n", STRING(pEntity->pev->classname));
+			LOG_ERROR("Dormant entity %s is thinking!!", STRING(pEntity->pev->classname));
 
 		// LRC - correct m_fNextThink if the engine has changed pev->nextthink
 		pEntity->ThinkCorrection();
@@ -280,7 +281,7 @@ void DispatchSave(edict_t* pent, SAVERESTOREDATA* pSaveData)
 		ENTITYTABLE* pTable = &pSaveData->pTable[pSaveData->currentIndex];
 
 		if (pTable->pent != pent)
-			ALERT(at_error, "ENTITY TABLE OR INDEX IS WRONG!!!!\n");
+			LOG_ERROR("ENTITY TABLE OR INDEX IS WRONG!!!!");
 
 		if ((pEntity->ObjectCaps() & FCAP_DONT_SAVE) != 0)
 			return;
@@ -326,7 +327,7 @@ CBaseEntity* FindGlobalEntity(string_t classname, string_t globalname)
 	{
 		if (!FClassnameIs(pReturn->pev, STRING(classname)))
 		{
-			ALERT(at_console, "Global entity found %s, wrong class %s\n", STRING(globalname), STRING(pReturn->pev->classname));
+			LOG_INFO("Global entity found %s, wrong class %s", STRING(globalname), STRING(pReturn->pev->classname));
 			pReturn = NULL;
 		}
 	}
@@ -407,7 +408,7 @@ int DispatchRestore(edict_t* pent, SAVERESTOREDATA* pSaveData, int globalEntity)
 #if 0
 		if ( pEntity && !FStringNull(pEntity->pev->globalname) && 0 != globalEntity ) 
 		{
-			ALERT( at_console, "Global %s is %s\n", STRING(pEntity->pev->globalname), STRING(pEntity->pev->model) );
+			LOG_INFO("Global %s is %s", STRING(pEntity->pev->globalname), STRING(pEntity->pev->model));
 		}
 #endif
 
@@ -438,7 +439,7 @@ int DispatchRestore(edict_t* pent, SAVERESTOREDATA* pSaveData, int globalEntity)
 			}
 			else
 			{
-				ALERT(at_error, "Global Entity %s (%s) not in table!!!\n", STRING(pEntity->pev->globalname), STRING(pEntity->pev->classname));
+				LOG_ERROR("Global Entity %s (%s) not in table!!!", STRING(pEntity->pev->globalname), STRING(pEntity->pev->classname));
 				// Spawned entities default to 'On'
 				gGlobalState.EntityAdd(pEntity->pev->globalname, gpGlobals->mapname, GLOBAL_ON);
 			}
@@ -787,7 +788,7 @@ CBaseEntity* CBaseEntity::Create(const char* szName, const Vector& vecOrigin, co
 	pent = CREATE_NAMED_ENTITY(MAKE_STRING(szName));
 	if (FNullEnt(pent))
 	{
-		ALERT(at_console, "NULL Ent in Create!\n");
+		LOG_INFO("NULL Ent in Create!");
 		return nullptr;
 	}
 	pEntity = Instance(pent);
@@ -877,7 +878,7 @@ void CBaseEntity::InitMoveWith()
 	CBaseEntity* pParent = UTIL_FindEntityByTargetname(NULL, STRING(m_MoveWith));
 	if (!pParent)
 	{
-		ALERT(at_console, "Missing movewith entity %s\n", STRING(m_MoveWith));
+		LOG_INFO("Missing movewith entity %s", STRING(m_MoveWith));
 		return;
 	}
 
@@ -888,13 +889,13 @@ void CBaseEntity::InitMoveWith()
 	{
 		if (pTest == this)
 		{
-			ALERT(at_error, "Circular MoveWith reference: %s\n", STRING(pev->classname));
+			LOG_ERROR("Circular MoveWith reference: %s", STRING(pev->classname));
 			return;
 		}
 		pTest = pTest->m_pMoveWith;
 		if (--loopbreaker <= 0)
 		{
-			ALERT(at_error, "MoveWith chain too deep for %s\n", STRING(pev->classname));
+			LOG_ERROR("MoveWith chain too deep for %s", STRING(pev->classname));
 			return;
 		}
 	}

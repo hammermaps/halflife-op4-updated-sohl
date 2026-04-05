@@ -28,6 +28,7 @@
 #include "doors.h"
 #include "movewith.h"
 #include "alias.h"
+#include "logger.h"
 
 extern bool FEntIsVisible(entvars_t* pev, entvars_t* pevTarget);
 
@@ -118,7 +119,7 @@ void CBaseEntity::SUB_Remove()
 	{
 		// this situation can screw up monsters who can't tell their entity pointers are invalid.
 		pev->health = 0;
-		ALERT(at_aiconsole, "SUB_Remove called on entity with health > 0\n");
+		LOG_DEBUG("SUB_Remove called on entity with health > 0");
 	}
 
 	// LRC - remove from all MoveWith FIFO queues and clear queue-related flags.
@@ -252,7 +253,7 @@ void FireTargets(const char* targetName, CBaseEntity* pActivator, CBaseEntity* p
 		useType = USE_SAME;
 	}
 
-	ALERT(at_aiconsole, "Firing: (%s)\n", targetName);
+	LOG_DEBUG("Firing: (%s)", targetName);
 
 	// LRC - use UTIL_FindEntityByTargetname to support *alias and group.member references
 	CBaseEntity* pTarget = UTIL_FindEntityByTargetname(nullptr, targetName);
@@ -260,7 +261,7 @@ void FireTargets(const char* targetName, CBaseEntity* pActivator, CBaseEntity* p
 	{
 		if ((pTarget->pev->flags & FL_KILLME) == 0) // Don't use dying ents
 		{
-			ALERT(at_aiconsole, "Found: %s, firing (%s)\n", STRING(pTarget->pev->classname), targetName);
+			LOG_DEBUG("Found: %s, firing (%s)", STRING(pTarget->pev->classname), targetName);
 			if (useType == USE_KILL)
 			{
 				UTIL_Remove(pTarget);
@@ -330,7 +331,7 @@ void CBaseDelay::SUB_UseTargets(CBaseEntity* pActivator, USE_TYPE useType, float
 	// LRC - now just USE_KILLs its killtarget, for consistency.
 	if (!FStringNull(m_iszKillTarget))
 	{
-		ALERT(at_aiconsole, "KillTarget: %s\n", STRING(m_iszKillTarget));
+		LOG_DEBUG("KillTarget: %s", STRING(m_iszKillTarget));
 		FireTargets(STRING(m_iszKillTarget), pActivator, this, USE_KILL, value);
 	}
 

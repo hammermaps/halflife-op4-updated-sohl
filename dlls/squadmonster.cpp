@@ -23,6 +23,7 @@
 #include "saverestore.h"
 #include "squadmonster.h"
 #include "plane.h"
+#include "logger.h"
 
 //=========================================================
 // Save/Restore
@@ -247,7 +248,7 @@ void CSquadMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 
 	if (!pEnemy)
 	{
-		ALERT(at_console, "ERROR: SquadMakeEnemy() - pEnemy is NULL!\n");
+		LOG_INFO("ERROR: SquadMakeEnemy() - pEnemy is NULL!");
 		return;
 	}
 
@@ -431,7 +432,7 @@ void CSquadMonster::StartMonster()
 
 		if (0 != iSquadSize)
 		{
-			ALERT(at_aiconsole, "Squad of %d %s formed\n", iSquadSize, STRING(pev->classname));
+			LOG_DEBUG("Squad of %d %s formed", iSquadSize, STRING(pev->classname));
 		}
 
 		if (IsLeader() && FClassnameIs(pev, "monster_human_grunt"))
@@ -486,9 +487,9 @@ bool CSquadMonster::NoFriendlyFire()
 	backPlane.InitializePlane(gpGlobals->v_forward, pev->origin);
 
 	/*
-	ALERT ( at_console, "LeftPlane: %f %f %f : %f\n", leftPlane.m_vecNormal.x, leftPlane.m_vecNormal.y, leftPlane.m_vecNormal.z, leftPlane.m_flDist );
-	ALERT ( at_console, "RightPlane: %f %f %f : %f\n", rightPlane.m_vecNormal.x, rightPlane.m_vecNormal.y, rightPlane.m_vecNormal.z, rightPlane.m_flDist );
-	ALERT ( at_console, "BackPlane: %f %f %f : %f\n", backPlane.m_vecNormal.x, backPlane.m_vecNormal.y, backPlane.m_vecNormal.z, backPlane.m_flDist );
+	LOG_INFO("LeftPlane: %f %f %f : %f", leftPlane.m_vecNormal.x, leftPlane.m_vecNormal.y, leftPlane.m_vecNormal.z, leftPlane.m_flDist);
+	LOG_INFO("RightPlane: %f %f %f : %f", rightPlane.m_vecNormal.x, rightPlane.m_vecNormal.y, rightPlane.m_vecNormal.z, rightPlane.m_flDist);
+	LOG_INFO("BackPlane: %f %f %f : %f", backPlane.m_vecNormal.x, backPlane.m_vecNormal.y, backPlane.m_vecNormal.z, backPlane.m_flDist);
 */
 
 	CSquadMonster* pSquadLeader = MySquadLeader();

@@ -26,6 +26,7 @@
 #include "player.h"   // LRC - footstep custom sound support
 #include "locus.h"    // LRC - locus utilities
 #include "movewith.h" // LRC - UTIL_SetVelocity for sprite resets
+#include "logger.h"
 
 #define SF_GIBSHOOTER_REPEATABLE 1 // allows a gibshooter to be refired
 #define SF_GIBSHOOTER_DEBUG      4 // LRC - debug mode: show gib velocity vectors
@@ -356,7 +357,7 @@ void CBeam::TriggerTouch(CBaseEntity* pOther)
 			CBaseEntity* pOwner = CBaseEntity::Instance(pev->owner);
 			pOwner->Use(pOther, this, USE_TOGGLE, 0);
 		}
-		ALERT(at_console, "Firing targets!!!\n");
+		LOG_INFO("Firing targets!!!");
 	}
 }
 
@@ -703,7 +704,7 @@ void CLightning::StrikeThink()
 			if (pStart != NULL)
 				RandomPoint(pStart->pev->origin);
 			else
-				ALERT(at_console, "env_beam: unknown entity \"%s\"\n", STRING(m_iszStartEntity));
+				LOG_INFO("env_beam: unknown entity \"%s\"", STRING(m_iszStartEntity));
 		}
 		return;
 	}
@@ -1509,7 +1510,7 @@ CGib* CGibShooter::CreateGib()
 
 	if (pev->body <= 1)
 	{
-		ALERT(at_aiconsole, "GibShooter Body is <= 1!\n");
+		LOG_DEBUG("GibShooter Body is <= 1!");
 	}
 
 	pGib->pev->body = RANDOM_LONG(1, pev->body - 1); // avoid throwing random amounts of the 0th gib. (skull).
@@ -1552,7 +1553,7 @@ void CGibShooter::ShootThink()
 		}
 
 		if ((pev->spawnflags & SF_GIBSHOOTER_DEBUG) != 0) // LRC - debug: show velocity vector
-			ALERT(at_console, "GibShooter: velocity (%f %f %f)\n", pGib->pev->velocity.x, pGib->pev->velocity.y, pGib->pev->velocity.z);
+			LOG_INFO("GibShooter: velocity (%f %f %f)", pGib->pev->velocity.x, pGib->pev->velocity.y, pGib->pev->velocity.z);
 	}
 
 	if (--m_iGibs <= 0)
@@ -2850,9 +2851,9 @@ void CEnvModel::SetSequence()
 	if (pev->sequence == -1)
 	{
 		if (pev->targetname)
-			ALERT(at_error, "env_model %s: unknown sequence \"%s\"\n", STRING(pev->targetname), STRING(iszSeq));
+			LOG_ERROR("env_model %s: unknown sequence \"%s\"", STRING(pev->targetname), STRING(iszSeq));
 		else
-			ALERT(at_error, "env_model: unknown sequence \"%s\"\n", STRING(iszSeq));
+			LOG_ERROR("env_model: unknown sequence \"%s\"", STRING(iszSeq));
 		pev->sequence = 0;
 	}
 
@@ -2953,7 +2954,7 @@ void CEnvBeamTrail::Precache()
 
 	if (m_iSprite == 0)
 	{
-		ALERT(at_error, "env_beamtrail \"%s\" has no sprite configured in netname; removing\n", STRING(pev->targetname));
+		LOG_ERROR("env_beamtrail \"%s\" has no sprite configured in netname; removing", STRING(pev->targetname));
 		UTIL_Remove(this);
 		return;
 	}
@@ -3084,7 +3085,7 @@ void CEnvFootsteps::PrecacheNoise(const char* szNoise)
 	size_t len = strlen(szNoise);
 	if (len >= sizeof(szBuf))
 	{
-		ALERT(at_error, "env_footsteps: noise string too long (max %d): %s\n", (int)(sizeof(szBuf) - 1), szNoise);
+		LOG_ERROR("env_footsteps: noise string too long (max %d): %s", (int)(sizeof(szBuf) - 1), szNoise);
 		return;
 	}
 	for (i = 0; szNoise[i]; i++)
@@ -3777,7 +3778,7 @@ void CEnvELight::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE use
 		m_hAttach = UTIL_FindEntityByTargetname(nullptr, STRING(pev->target));
 		if (m_hAttach == nullptr)
 		{
-			ALERT(at_console, "env_elight \"%s\" can't find target %s\n", STRING(pev->targetname), STRING(pev->target));
+			LOG_INFO("env_elight \"%s\" can't find target %s", STRING(pev->targetname), STRING(pev->target));
 			return;
 		}
 	}
@@ -3917,7 +3918,7 @@ void CEnvDecal::Spawn()
 		pev->skin = DECAL_INDEX(STRING(pev->noise));
 
 		if (pev->skin == 0)
-			ALERT(at_debug, "env_decal \"%s\" can't find decal \"%s\"\n", STRING(pev->targetname), STRING(pev->noise));
+			LOG_DEBUG("env_decal \"%s\" can't find decal \"%s\"", STRING(pev->targetname), STRING(pev->noise));
 	}
 }
 

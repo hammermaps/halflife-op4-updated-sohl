@@ -45,6 +45,7 @@
 #include "effects.h"
 #include "customentity.h"
 #include "explode.h"
+#include "logger.h"
 
 int g_fTorchAllyQuestion; // true if an idle grunt asked a question. Cleared when someone answers.
 
@@ -770,7 +771,7 @@ bool COFTorchAlly::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, f
 
 				Remember(bits_MEMORY_PROVOKED);
 				StopFollowing(true);
-				ALERT(at_console, "HGrunt Ally is now MAD!\n");
+				LOG_INFO("HGrunt Ally is now MAD!");
 			}
 			else
 			{
@@ -785,7 +786,7 @@ bool COFTorchAlly::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, f
 
 				m_flLastHitByPlayer = gpGlobals->time;
 
-				ALERT(at_console, "HGrunt Ally is now SUSPICIOUS!\n");
+				LOG_INFO("HGrunt Ally is now SUSPICIOUS!");
 			}
 		}
 		else if (!m_hEnemy->IsPlayer())
@@ -2100,7 +2101,7 @@ void COFTorchAlly::SetActivity(Activity NewActivity)
 	else
 	{
 		// Not available try to get default anim
-		ALERT(at_console, "%s has no sequence for act:%d\n", STRING(pev->classname), NewActivity);
+		LOG_INFO("%s has no sequence for act:%d", STRING(pev->classname), NewActivity);
 		pev->sequence = 0; // Set to the reset anim (if it's there)
 	}
 }
@@ -2399,11 +2400,11 @@ Schedule_t* COFTorchAlly::GetSchedule()
 			{
 				if (pMedic->pev->deadflag == DEAD_NO)
 				{
-					ALERT(at_aiconsole, "Injured Grunt found Medic\n");
+					LOG_DEBUG("Injured Grunt found Medic");
 
 					if (pMedic->HealMe(this))
 					{
-						ALERT(at_aiconsole, "Injured Grunt called for Medic\n");
+						LOG_DEBUG("Injured Grunt called for Medic");
 
 						EMIT_SOUND_DYN(edict(), CHAN_VOICE, "fgrunt/medic.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 

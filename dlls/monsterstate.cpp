@@ -24,6 +24,7 @@
 #include "animation.h"
 #include "saverestore.h"
 #include "soundent.h"
+#include "logger.h"
 
 //=========================================================
 // SetState
@@ -33,7 +34,7 @@ void CBaseMonster::SetState(MONSTERSTATE State)
 	/*
 	if ( State != m_MonsterState )
 	{
-		ALERT ( at_aiconsole, "State Changed to %d\n", State );
+		LOG_DEBUG("State Changed to %d", State);
 	}
 */
 
@@ -46,7 +47,7 @@ void CBaseMonster::SetState(MONSTERSTATE State)
 		if (m_hEnemy != NULL)
 		{
 			m_hEnemy = NULL; // not allowed to have an enemy anymore.
-			ALERT(at_aiconsole, "Stripped\n");
+			LOG_DEBUG("Stripped");
 		}
 		break;
 	}
@@ -202,7 +203,7 @@ MONSTERSTATE CBaseMonster::GetIdealState()
 			{
 				m_IdealMonsterState = MONSTERSTATE_ALERT;
 				// pev->effects = EF_BRIGHTFIELD;
-				ALERT(at_aiconsole, "***Combat state with no enemy!\n");
+				LOG_DEBUG("***Combat state with no enemy!");
 			}
 			break;
 		}

@@ -545,7 +545,7 @@ void CMultiManager::ManagerReport()
 
 	for (cIndex = 0; cIndex < m_cTargets; cIndex++)
 	{
-		ALERT(at_console, "%s %f\n", STRING(m_iTargetName[cIndex]), m_flTargetDelay[cIndex]);
+		LOG_INFO("%s %f", STRING(m_iTargetName[cIndex]), m_flTargetDelay[cIndex]);
 	}
 }
 #endif
@@ -794,7 +794,7 @@ void PlayCDTrack(int iTrack)
 
 	if (iTrack < -1 || iTrack > 30)
 	{
-		ALERT(at_console, "TriggerCDAudio - Track %d out of range\n");
+		LOG_INFO("TriggerCDAudio - Track %d out of range");
 		return;
 	}
 
@@ -1341,16 +1341,16 @@ void CBaseTrigger::CounterUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE
 			switch (m_cTriggersLeft)
 			{
 			case 1:
-				ALERT(at_console, "Only 1 more to go...");
+				LOG_INFO("Only 1 more to go...");
 				break;
 			case 2:
-				ALERT(at_console, "Only 2 more to go...");
+				LOG_INFO("Only 2 more to go...");
 				break;
 			case 3:
-				ALERT(at_console, "Only 3 more to go...");
+				LOG_INFO("Only 3 more to go...");
 				break;
 			default:
-				ALERT(at_console, "There are more to go...");
+				LOG_INFO("There are more to go...");
 				break;
 			}
 		}
@@ -1359,7 +1359,7 @@ void CBaseTrigger::CounterUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE
 
 	// !!!UNDONE: I don't think we want these Quakesque messages
 	if (fTellActivator)
-		ALERT(at_console, "Sequence completed!");
+		LOG_INFO("Sequence completed!");
 
 	ActivateMultiTrigger(m_hActivator);
 }
@@ -1530,10 +1530,10 @@ When the player touches this, he gets sent to the map listed in the "map" variab
 void CChangeLevel::Spawn()
 {
 	if (FStrEq(m_szMapName, ""))
-		ALERT(at_console, "a trigger_changelevel doesn't have a map");
+		LOG_INFO("a trigger_changelevel doesn't have a map");
 
 	if (FStrEq(m_szLandmarkName, ""))
-		ALERT(at_console, "trigger_changelevel to %s doesn't have a landmark", m_szMapName);
+		LOG_INFO("trigger_changelevel to %s doesn't have a landmark", m_szMapName);
 
 	if (0 == stricmp(m_szMapName, STRING(gpGlobals->mapname)))
 	{
@@ -1615,7 +1615,7 @@ void CChangeLevel::ChangeLevelNow(CBaseEntity* pActivator)
 	CBaseEntity* pPlayer = UTIL_GetLocalPlayer();
 	if (!InTransitionVolume(pPlayer, m_szLandmarkName))
 	{
-		ALERT(at_aiconsole, "Player isn't in the transition volume %s, aborting\n", m_szLandmarkName);
+		LOG_DEBUG("Player isn't in the transition volume %s, aborting", m_szLandmarkName);
 		return;
 	}
 
@@ -1648,7 +1648,7 @@ void CChangeLevel::ChangeLevelNow(CBaseEntity* pActivator)
 		gpGlobals->vecLandmarkOffset = VARS(pentLandmark)->origin;
 	}
 	//	ALERT( at_console, "Level touches %d levels\n", ChangeList( levels, 16 ) );
-	ALERT(at_console, "CHANGE LEVEL: %s %s\n", st_szNextMap, st_szNextSpot);
+	LOG_INFO("CHANGE LEVEL: %s %s", st_szNextMap, st_szNextSpot);
 	CHANGE_LEVEL(st_szNextMap, st_szNextSpot);
 }
 

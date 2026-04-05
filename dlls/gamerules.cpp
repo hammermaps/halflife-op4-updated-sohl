@@ -29,6 +29,7 @@
 #include "game.h"
 #include "world.h"
 #include "UserMessages.h"
+#include "logger.h"
 
 extern edict_t* EntSelectSpawnPoint(CBasePlayer* pPlayer);
 
@@ -196,7 +197,7 @@ void CGameRules::RefreshSkillData()
 
 	gSkillData.iSkillLevel = iSkill;
 
-	ALERT(at_console, "\nGAME SKILL LEVEL:%d\n", iSkill);
+	LOG_INFO("\nGAME SKILL LEVEL:%d", iSkill);
 
 	//Agrunt
 	gSkillData.agruntHealth = GetSkillCvar("sk_agrunt_health");

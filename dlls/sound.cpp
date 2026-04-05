@@ -1233,7 +1233,7 @@ int SENTENCEG_PlayRndSz(edict_t* entity, const char* szgroupname,
 	isentenceg = SENTENCEG_GetIndex(szgroupname);
 	if (isentenceg < 0)
 	{
-		ALERT(at_console, "No such sentence group %s\n", szgroupname);
+		LOG_INFO("No such sentence group %s", szgroupname);
 		return -1;
 	}
 
@@ -1448,7 +1448,7 @@ void EMIT_SOUND_DYN(edict_t* entity, int channel, const char* sample, float volu
 		if (SENTENCEG_Lookup(sample, name) >= 0)
 			EMIT_SOUND_DYN2(entity, channel, name, volume, attenuation, flags, pitch);
 		else
-			ALERT(at_aiconsole, "Unable to find %s in sentences.txt\n", sample);
+			LOG_DEBUG("Unable to find %s in sentences.txt", sample);
 	}
 	else
 		EMIT_SOUND_DYN2(entity, channel, sample, volume, attenuation, flags, pitch);
@@ -1977,7 +1977,7 @@ void CSpeaker::SpeakerThink()
 		// make random announcement from sentence group
 
 		if (SENTENCEG_PlayRndSz(ENT(pev), szSoundFile, flvolume, flattenuation, flags, pitch) < 0)
-			ALERT(at_console, "Level Design Error!\nSPEAKER has bad sentence group name: %s\n", szSoundFile);
+			LOG_INFO("Level Design Error!\nSPEAKER has bad sentence group name: %s", szSoundFile);
 
 		// set next announcement time for random 5 to 10 minute delay
 		SetNextThink(RANDOM_FLOAT(ANNOUNCE_MINUTES_MIN * 60.0, ANNOUNCE_MINUTES_MAX * 60.0));

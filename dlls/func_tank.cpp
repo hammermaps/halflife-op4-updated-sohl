@@ -20,6 +20,7 @@
 #include "explode.h"
 
 #include "player.h"
+#include "logger.h"
 
 
 #define SF_TANK_ACTIVE 0x0001
@@ -468,7 +469,7 @@ bool CFuncTank::StartControl(CBasePlayer* pController)
 			return false;
 	}
 
-	ALERT(at_aiconsole, "using TANK!\n");
+	LOG_DEBUG("using TANK!");
 
 	m_pController = pController;
 	if (m_pController->m_pActiveItem)
@@ -494,7 +495,7 @@ void CFuncTank::StopControl()
 
 	m_pController->EquipWeapon();
 
-	ALERT(at_aiconsole, "stopped using TANK\n");
+	LOG_DEBUG("stopped using TANK");
 
 	m_pController->m_iHideHUD &= ~HIDEHUD_WEAPONS;
 
@@ -1067,7 +1068,7 @@ void CFuncTankLaser::Activate()
 	if (!GetLaser())
 	{
 		UTIL_Remove(this);
-		ALERT(at_error, "Laser tank with no env_laser!\n");
+		LOG_ERROR("Laser tank with no env_laser!");
 	}
 	else
 	{
@@ -1342,7 +1343,7 @@ void CFuncTankControls::Think()
 	}
 
 	if (!m_pTank)
-		ALERT(at_aiconsole, "No tank %s\n", STRING(pev->target));
+		LOG_DEBUG("No tank %s", STRING(pev->target));
 }
 
 void CFuncTankControls::Spawn()
@@ -1455,7 +1456,7 @@ void CTankSequence::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 	CBaseEntity* pEnt = UTIL_FindEntityByTargetname(NULL, STRING(m_iszEntity));
 	if (!pEnt || strncmp(STRING(pEnt->pev->classname), "func_tank", 9) != 0)
 	{
-		ALERT(at_error, "Invalid or missing tank \"%s\" for scripted_tanksequence!\n", STRING(m_iszEntity));
+		LOG_ERROR("Invalid or missing tank \"%s\" for scripted_tanksequence!", STRING(m_iszEntity));
 		return;
 	}
 	CFuncTank* pTank = (CFuncTank*)pEnt;
@@ -1555,7 +1556,7 @@ void CTankSequence::StopSequence()
 {
 	if (!m_pTank)
 	{
-		ALERT(at_error, "TankSeq: StopSequence with no tank!\n");
+		LOG_ERROR("TankSeq: StopSequence with no tank!");
 		return;
 	}
 

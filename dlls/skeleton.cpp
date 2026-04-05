@@ -15,6 +15,7 @@
 #include "extdll.h"
 #include "util.h"
 #include "cbase.h"
+#include "logger.h"
 
 //=========================================================
 // DEAD SKELETON PROP
@@ -65,7 +66,7 @@ void COFSkeleton::Spawn()
 
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead skeleton with bad pose\n");
+		LOG_INFO("Dead skeleton with bad pose");
 	}
 
 	// Corpses have less health

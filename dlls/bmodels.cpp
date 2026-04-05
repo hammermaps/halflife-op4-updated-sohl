@@ -26,6 +26,7 @@
 #include "doors.h"
 #include "UserMessages.h"
 #include "movewith.h" // LRC - UTIL_SetAvelocity / UTIL_SetAngles
+#include "logger.h"
 
 #define SF_BRUSH_ACCDCC 16		 // brush should accelerate and decelerate when toggled
 #define SF_BRUSH_HURT 32		 // rotating brush that inflicts pain based on rotation speed
@@ -968,7 +969,7 @@ void CPendulum::RopeTouch(CBaseEntity* pOther)
 
 	if (!pOther->IsPlayer())
 	{ // not a player!
-		ALERT(at_console, "Not a client\n");
+		LOG_INFO("Not a client");
 		return;
 	}
 

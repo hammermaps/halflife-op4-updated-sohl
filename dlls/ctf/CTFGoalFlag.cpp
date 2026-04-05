@@ -25,6 +25,7 @@
 #include "gamerules.h"
 #include "ctf/ctfplay_gamerules.h"
 #include "UserMessages.h"
+#include "logger.h"
 
 void DumpCTFFlagInfo(CBasePlayer* pPlayer)
 {
@@ -223,9 +224,7 @@ void CTFGoalFlag::Spawn()
 
 		if (0 == g_engfuncs.pfnDropToFloor(edict()))
 		{
-			ALERT(
-				at_error,
-				"Item %s fell out of level at %f,%f,%f",
+			LOG_ERROR("Item %s fell out of level at %f,%f,%f",
 				STRING(pev->classname),
 				pev->origin.x,
 				pev->origin.y,
@@ -268,7 +267,7 @@ void CTFGoalFlag::Spawn()
 	}
 	else
 	{
-		ALERT(at_error, "Invalid goal_no set for CTF flag\n");
+		LOG_ERROR("Invalid goal_no set for CTF flag");
 	}
 }
 

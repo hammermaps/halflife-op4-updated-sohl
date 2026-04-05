@@ -1,3 +1,6 @@
+#ifndef CLIENT_DLL
+#include "logger.h"
+#endif
 /***
 *
 *	Copyright (c) 1996-2001, Valve LLC. All rights reserved.
@@ -215,7 +218,11 @@ public:
 	{
 #ifdef _DEBUG
 		if (!m_pNodes || i < 0 || i > m_cNodes)
+			#ifndef CLIENT_DLL
+			LOG_ERROR("Bad Node!");
+			#else
 			ALERT(at_error, "Bad Node!\n");
+			#endif
 #endif
 		return m_pNodes[i];
 	}
@@ -224,7 +231,11 @@ public:
 	{
 #ifdef _DEBUG
 		if (!m_pLinkPool || i < 0 || i > m_cLinks)
+			#ifndef CLIENT_DLL
+			LOG_ERROR("Bad link!");
+			#else
 			ALERT(at_error, "Bad link!\n");
+			#endif
 #endif
 		return m_pLinkPool[i];
 	}

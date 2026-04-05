@@ -17,6 +17,7 @@
 #include "cbase.h"
 
 #include "CTFSpawn.h"
+#include "logger.h"
 
 const char* const sTeamSpawnNames[] =
 	{
@@ -47,7 +48,7 @@ void CTFSpawn::Spawn()
 {
 	if (team_no < CTFTeam::None || team_no > CTFTeam::OpposingForce)
 	{
-		ALERT(at_console, "Teamspawnpoint with an invalid team_no of %d\n", team_no);
+		LOG_INFO("Teamspawnpoint with an invalid team_no of %d", team_no);
 		return;
 	}
 

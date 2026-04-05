@@ -26,6 +26,7 @@
 #include "decals.h"
 #include "soundent.h"
 #include "game.h"
+#include "logger.h"
 
 #define SQUID_SPRINT_DIST 256 // how close the squid has to get before starting to sprint and refusing to swerve
 
@@ -453,7 +454,7 @@ bool CPitdrone::FValidateHintType(short sHint)
 		}
 	}
 
-	ALERT(at_aiconsole, "Couldn't validate hint type");
+	LOG_DEBUG("Couldn't validate hint type");
 	return false;
 }
 
@@ -1173,7 +1174,7 @@ void CPitdrone::StartTask(Task_t* pTask)
 		}
 		else
 		{
-			ALERT(at_aiconsole, "GetPathToEnemy failed!!\n");
+			LOG_DEBUG("GetPathToEnemy failed!!");
 			TaskFail();
 		}
 		break;

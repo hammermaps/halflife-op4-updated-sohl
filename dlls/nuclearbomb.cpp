@@ -256,7 +256,7 @@ void COFNuclearBomb::Spawn()
 	}
 	else
 	{
-		ALERT(at_error, "Nuclear Bomb fell out of level at %f,%f,%f", pev->origin.x, pev->origin.y, pev->origin.z);
+		LOG_ERROR("Nuclear Bomb fell out of level at %f,%f,%f", pev->origin.x, pev->origin.y, pev->origin.z);
 		UTIL_Remove(this);
 	}
 }

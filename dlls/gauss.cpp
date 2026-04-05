@@ -23,6 +23,7 @@
 #include "shake.h"
 #include "gamerules.h"
 #include "UserMessages.h"
+#include "logger.h"
 
 LINK_ENTITY_TO_CLASS(weapon_gauss, CGauss);
 
@@ -257,7 +258,7 @@ void CGauss::SecondaryAttack()
 		// ALERT( at_console, "%d %d %d\n", m_fInAttack, m_iSoundState, pitch );
 
 		if (m_iSoundState == 0)
-			ALERT(at_console, "sound state %d\n", m_iSoundState);
+			LOG_INFO("sound state %d", m_iSoundState);
 
 		PLAYBACK_EVENT_FULL(UTIL_DefaultPlaybackFlags(), m_pPlayer->edict(), m_usGaussSpin, 0.0,
 			g_vecZero, g_vecZero, 0.0, 0.0, pitch, 0, (m_iSoundState == SND_CHANGE_PITCH) ? 1 : 0, 0);

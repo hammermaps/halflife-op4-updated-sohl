@@ -43,6 +43,7 @@
 #include "customentity.h"
 #include "weapons/CSpore.h"
 #include "weapons/CShockBeam.h"
+#include "logger.h"
 
 int g_fShockTrooperQuestion; // true if an idle grunt asked a question. Cleared when someone answers.
 static int iShockTrooperMuzzleFlash;
@@ -1822,7 +1823,7 @@ void CShockTrooper::SetActivity(Activity NewActivity)
 	else
 	{
 		// Not available try to get default anim
-		ALERT(at_console, "%s has no sequence for act:%d\n", STRING(pev->classname), NewActivity);
+		LOG_INFO("%s has no sequence for act:%d", STRING(pev->classname), NewActivity);
 		pev->sequence = 0; // Set to the reset anim (if it's there)
 	}
 }
@@ -2230,7 +2231,7 @@ void CShockTrooper::MonsterThink()
 		{
 			++m_cAmmoLoaded;
 			m_flLastChargeTime = gpGlobals->time;
-			ALERT(at_aiconsole, "Shocktrooper Reload: %d\n", m_cAmmoLoaded);
+			LOG_DEBUG("Shocktrooper Reload: %d", m_cAmmoLoaded);
 		}
 	}
 
@@ -2371,7 +2372,7 @@ void CDeadShockTrooper::Spawn()
 
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead ShockTrooper with bad pose\n");
+		LOG_INFO("Dead ShockTrooper with bad pose");
 	}
 
 	// Corpses have less health

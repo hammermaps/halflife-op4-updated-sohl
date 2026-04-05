@@ -26,6 +26,7 @@
 #include "squadmonster.h"
 #include "soundent.h"
 #include "game.h"
+#include "logger.h"
 
 // houndeye does 20 points of damage spread over a sphere 384 units in diameter, and each additional
 // squad member increases the BASE damage by 110%, per the spec.
@@ -209,7 +210,7 @@ bool CHoundeye::FValidateHintType(short sHint)
 		}
 	}
 
-	ALERT(at_aiconsole, "Couldn't validate hint type");
+	LOG_DEBUG("Couldn't validate hint type");
 	return false;
 }
 
@@ -516,7 +517,7 @@ void CHoundeye::WriteBeamColor()
 			bBlue = 211;
 			break;
 		default:
-			ALERT(at_aiconsole, "Unsupported Houndeye SquadSize!\n");
+			LOG_DEBUG("Unsupported Houndeye SquadSize!");
 			bRed = 188;
 			bGreen = 220;
 			bBlue = 255;
@@ -1313,7 +1314,7 @@ void CDeadHoundeye::Spawn()
 
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead houndeye with bad pose\n");
+		LOG_INFO("Dead houndeye with bad pose");
 	}
 
 	// Corpses have less health

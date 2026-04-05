@@ -33,6 +33,7 @@
 #include "decals.h"
 #include "soundent.h"
 #include "gamerules.h"
+#include "logger.h"
 
 #define MONSTER_CUT_CORNER_DIST 8 // 8 means the monster's bounding box is contained without the box of the node in WC
 
@@ -379,7 +380,7 @@ void CBaseMonster::Look(int iDistance)
 					case R_AL:
 						break;
 					default:
-						ALERT(at_aiconsole, "%s can't assess %s\n", STRING(pev->classname), STRING(pSightEnt->pev->classname));
+						LOG_DEBUG("%s can't assess %s", STRING(pev->classname), STRING(pSightEnt->pev->classname));
 						break;
 					}
 				}
@@ -418,9 +419,9 @@ CSound* CBaseMonster::PBestSound()
 
 	if (iThisSound == SOUNDLIST_EMPTY)
 	{
-		ALERT(at_aiconsole, "ERROR! monster %s has no audible sounds!\n", STRING(pev->classname));
+		LOG_DEBUG("ERROR! monster %s has no audible sounds!", STRING(pev->classname));
 #if _DEBUG
-		ALERT(at_error, "NULL Return from PBestSound\n");
+		LOG_ERROR("NULL Return from PBestSound");
 #endif
 		return NULL;
 	}
@@ -448,7 +449,7 @@ CSound* CBaseMonster::PBestSound()
 		return pSound;
 	}
 #if _DEBUG
-	ALERT(at_error, "NULL Return from PBestSound\n");
+	LOG_ERROR("NULL Return from PBestSound");
 #endif
 	return NULL;
 }
@@ -469,9 +470,9 @@ CSound* CBaseMonster::PBestScent()
 
 	if (iThisScent == SOUNDLIST_EMPTY)
 	{
-		ALERT(at_aiconsole, "ERROR! PBestScent() has empty soundlist!\n");
+		LOG_DEBUG("ERROR! PBestScent() has empty soundlist!");
 #if _DEBUG
-		ALERT(at_error, "NULL Return from PBestSound\n");
+		LOG_ERROR("NULL Return from PBestSound");
 #endif
 		return NULL;
 	}
@@ -500,7 +501,7 @@ CSound* CBaseMonster::PBestScent()
 		return pSound;
 	}
 #if _DEBUG
-	ALERT(at_error, "NULL Return from PBestScent\n");
+	LOG_ERROR("NULL Return from PBestScent");
 #endif
 	return NULL;
 }
@@ -557,7 +558,7 @@ void CBaseMonster::MonsterThink()
 	else
 	{
 		if (!TaskIsRunning() && !TaskIsComplete())
-			ALERT(at_error, "Schedule stalled!!\n");
+			LOG_ERROR("Schedule stalled!!");
 	}
 #endif
 }
@@ -743,7 +744,7 @@ void DrawRoute(entvars_t* pev, WayPoint_t* m_Route, int m_iRouteIndex, int r, in
 
 	if (m_Route[m_iRouteIndex].iType == 0)
 	{
-		ALERT(at_aiconsole, "Can't draw route!\n");
+		LOG_DEBUG("Can't draw route!");
 		return;
 	}
 
@@ -1243,7 +1244,7 @@ void CBaseMonster::SetActivity(Activity NewActivity)
 	else
 	{
 		// Not available try to get default anim
-		ALERT(at_aiconsole, "%s has no sequence for act:%d\n", STRING(pev->classname), NewActivity);
+		LOG_DEBUG("%s has no sequence for act:%d", STRING(pev->classname), NewActivity);
 		pev->sequence = 0; // Set to the reset anim (if it's there)
 	}
 }
@@ -1272,7 +1273,7 @@ void CBaseMonster::SetSequenceByName(const char* szSequence)
 	else
 	{
 		// Not available try to get default anim
-		ALERT(at_aiconsole, "%s has no sequence named:%f\n", STRING(pev->classname), szSequence);
+		LOG_DEBUG("%s has no sequence named:%f", STRING(pev->classname), szSequence);
 		pev->sequence = 0; // Set to the reset anim (if it's there)
 	}
 }
@@ -1449,7 +1450,7 @@ void CBaseMonster::AdvanceRoute(float distance)
 		// time to refresh the route.
 		if (!FRefreshRoute())
 		{
-			ALERT(at_aiconsole, "Can't Refresh Route!!\n");
+			LOG_DEBUG("Can't Refresh Route!!");
 		}
 	}
 	else
@@ -1803,7 +1804,7 @@ void CBaseMonster::Move(float flInterval)
 		// so refresh it.
 		if (m_movementGoal == MOVEGOAL_NONE || !FRefreshRoute())
 		{
-			ALERT(at_aiconsole, "Tried to move with no route!\n");
+			LOG_DEBUG("Tried to move with no route!");
 			TaskFail();
 			return;
 		}
@@ -1919,7 +1920,7 @@ void CBaseMonster::Move(float flInterval)
 				else
 				{
 					TaskFail();
-					ALERT(at_aiconsole, "%s Failed to move (%d)!\n", STRING(pev->classname), static_cast<int>(HasMemory(bits_MEMORY_MOVE_FAILED)));
+					LOG_DEBUG("%s Failed to move (%d)!", STRING(pev->classname), static_cast<int>(HasMemory(bits_MEMORY_MOVE_FAILED)));
 					//ALERT( at_aiconsole, "%f, %f, %f\n", pev->origin.z, (pev->origin + (vecDir * flCheckDist)).z, m_Route[m_iRouteIndex].vecLocation.z );
 				}
 				return;
@@ -2084,7 +2085,7 @@ void CBaseMonster::StartMonster()
 		{
 			if (!(pev->spawnflags & SF_MONSTER_NO_YELLOW_BLOBS))
 			{
-				ALERT(at_error, "Monster %s stuck in wall--level design error", STRING(pev->classname));
+				LOG_ERROR("Monster %s stuck in wall--level design error", STRING(pev->classname));
 				pev->effects = EF_BRIGHTFIELD;
 			}
 		}
@@ -2101,7 +2102,7 @@ void CBaseMonster::StartMonster()
 
 		if (!m_pGoalEnt)
 		{
-			ALERT(at_error, "ReadyMonster()--%s couldn't find target %s", STRING(pev->classname), STRING(pev->target));
+			LOG_ERROR("ReadyMonster()--%s couldn't find target %s", STRING(pev->classname), STRING(pev->target));
 		}
 		else
 		{
@@ -2113,7 +2114,7 @@ void CBaseMonster::StartMonster()
 			// At this point, we expect only a path_corner as initial goal
 			if (!FClassnameIs( m_pGoalEnt->pev, "path_corner"))
 			{
-				ALERT(at_warning, "ReadyMonster--monster's initial goal '%s' is not a path_corner", STRING(pev->target));
+				LOG_WARNING("ReadyMonster--monster's initial goal '%s' is not a path_corner", STRING(pev->target));
 			}
 #endif
 
@@ -2129,7 +2130,7 @@ void CBaseMonster::StartMonster()
 
 			if (!FRefreshRoute())
 			{
-				ALERT(at_aiconsole, "Can't Create Route!\n");
+				LOG_DEBUG("Can't Create Route!");
 			}
 			SetState(MONSTERSTATE_IDLE);
 			ChangeSchedule(GetScheduleOfType(SCHED_IDLE_WALK));
@@ -2168,7 +2169,7 @@ void CBaseMonster::MovementComplete()
 		break;
 
 	case TASKSTATUS_RUNNING_TASK:
-		ALERT(at_error, "Movement completed twice!\n");
+		LOG_ERROR("Movement completed twice!");
 		break;
 
 	case TASKSTATUS_COMPLETE:
@@ -2247,14 +2248,14 @@ bool CBaseMonster::FindCover(Vector vecThreat, Vector vecViewOffset, float flMin
 	if (flMinDist > 0.5 * flMaxDist)
 	{
 #if _DEBUG
-		ALERT(at_console, "FindCover MinDist (%.0f) too close to MaxDist (%.0f)\n", flMinDist, flMaxDist);
+		LOG_INFO("FindCover MinDist (%.0f) too close to MaxDist (%.0f)", flMinDist, flMaxDist);
 #endif
 		flMinDist = 0.5 * flMaxDist;
 	}
 
 	if (0 == WorldGraph.m_fGraphPresent || 0 == WorldGraph.m_fGraphPointersSet)
 	{
-		ALERT(at_aiconsole, "Graph not ready for findcover!\n");
+		LOG_DEBUG("Graph not ready for findcover!");
 		return false;
 	}
 
@@ -2264,7 +2265,7 @@ bool CBaseMonster::FindCover(Vector vecThreat, Vector vecViewOffset, float flMin
 
 	if (iMyNode == NO_NODE)
 	{
-		ALERT(at_aiconsole, "FindCover() - %s has no nearest node!\n", STRING(pev->classname));
+		LOG_DEBUG("FindCover() - %s has no nearest node!", STRING(pev->classname));
 		return false;
 	}
 	if (iThreatNode == NO_NODE)
@@ -2352,14 +2353,14 @@ bool CBaseMonster::BuildNearestRoute(Vector vecThreat, Vector vecViewOffset, flo
 	if (flMinDist > 0.5 * flMaxDist)
 	{
 #if _DEBUG
-		ALERT(at_console, "FindCover MinDist (%.0f) too close to MaxDist (%.0f)\n", flMinDist, flMaxDist);
+		LOG_INFO("FindCover MinDist (%.0f) too close to MaxDist (%.0f)", flMinDist, flMaxDist);
 #endif
 		flMinDist = 0.5 * flMaxDist;
 	}
 
 	if (0 == WorldGraph.m_fGraphPresent || 0 == WorldGraph.m_fGraphPointersSet)
 	{
-		ALERT(at_aiconsole, "Graph not ready for BuildNearestRoute!\n");
+		LOG_DEBUG("Graph not ready for BuildNearestRoute!");
 		return false;
 	}
 
@@ -2368,7 +2369,7 @@ bool CBaseMonster::BuildNearestRoute(Vector vecThreat, Vector vecViewOffset, flo
 
 	if (iMyNode == NO_NODE)
 	{
-		ALERT(at_aiconsole, "BuildNearestRoute() - %s has no nearest node!\n", STRING(pev->classname));
+		LOG_DEBUG("BuildNearestRoute() - %s has no nearest node!", STRING(pev->classname));
 		return false;
 	}
 
@@ -2621,7 +2622,7 @@ void CBaseMonster::SetEyePosition()
 
 	if (pev->view_ofs == g_vecZero)
 	{
-		ALERT(at_aiconsole, "%s has no view_ofs!\n", STRING(pev->classname));
+		LOG_DEBUG("%s has no view_ofs!", STRING(pev->classname));
 	}
 }
 
@@ -2635,13 +2636,13 @@ void CBaseMonster::HandleAnimEvent(MonsterEvent_t* pEvent)
 			pev->deadflag = DEAD_DYING;
 			// Kill me now! (and fade out when CineCleanup() is called)
 #if _DEBUG
-			ALERT(at_aiconsole, "Death event: %s\n", STRING(pev->classname));
+			LOG_DEBUG("Death event: %s", STRING(pev->classname));
 #endif
 			pev->health = 0;
 		}
 #if _DEBUG
 		else
-			ALERT(at_aiconsole, "INVALID death event:%s\n", STRING(pev->classname));
+			LOG_DEBUG("INVALID death event:%s", STRING(pev->classname));
 #endif
 		break;
 	case SCRIPT_EVENT_NOT_DEAD:
@@ -2737,7 +2738,7 @@ void CBaseMonster::HandleAnimEvent(MonsterEvent_t* pEvent)
 	}
 
 	default:
-		ALERT(at_aiconsole, "Unhandled animation event %d for %s\n", pEvent->event, STRING(pev->classname));
+		LOG_DEBUG("Unhandled animation event %d for %s", pEvent->event, STRING(pev->classname));
 		break;
 	}
 }
@@ -2809,7 +2810,7 @@ bool CBaseMonster::FGetNodeRoute(Vector vecDest)
 	if (0 == iResult)
 	{
 #if 1
-		ALERT(at_aiconsole, "No Path from %d to %d!\n", iSrcNode, iDestNode);
+		LOG_DEBUG("No Path from %d to %d!", iSrcNode, iDestNode);
 		return false;
 #else
 		bool bRoutingSave = WorldGraph.m_fRoutingComplete;
@@ -2818,12 +2819,12 @@ bool CBaseMonster::FGetNodeRoute(Vector vecDest)
 		WorldGraph.m_fRoutingComplete = bRoutingSave;
 		if (0 == iResult)
 		{
-			ALERT(at_aiconsole, "No Path from %d to %d!\n", iSrcNode, iDestNode);
+			LOG_DEBUG("No Path from %d to %d!", iSrcNode, iDestNode);
 			return false;
 		}
 		else
 		{
-			ALERT(at_aiconsole, "Routing is inconsistent!");
+			LOG_DEBUG("Routing is inconsistent!");
 		}
 #endif
 	}
@@ -2867,7 +2868,7 @@ int CBaseMonster::FindHintNode()
 
 	if (0 == WorldGraph.m_fGraphPresent)
 	{
-		ALERT(at_aiconsole, "find_hintnode: graph not ready!\n");
+		LOG_DEBUG("find_hintnode: graph not ready!");
 		return NO_NODE;
 	}
 
@@ -2908,19 +2909,17 @@ int CBaseMonster::FindHintNode()
 
 void CBaseMonster::ReportAIState()
 {
-	ALERT_TYPE level = at_console;
-
 	static const char* pStateNames[] = {"None", "Idle", "Combat", "Alert", "Hunt", "Prone", "Scripted", "PlayDead", "Dead"};
 
-	ALERT(level, "%s: ", STRING(pev->classname));
+	LOG_INFO("%s: ", STRING(pev->classname));
 	if ((int)m_MonsterState < ARRAYSIZE(pStateNames))
-		ALERT(level, "State: %s, ", pStateNames[m_MonsterState]);
+		LOG_INFO("State: %s, ", pStateNames[m_MonsterState]);
 	int i = 0;
 	while (activity_map[i].type != 0)
 	{
 		if (activity_map[i].type == (int)m_Activity)
 		{
-			ALERT(level, "Activity %s, ", activity_map[i].name);
+			LOG_INFO("Activity %s, ", activity_map[i].name);
 			break;
 		}
 		i++;
@@ -2932,26 +2931,26 @@ void CBaseMonster::ReportAIState()
 		pName = m_pSchedule->pName;
 		if (!pName)
 			pName = "Unknown";
-		ALERT(level, "Schedule %s, ", pName);
+		LOG_INFO("Schedule %s, ", pName);
 		Task_t* pTask = GetTask();
 		if (pTask)
-			ALERT(level, "Task %d (#%d), ", pTask->iTask, m_iScheduleIndex);
+			LOG_INFO("Task %d (#%d), ", pTask->iTask, m_iScheduleIndex);
 	}
 	else
-		ALERT(level, "No Schedule, ");
+		LOG_INFO("No Schedule, ");
 
 	if (m_hEnemy != NULL)
-		ALERT(level, "\nEnemy is %s", STRING(m_hEnemy->pev->classname));
+		LOG_INFO("Enemy is %s", STRING(m_hEnemy->pev->classname));
 	else
-		ALERT(level, "No enemy");
+		LOG_INFO("No enemy");
 
 	if (IsMoving())
 	{
-		ALERT(level, " Moving ");
+		LOG_INFO(" Moving ");
 		if (m_flMoveWaitFinished > gpGlobals->time)
-			ALERT(level, ": Stopped for %.2f. ", m_flMoveWaitFinished - gpGlobals->time);
+			LOG_INFO(": Stopped for %.2f. ", m_flMoveWaitFinished - gpGlobals->time);
 		else if (m_IdealActivity == GetStoppedActivity())
-			ALERT(level, ": In stopped anim. ");
+			LOG_INFO(": In stopped anim. ");
 	}
 
 	CSquadMonster* pSquadMonster = MySquadMonsterPointer();
@@ -2960,26 +2959,24 @@ void CBaseMonster::ReportAIState()
 	{
 		if (!pSquadMonster->InSquad())
 		{
-			ALERT(level, "not ");
+			LOG_INFO("not ");
 		}
 
-		ALERT(level, "In Squad, ");
+		LOG_INFO("In Squad, ");
 
 		if (!pSquadMonster->IsLeader())
 		{
-			ALERT(level, "not ");
+			LOG_INFO("not ");
 		}
 
-		ALERT(level, "Leader.");
+		LOG_INFO("Leader.");
 	}
 
-	ALERT(level, "\n");
-	ALERT(level, "Yaw speed:%3.1f,Health: %3.1f\n", pev->yaw_speed, pev->health);
+	LOG_INFO("Yaw speed:%3.1f,Health: %3.1f", pev->yaw_speed, pev->health);
 	if ((pev->spawnflags & SF_MONSTER_PRISONER) != 0)
-		ALERT(level, " PRISONER! ");
+		LOG_INFO(" PRISONER! ");
 	if ((pev->spawnflags & SF_MONSTER_PREDISASTER) != 0)
-		ALERT(level, " Pre-Disaster! ");
-	ALERT(level, "\n");
+		LOG_INFO(" Pre-Disaster! ");
 }
 
 //=========================================================
@@ -3109,7 +3106,7 @@ bool CBaseMonster::FCheckAITrigger()
 	if (fFireTarget)
 	{
 		// fire the target, then set the trigger conditions to NONE so we don't fire again
-		ALERT(at_aiconsole, "AI Trigger Fire Target\n");
+		LOG_DEBUG("AI Trigger Fire Target");
 		FireTargets(STRING(m_iszTriggerTarget), this, this, USE_TOGGLE, 0);
 		m_iTriggerCondition = AITRIGGER_NONE;
 		return true;
@@ -3422,7 +3419,7 @@ CBaseEntity* CBaseMonster::DropItem(const char* pszItemName, const Vector& vecPo
 {
 	if (!pszItemName)
 	{
-		ALERT(at_console, "DropItem() - No item name!\n");
+		LOG_INFO("DropItem() - No item name!");
 		return nullptr;
 	}
 
@@ -3442,7 +3439,7 @@ CBaseEntity* CBaseMonster::DropItem(const char* pszItemName, const Vector& vecPo
 	}
 	else
 	{
-		ALERT(at_console, "DropItem() - Didn't create!\n");
+		LOG_INFO("DropItem() - Didn't create!");
 		return nullptr;
 	}
 }

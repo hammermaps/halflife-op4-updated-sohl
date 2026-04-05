@@ -511,7 +511,7 @@ void COFSquadTalkMonster::StartMonster()
 
 		if (0 != iSquadSize)
 		{
-			ALERT(at_aiconsole, "Squad of %d %s formed\n", iSquadSize, STRING(pev->classname));
+			LOG_DEBUG("Squad of %d %s formed", iSquadSize, STRING(pev->classname));
 		}
 	}
 
@@ -563,9 +563,9 @@ bool COFSquadTalkMonster::NoFriendlyFire()
 	backPlane.InitializePlane(gpGlobals->v_forward, pev->origin);
 
 	/*
-		ALERT ( at_console, "LeftPlane: %f %f %f : %f\n", leftPlane.m_vecNormal.x, leftPlane.m_vecNormal.y, leftPlane.m_vecNormal.z, leftPlane.m_flDist );
-		ALERT ( at_console, "RightPlane: %f %f %f : %f\n", rightPlane.m_vecNormal.x, rightPlane.m_vecNormal.y, rightPlane.m_vecNormal.z, rightPlane.m_flDist );
-		ALERT ( at_console, "BackPlane: %f %f %f : %f\n", backPlane.m_vecNormal.x, backPlane.m_vecNormal.y, backPlane.m_vecNormal.z, backPlane.m_flDist );
+		LOG_INFO("LeftPlane: %f %f %f : %f", leftPlane.m_vecNormal.x, leftPlane.m_vecNormal.y, leftPlane.m_vecNormal.z, leftPlane.m_flDist);
+		LOG_INFO("RightPlane: %f %f %f : %f", rightPlane.m_vecNormal.x, rightPlane.m_vecNormal.y, rightPlane.m_vecNormal.z, rightPlane.m_flDist);
+		LOG_INFO("BackPlane: %f %f %f : %f", backPlane.m_vecNormal.x, backPlane.m_vecNormal.y, backPlane.m_vecNormal.z, backPlane.m_flDist);
 	*/
 
 	COFSquadTalkMonster* pSquadLeader = MySquadLeader();
@@ -715,7 +715,7 @@ void COFSquadTalkMonster::FollowerUse(CBaseEntity* pActivator, CBaseEntity* pCal
 			LimitFollowers(pCaller, 6);
 
 			if ((m_afMemory & bits_MEMORY_PROVOKED) != 0)
-				ALERT(at_console, "I'm not following you, you evil person!\n");
+				LOG_INFO("I'm not following you, you evil person!");
 			else
 			{
 				StartFollowing(pCaller);

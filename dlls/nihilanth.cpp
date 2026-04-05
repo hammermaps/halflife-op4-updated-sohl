@@ -20,6 +20,7 @@
 #include "weapons.h"
 #include "nodes.h"
 #include "effects.h"
+#include "logger.h"
 
 #define N_SCALE 15
 #define N_SPHERES 20
@@ -753,7 +754,7 @@ void CNihilanth::NextActivity()
 		else
 		{
 			m_hRecharger = NULL;
-			ALERT(at_aiconsole, "nihilanth can't find %s\n", szName);
+			LOG_DEBUG("nihilanth can't find %s", szName);
 			m_iLevel++;
 			if (m_iLevel > 9)
 				m_irritation = 2;
@@ -777,7 +778,7 @@ void CNihilanth::NextActivity()
 				snprintf(szText, sizeof(szText), "%s%d", m_szDrawUse, m_iLevel);
 				FireTargets(szText, this, this, USE_ON, 1.0);
 
-				ALERT(at_console, "fireing %s\n", szText);
+				LOG_INFO("fireing %s", szText);
 			}
 			pev->sequence = LookupSequence("recharge");
 		}
@@ -1129,7 +1130,7 @@ void CNihilanth::HandleAnimEvent(MonsterEvent_t* pEvent)
 
 				EMIT_SOUND(edict(), CHAN_WEAPON, RANDOM_SOUND_ARRAY(pBallSounds), 1.0, 0.2);
 
-				ALERT(at_aiconsole, "nihilanth can't target %s\n", szText);
+				LOG_DEBUG("nihilanth can't target %s", szText);
 
 				MESSAGE_BEGIN(MSG_BROADCAST, SVC_TEMPENTITY);
 				WRITE_BYTE(TE_ELIGHT);

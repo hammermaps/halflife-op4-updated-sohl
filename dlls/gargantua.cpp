@@ -28,6 +28,7 @@
 #include "decals.h"
 #include "explode.h"
 #include "func_break.h"
+#include "logger.h"
 
 //=========================================================
 // Gargantua Monster
@@ -823,7 +824,7 @@ void CGargantua::Precache()
 
 void CGargantua::TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType)
 {
-	ALERT(at_aiconsole, "CGargantua::TraceAttack\n");
+	LOG_DEBUG("CGargantua::TraceAttack");
 
 	if (!IsAlive())
 	{
@@ -862,7 +863,7 @@ void CGargantua::TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecD
 
 bool CGargantua::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType)
 {
-	ALERT(at_aiconsole, "CGargantua::TakeDamage\n");
+	LOG_DEBUG("CGargantua::TakeDamage");
 
 	if (IsAlive())
 	{

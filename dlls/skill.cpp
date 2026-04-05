@@ -18,6 +18,7 @@
 #include "extdll.h"
 #include "util.h"
 #include "skill.h"
+#include "logger.h"
 
 //=========================================================
 // take the name of a cvar, tack a digit for the skill level
@@ -35,7 +36,7 @@ float GetSkillCvar(const char* pName)
 
 	if (flValue <= 0)
 	{
-		ALERT(at_console, "\n\n** GetSkillCVar Got a zero for %s **\n\n", szBuffer);
+		LOG_INFO("\n\n** GetSkillCVar Got a zero for %s **\n", szBuffer);
 	}
 
 	return flValue;

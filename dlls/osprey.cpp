@@ -20,6 +20,7 @@
 #include "soundent.h"
 #include "effects.h"
 #include "customentity.h"
+#include "logger.h"
 
 typedef struct
 {
@@ -231,7 +232,7 @@ void COsprey::FindAllThink()
 
 	if (m_iUnits == 0)
 	{
-		ALERT(at_console, "osprey error: no grunts to resupply\n");
+		LOG_INFO("osprey error: no grunts to resupply");
 		m_iUnits = 4; // LRC - just make the grunts
 	}
 	SetThink(&COsprey::FlyThink);
@@ -385,7 +386,7 @@ void COsprey::UpdateGoal()
 	}
 	else
 	{
-		ALERT(at_console, "osprey missing target");
+		LOG_INFO("osprey missing target");
 	}
 }
 

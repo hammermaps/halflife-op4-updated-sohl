@@ -20,6 +20,7 @@
 #include "player.h"
 #include "effects.h"
 #include "gamerules.h"
+#include "logger.h"
 
 #define TRIPMINE_PRIMARY_VOLUME 450
 
@@ -179,7 +180,7 @@ void CTripmineGrenade::PowerupThink()
 			STOP_SOUND(ENT(pev), CHAN_BODY, "weapons/mine_charge.wav");
 			SetThink(&CTripmineGrenade::SUB_Remove);
 			SetNextThink(0.1);
-			ALERT(at_console, "WARNING:Tripmine at %.0f, %.0f, %.0f removed\n", pev->origin.x, pev->origin.y, pev->origin.z);
+			LOG_INFO("WARNING:Tripmine at %.0f, %.0f, %.0f removed", pev->origin.x, pev->origin.y, pev->origin.z);
 			KillBeam();
 			return;
 		}

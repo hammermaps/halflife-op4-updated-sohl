@@ -29,6 +29,7 @@
 #include "items.h"
 #include "gamerules.h"
 #include "UserMessages.h"
+#include "logger.h"
 
 class CWorldItem : public CBaseEntity
 {
@@ -73,7 +74,7 @@ void CWorldItem::Spawn()
 
 	if (!pEntity)
 	{
-		ALERT(at_console, "unable to create world_item %d\n", m_iType);
+		LOG_INFO("unable to create world_item %d", m_iType);
 	}
 	else
 	{
@@ -96,7 +97,7 @@ void CItem::Spawn()
 
 	if (DROP_TO_FLOOR(ENT(pev)) == 0)
 	{
-		ALERT(at_error, "Item %s fell out of level at %f,%f,%f", STRING(pev->classname), pev->origin.x, pev->origin.y, pev->origin.z);
+		LOG_ERROR("Item %s fell out of level at %f,%f,%f", STRING(pev->classname), pev->origin.x, pev->origin.y, pev->origin.z);
 		UTIL_Remove(this);
 		return;
 	}

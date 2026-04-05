@@ -23,6 +23,7 @@
 #include "schedule.h"
 #include "soundent.h"
 #include "decals.h"
+#include "logger.h"
 
 #define ROACH_IDLE 0
 #define ROACH_BORED 1
@@ -454,7 +455,7 @@ void CRoach::Look(int iDistance)
 				case R_NO:
 					break;
 				default:
-					ALERT(at_console, "%s can't asses %s\n", STRING(pev->classname), STRING(pSightEnt->pev->classname));
+					LOG_INFO("%s can't asses %s", STRING(pev->classname), STRING(pSightEnt->pev->classname));
 					break;
 				}
 			}

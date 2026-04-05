@@ -26,6 +26,7 @@
 #include "soundent.h"
 #include "hornet.h"
 #include "decals.h"
+#include "logger.h"
 
 //=========================================================
 // monster-specific schedule types
@@ -1042,7 +1043,7 @@ void COFVoltigore::StartTask(Task_t* pTask)
 		}
 		else
 		{
-			ALERT(at_aiconsole, "VoltigoreGetPathToEnemyCorpse failed!!\n");
+			LOG_DEBUG("VoltigoreGetPathToEnemyCorpse failed!!");
 			TaskFail();
 		}
 	}
