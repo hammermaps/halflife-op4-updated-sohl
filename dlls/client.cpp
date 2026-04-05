@@ -751,7 +751,6 @@ void ClientUserInfoChanged(edict_t* pEntity, char* infobuffer)
 
 		if (g_pGameRules->IsCTF())
 		{
-			//TODO: in vanilla Op4 this code incorrectly skips the above validation logic if the player is already in a team
 			if (player->m_iTeamNum != CTFTeam::None)
 			{
 				UTIL_LogPrintf("\"%s<%i><%s><%s>\" changed name to \"%s\"\n",

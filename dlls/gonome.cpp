@@ -245,8 +245,7 @@ public:
 	float m_flNextFlinch;
 	float m_flNextThrowTime;
 
-	//TODO: needs to be EHANDLE, save/restored or a save during a windup will cause problems
-	COFGonomeGuts* m_pGonomeGuts;
+	EHANDLE m_hGonomeGuts;
 	EHANDLE m_PlayerLocked;
 };
 
@@ -254,6 +253,7 @@ TYPEDESCRIPTION COFGonome::m_SaveData[] =
 	{
 		DEFINE_FIELD(COFGonome, m_flNextFlinch, FIELD_TIME),
 		DEFINE_FIELD(COFGonome, m_flNextThrowTime, FIELD_TIME),
+		DEFINE_FIELD(COFGonome, m_hGonomeGuts, FIELD_EHANDLE),
 		DEFINE_FIELD(COFGonome, m_PlayerLocked, FIELD_EHANDLE),
 };
 
@@ -459,16 +459,18 @@ void COFGonome::HandleAnimEvent(MonsterEvent_t* pEvent)
 			Vector vecGutsPos, vecGutsAngles;
 			GetAttachment(0, vecGutsPos, vecGutsAngles);
 
-			if (!m_pGonomeGuts)
+			if (!m_hGonomeGuts)
 			{
-				m_pGonomeGuts = COFGonomeGuts::GonomeGutsCreate(vecGutsPos);
+				m_hGonomeGuts = COFGonomeGuts::GonomeGutsCreate(vecGutsPos);
 			}
 
+			auto pGonomeGuts = static_cast<COFGonomeGuts*>((CBaseEntity*)m_hGonomeGuts);
+
 			//Attach to hand for throwing
-			m_pGonomeGuts->pev->skin = entindex();
-			m_pGonomeGuts->pev->body = 1;
-			m_pGonomeGuts->pev->aiment = edict();
-			m_pGonomeGuts->pev->movetype = MOVETYPE_FOLLOW;
+			pGonomeGuts->pev->skin = entindex();
+			pGonomeGuts->pev->body = 1;
+			pGonomeGuts->pev->aiment = edict();
+			pGonomeGuts->pev->movetype = MOVETYPE_FOLLOW;
 
 			auto direction = (m_hEnemy->pev->origin + m_hEnemy->pev->view_ofs - vecGutsPos).Normalize();
 
@@ -492,10 +494,12 @@ void COFGonome::HandleAnimEvent(MonsterEvent_t* pEvent)
 
 			UTIL_MakeVectors(pev->angles);
 
-			if (!m_pGonomeGuts)
+			if (!m_hGonomeGuts)
 			{
-				m_pGonomeGuts = COFGonomeGuts::GonomeGutsCreate(vecGutsPos);
+				m_hGonomeGuts = COFGonomeGuts::GonomeGutsCreate(vecGutsPos);
 			}
+
+			auto pGonomeGuts = static_cast<COFGonomeGuts*>((CBaseEntity*)m_hGonomeGuts);
 
 			auto direction = (m_hEnemy->pev->origin + m_hEnemy->pev->view_ofs - vecGutsPos).Normalize();
 
@@ -507,19 +511,19 @@ void COFGonome::HandleAnimEvent(MonsterEvent_t* pEvent)
 			UTIL_BloodDrips(vecGutsPos, direction, BLOOD_COLOR_RED, 35);
 
 			//Detach from owner
-			m_pGonomeGuts->pev->skin = 0;
-			m_pGonomeGuts->pev->body = 0;
-			m_pGonomeGuts->pev->aiment = nullptr;
-			m_pGonomeGuts->pev->movetype = MOVETYPE_FLY;
+			pGonomeGuts->pev->skin = 0;
+			pGonomeGuts->pev->body = 0;
+			pGonomeGuts->pev->aiment = nullptr;
+			pGonomeGuts->pev->movetype = MOVETYPE_FLY;
 
-			m_pGonomeGuts->Launch(pev, vecGutsPos, direction * 900);
+			pGonomeGuts->Launch(pev, vecGutsPos, direction * 900);
 		}
 		else
 		{
-			UTIL_Remove(m_pGonomeGuts);
+			UTIL_Remove((CBaseEntity*)m_hGonomeGuts);
 		}
 
-		m_pGonomeGuts = nullptr;
+		m_hGonomeGuts = nullptr;
 	}
 	break;
 
@@ -621,7 +625,7 @@ void COFGonome::Spawn()
 	m_afCapability = bits_CAP_DOORS_GROUP;
 
 	m_flNextThrowTime = gpGlobals->time;
-	m_pGonomeGuts = nullptr;
+	m_hGonomeGuts = nullptr;
 	m_PlayerLocked = nullptr;
 
 	MonsterInit();
@@ -755,10 +759,10 @@ Schedule_t* COFGonome::GetScheduleOfType(int Type)
 
 void COFGonome::Killed(entvars_t* pevAttacker, int iGib)
 {
-	if (m_pGonomeGuts)
+	if (m_hGonomeGuts)
 	{
-		UTIL_Remove(m_pGonomeGuts);
-		m_pGonomeGuts = nullptr;
+		UTIL_Remove((CBaseEntity*)m_hGonomeGuts);
+		m_hGonomeGuts = nullptr;
 	}
 
 	auto player = m_PlayerLocked.Entity<CBasePlayer>();
@@ -780,10 +784,10 @@ void COFGonome::StartTask(Task_t* pTask)
 	{
 	case TASK_GONOME_GET_PATH_TO_ENEMY_CORPSE:
 	{
-		if (m_pGonomeGuts)
+		if (m_hGonomeGuts)
 		{
-			UTIL_Remove(m_pGonomeGuts);
-			m_pGonomeGuts = nullptr;
+			UTIL_Remove((CBaseEntity*)m_hGonomeGuts);
+			m_hGonomeGuts = nullptr;
 		}
 
 		UTIL_MakeVectors(pev->angles);
@@ -811,10 +815,10 @@ void COFGonome::SetActivity(Activity NewActivity)
 	int iSequence = ACTIVITY_NOT_AVAILABLE;
 	void* pmodel = GET_MODEL_PTR(ENT(pev));
 
-	if (NewActivity != ACT_RANGE_ATTACK1 && m_pGonomeGuts)
+	if (NewActivity != ACT_RANGE_ATTACK1 && m_hGonomeGuts)
 	{
-		UTIL_Remove(m_pGonomeGuts);
-		m_pGonomeGuts = nullptr;
+		UTIL_Remove((CBaseEntity*)m_hGonomeGuts);
+		m_hGonomeGuts = nullptr;
 	}
 
 	auto player = m_PlayerLocked.Entity<CBasePlayer>();

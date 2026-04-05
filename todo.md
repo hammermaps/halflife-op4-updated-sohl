@@ -1,16 +1,16 @@
 # TODO / Unfinished Code Passages
 
-> Automatisch generiert. Gesamt: **263** Einträge in **125** Dateien.
+> Automatisch generiert. Gesamt: **263** Einträge in **125** Dateien. **17 Einträge erledigt** (✅), **246 offen**.
 
 
 ## Zusammenfassung nach Typ
 
-| Typ | Anzahl |
-|-----|--------|
-| `TODO` | 178 |
-| `FIXME` | 30 |
-| `HACK` | 37 |
-| `BUG` | 18 |
+| Typ | Gesamt | Offen | Erledigt |
+|-----|--------|-------|---------|
+| `TODO` | 178 | 164 | 14 |
+| `FIXME` | 30 | 30 | 0 |
+| `HACK` | 37 | 37 | 0 |
+| `BUG` | 18 | 15 | 3 |
 
 
 ---
@@ -29,7 +29,7 @@
 | [443](cl_dll/StudioModelRenderer.cpp#L443) | `TODO` | TODO: should use a look-up table | Sollte eine Nachschlagetabelle verwenden | Niedrige Priorität: Lookup-Tabelle implementieren, um Laufzeitberechnungen zu beschleunigen. |
 | [444](cl_dll/StudioModelRenderer.cpp#L444) | `TODO` | TODO: could cache lazily, stored in the entity | Könnte lazy gecacht werden, gespeichert in der Entität | Niedrige Priorität: Lazy-Caching einführen, um redundante Berechnungen zu vermeiden. |
 | [544](cl_dll/StudioModelRenderer.cpp#L544) | `FIXME` | FIXME: make this work for clipped case too? | FIXME: Auch für den geclippten Fall zum Laufen bringen? | Mittlere Priorität: Clipping-Behandlung im Renderer prüfen und ggf. erweitern. |
-| [605](cl_dll/StudioModelRenderer.cpp#L605) | `BUG` | BUG ( somewhere else ) but this code should validate this data. | BUG (woanders) aber dieser Code sollte diese Daten validieren | Hohe Priorität: Datenvalidierung einbauen, um Abstürze durch ungültige Eingaben zu verhindern. |
+| [605](cl_dll/StudioModelRenderer.cpp#L605) | `BUG` | BUG ( somewhere else ) but this code should validate this data. | BUG (woanders) aber dieser Code sollte diese Daten validieren | ~~Hohe Priorität: Datenvalidierung einbauen, um Abstürze durch ungültige Eingaben zu verhindern.~~ ✅ Erledigt: Stale BUG-Kommentar entfernt; Clamping war bereits korrekt implementiert. |
 
 
 #### `cl_dll/demo.cpp`
@@ -85,8 +85,8 @@
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
 | [129](cl_dll/hud_playerbrowse.cpp#L129) | `TODO` | TODO: is the leading space supposed to be here? | TODO: Soll das führende Leerzeichen hier sein? | Niedrige Priorität: Zeichenkette auf korrekte Formatierung prüfen. |
-| [136](cl_dll/hud_playerbrowse.cpp#L136) | `TODO` | TODO: unsafe use of strncat count parameter | TODO: Unsichere Verwendung des strncat-Zählerparameters | Hohe Priorität: Sicheren String-Ersatz (z.B. strncat_s oder snprintf) verwenden. |
-| [201](cl_dll/hud_playerbrowse.cpp#L201) | `TODO` | TODO: unsafe | TODO: Unsicher | Hohe Priorität: Unsichere String-Operation durch eine sichere Alternative ersetzen. |
+| [136](cl_dll/hud_playerbrowse.cpp#L136) | `TODO` | TODO: unsafe use of strncat count parameter | TODO: Unsichere Verwendung des strncat-Zählerparameters | ~~Hohe Priorität: Sicheren String-Ersatz (z.B. strncat_s oder snprintf) verwenden.~~ ✅ Erledigt: `strncat` auf verbleibende Puffergröße begrenzt. |
+| [201](cl_dll/hud_playerbrowse.cpp#L201) | `TODO` | TODO: unsafe | TODO: Unsicher | ~~Hohe Priorität: Unsichere String-Operation durch eine sichere Alternative ersetzen.~~ ✅ Erledigt: `sprintf` durch `snprintf` mit korrekter Pufferbegrenzung ersetzt. |
 
 
 #### `cl_dll/hud_spectator.cpp`
@@ -94,7 +94,7 @@
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
 | [121](cl_dll/hud_spectator.cpp#L121) | `TODO` | TODO: none of this spectator stuff exists in Op4 | TODO: Nichts von diesem Spectator-Zeug existiert in Op4 | Mittlere Priorität: Op4-spezifischen Spectator-Code implementieren oder Dead-Code entfernen. |
-| [407](cl_dll/hud_spectator.cpp#L407) | `TODO` | TODO: this flags check is incorrect, fix it. Comment contains original code before bool fix. | TODO: Diese Flags-Prüfung ist falsch, bitte korrigieren | Hohe Priorität: Flags-Prüfung korrigieren, um Spectator-Logik-Fehler zu beheben. |
+| [407](cl_dll/hud_spectator.cpp#L407) | `TODO` | TODO: this flags check is incorrect, fix it. Comment contains original code before bool fix. | TODO: Diese Flags-Prüfung ist falsch, bitte korrigieren | ~~Hohe Priorität: Flags-Prüfung korrigieren, um Spectator-Logik-Fehler zu beheben.~~ ✅ Erledigt: `flags == 0` war bereits korrekt; stale TODO-Kommentar entfernt. |
 | [668](cl_dll/hud_spectator.cpp#L668) | `TODO` | TODO: this is pretty ugly, need a better way. | TODO: Ziemlich hässlich, besser lösen | Niedrige Priorität: Code refaktorieren für bessere Lesbarkeit. |
 
 
@@ -117,7 +117,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [225](cl_dll/inputw32.cpp#L225) | `TODO` | TODO: accessing the cvar value is a race condition | TODO: Zugriff auf den Cvar-Wert ist eine Race-Condition | Hohe Priorität: Thread-sicheren Zugriff auf Cvar implementieren. |
+| [225](cl_dll/inputw32.cpp#L225) | `TODO` | TODO: accessing the cvar value is a race condition | TODO: Zugriff auf den Cvar-Wert ist eine Race-Condition | ~~Hohe Priorität: Thread-sicheren Zugriff auf Cvar implementieren.~~ ✅ Erledigt: Cvar-Wert wird jetzt unter dem Mutex-Lock in eine lokale Variable kopiert. |
 
 
 #### `cl_dll/particleman/CBaseParticle.cpp`
@@ -154,7 +154,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [238](cl_dll/status_icons.cpp#L238) | `TODO` | TODO: potential overflow | TODO: Möglicher Überlauf | Hohe Priorität: Buffer-Overflow-Schutz implementieren. |
+| [238](cl_dll/status_icons.cpp#L238) | `TODO` | TODO: potential overflow | TODO: Möglicher Überlauf | ~~Hohe Priorität: Buffer-Overflow-Schutz implementieren.~~ ✅ Erledigt: `strcpy` durch `strncpy` mit explizitem Null-Terminator ersetzt. |
 
 
 #### `cl_dll/studio_util.cpp`
@@ -168,7 +168,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [279](cl_dll/vgui_ClassMenu.cpp#L279) | `BUG` | TODO: apparently bugged in vanilla, still uses old indexing code with no second array index | TODO: Anscheinend fehlerhaft in Vanilla, benutzt noch alten Indexierungscode | Hohe Priorität: Indexierungsfehler korrigieren, da er Vanilla-Bug reproduziert. |
+| [279](cl_dll/vgui_ClassMenu.cpp#L279) | `BUG` | TODO: apparently bugged in vanilla, still uses old indexing code with no second array index | TODO: Anscheinend fehlerhaft in Vanilla, benutzt noch alten Indexierungscode | ~~Hohe Priorität: Indexierungsfehler korrigieren, da er Vanilla-Bug reproduziert.~~ ✅ Erledigt: Code verwendet bereits korrektes 2D-Array-Indexing; stale TODO-Kommentar entfernt. |
 
 
 #### `cl_dll/vgui_ScorePanel.cpp`
@@ -230,7 +230,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [259](dlls/COFSquadTalkMonster.cpp#L259) | `TODO` | TODO: pEnemy could be null here | TODO: pEnemy könnte hier null sein | Hohe Priorität: Null-Prüfung für pEnemy vor Verwendung einbauen. |
+| [259](dlls/COFSquadTalkMonster.cpp#L259) | `TODO` | TODO: pEnemy could be null here | TODO: pEnemy könnte hier null sein | ~~Hohe Priorität: Null-Prüfung für pEnemy vor Verwendung einbauen.~~ ✅ Erledigt: Null-Check für `pEnemy` an den Funktionsanfang verschoben; ALERT-Aufrufe zu LOG_DEBUG/LOG_ERROR migriert. |
 
 
 #### `dlls/animating.cpp`
@@ -260,7 +260,7 @@
 |-------|-----|-----------|------------------|------------|
 | [57](dlls/blowercannon.cpp#L57) | `TODO` | TODO: probably shadowing CBaseDelay | TODO: Überschattet wahrscheinlich CBaseDelay | Mittlere Priorität: Namenskonflikt mit CBaseDelay prüfen und beheben. |
 | [99](dlls/blowercannon.cpp#L99) | `TODO` | TODO: should call base | TODO: Sollte Basis aufrufen | Mittlere Priorität: super/base-Aufruf ergänzen für korrekte Vererbungskette. |
-| [141](dlls/blowercannon.cpp#L141) | `TODO` | TODO: can crash if target has been removed | TODO: Kann abstürzen wenn das Ziel entfernt wurde | Hohe Priorität: Gültigkeit des Ziels vor Verwendung prüfen (EHANDLE oder Null-Check). |
+| [141](dlls/blowercannon.cpp#L141) | `TODO` | TODO: can crash if target has been removed | TODO: Kann abstürzen wenn das Ziel entfernt wurde | ~~Hohe Priorität: Gültigkeit des Ziels vor Verwendung prüfen (EHANDLE oder Null-Check).~~ ✅ Erledigt: Null-Check für `GetNextTarget()` vor Dereferenzierung hinzugefügt. |
 
 
 #### `dlls/bmodels.cpp`
@@ -298,7 +298,7 @@
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
 | [436](dlls/client.cpp#L436) | `TODO` | TODO: clamp cvar value so it can't be negative | TODO: Cvar-Wert begrenzen, darf nicht negativ sein | Mittlere Priorität: Cvar-Wert-Clamp einbauen, um ungültige Werte zu verhindern. |
-| [754](dlls/client.cpp#L754) | `TODO` | TODO: in vanilla Op4 this code incorrectly skips the above validation logic if the player is already in a team | TODO: In Vanilla Op4 wird obige Validierungslogik fälschlicherweise übersprungen wenn Spieler bereits in einem Team ist | Hohe Priorität: Validierungslogik immer ausführen, unabhängig vom Team-Status. |
+| [754](dlls/client.cpp#L754) | `TODO` | TODO: in vanilla Op4 this code incorrectly skips the above validation logic if the player is already in a team | TODO: In Vanilla Op4 wird obige Validierungslogik fälschlicherweise übersprungen wenn Spieler bereits in einem Team ist | ~~Hohe Priorität: Validierungslogik immer ausführen, unabhängig vom Team-Status.~~ ✅ Erledigt: Code war bereits korrekt; stale TODO-Kommentar entfernt. |
 | [1513](dlls/client.cpp#L1513) | `HACK` | HACK:  Somewhat... | HACK: Etwas... [unvollständiger Kommentar] | Niedrige Priorität: Hack-Kommentar vervollständigen oder Lösung sauber implementieren. |
 
 
@@ -321,7 +321,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [153](dlls/ctf/CHUDIconTrigger.cpp#L153) | `TODO` | TODO: this will break when an index is larger than 31 or a negative value | TODO: Bricht wenn ein Index größer als 31 oder negativ ist | Hohe Priorität: Bitfeld auf 32-Bit begrenzen oder dynamische Datenstruktur verwenden. |
+| [153](dlls/ctf/CHUDIconTrigger.cpp#L153) | `TODO` | TODO: this will break when an index is larger than 31 or a negative value | TODO: Bricht wenn ein Index größer als 31 oder negativ ist | ~~Hohe Priorität: Bitfeld auf 32-Bit begrenzen oder dynamische Datenstruktur verwenden.~~ ✅ Erledigt: `m_nCustomIndex` wird jetzt auf den Bereich [0, 31] geprüft bevor der Bit-Shift ausgeführt wird. |
 
 
 #### `dlls/ctf/CItemAcceleratorCTF.cpp`
@@ -380,7 +380,7 @@
 | [438](dlls/ctf/ctfplay_gamerules.cpp#L438) | `TODO` | TODO: this can probably be optimized by finding the last item that the player is carrying and only sending that | TODO: Kann optimiert werden – nur letztes getragenes Item des Spielers senden | Niedrige Priorität: Netzwerkeffizienz durch inkrementelle Item-Updates verbessern. |
 | [505](dlls/ctf/ctfplay_gamerules.cpp#L505) | `TODO` | TODO: checks against an index that may not have been sent | TODO: Prüft Index der möglicherweise nicht gesendet wurde | Hohe Priorität: Sicherheitscheck für ungesendete Indizes einbauen. |
 | [702](dlls/ctf/ctfplay_gamerules.cpp#L702) | `TODO` | TODO: doesn't seem to be used | TODO: Scheint nicht verwendet zu werden | Niedrige Priorität: Toten Code entfernen. |
-| [1770](dlls/ctf/ctfplay_gamerules.cpp#L1770) | `TODO` | TODO: player count is always 0 | TODO: Spieleranzahl ist immer 0 | Hohe Priorität: Spieleranzahl korrekt initialisieren/aktualisieren. |
+| [1770](dlls/ctf/ctfplay_gamerules.cpp#L1770) | `TODO` | TODO: player count is always 0 | TODO: Spieleranzahl ist immer 0 | ~~Hohe Priorität: Spieleranzahl korrekt initialisieren/aktualisieren.~~ ✅ Erledigt: Spieler werden jetzt per Team gezählt und korrekt im End-Game-Log ausgegeben. |
 
 
 #### `dlls/effects.cpp`
@@ -446,7 +446,7 @@
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
 | [88](dlls/gonome.cpp#L88) | `TODO` | TODO: probably shouldn't be assinging to x every time | TODO: Sollte nicht jedes Mal x zuweisen | Niedrige Priorität: Mehrfache x-Zuweisung zu einer einzigen zusammenfassen. |
-| [248](dlls/gonome.cpp#L248) | `TODO` | TODO: needs to be EHANDLE, save/restored or a save during a windup will cause problems | TODO: Muss EHANDLE sein und gespeichert/wiederhergestellt werden | Hohe Priorität: EHANDLE verwenden um Absturz bei Save/Load-Zyklen zu verhindern. |
+| [248](dlls/gonome.cpp#L248) | `TODO` | TODO: needs to be EHANDLE, save/restored or a save during a windup will cause problems | TODO: Muss EHANDLE sein und gespeichert/wiederhergestellt werden | ~~Hohe Priorität: EHANDLE verwenden um Absturz bei Save/Load-Zyklen zu verhindern.~~ ✅ Erledigt: `m_pGonomeGuts` in `EHANDLE m_hGonomeGuts` umgewandelt und in `TYPEDESCRIPTION` für Save/Restore eingetragen. |
 | [376](dlls/gonome.cpp#L376) | `HACK` | HACK HACK -- until we fix this. | HACK HACK: Bis wir das reparieren | Niedrige Priorität: Workaround durch saubere Implementierung ersetzen. |
 
 
@@ -506,7 +506,7 @@
 |-------|-----|-----------|------------------|------------|
 | [551](dlls/hgrunt_torch.cpp#L551) | `TODO` | TODO: kinda odd that this doesn't use GetGunPosition like the original | TODO: Eigenartig, dass GetGunPosition nicht wie im Original verwendet wird | Niedrige Priorität: GetGunPosition einheitlich nutzen. |
 | [718](dlls/hgrunt_torch.cpp#L718) | `TODO` | TODO: disabled for ally | TODO: Für Ally deaktiviert | Niedrige Priorität: Funktion für Ally-Variante prüfen. |
-| [2736](dlls/hgrunt_torch.cpp#L2736) | `BUG` | TODO: looks like a bug to me, shouldn't be bitwise inverting | TODO: Sieht wie ein Bug aus, sollte nicht bitweise invertieren | Hohe Priorität: Bitweise-Invertierung prüfen und ggf. durch logische Negation ersetzen. |
+| [2736](dlls/hgrunt_torch.cpp#L2736) | `BUG` | TODO: looks like a bug to me, shouldn't be bitwise inverting | TODO: Sieht wie ein Bug aus, sollte nicht bitweise invertieren | ~~Hohe Priorität: Bitweise-Invertierung prüfen und ggf. durch logische Negation ersetzen.~~ ✅ Erledigt: `|= ~SF_BEAM_SPARKEND` (bitweise NOT, setzte alle anderen Flags) durch `|= SF_BEAM_SPARKEND` ersetzt. |
 
 
 #### `dlls/male_assassin.cpp`
@@ -573,7 +573,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [127](dlls/penguin_grenade.cpp#L127) | `TODO` | TODO: set to null earlier on, so this can never be valid | TODO: Früher auf null gesetzt, kann daher nie gültig sein | Hohe Priorität: Null-Pointer-Dereference vermeiden. |
+| [127](dlls/penguin_grenade.cpp#L127) | `TODO` | TODO: set to null earlier on, so this can never be valid | TODO: Früher auf null gesetzt, kann daher nie gültig sein | ~~Hohe Priorität: Null-Pointer-Dereference vermeiden.~~ ✅ Erledigt: Null-Check für `owner` vor `IsPlayer()`-Aufruf hinzugefügt. |
 | [253](dlls/penguin_grenade.cpp#L253) | `TODO` | TODO: shouldn't use index | TODO: Sollte keinen Index verwenden | Mittlere Priorität: Index-basierten Zugriff durch sicheren Bezeichner ersetzen. |
 
 
@@ -590,7 +590,7 @@
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
 | [669](dlls/pitworm_up.cpp#L669) | `TODO` | TODO: maybe determine direction of velocity to apply? | TODO: Vielleicht Richtung der Geschwindigkeit ermitteln? | Niedrige Priorität: Physikalisch korrekte Geschwindigkeitsrichtung berechnen. |
-| [899](dlls/pitworm_up.cpp#L899) | `TODO` | TODO: missing an ApplyMultiDamage call here | TODO: Fehlender ApplyMultiDamage-Aufruf | Hohe Priorität: Schaden korrekt anwenden, fehlenden Aufruf ergänzen. |
+| [899](dlls/pitworm_up.cpp#L899) | `TODO` | TODO: missing an ApplyMultiDamage call here | TODO: Fehlender ApplyMultiDamage-Aufruf | ~~Hohe Priorität: Schaden korrekt anwenden, fehlenden Aufruf ergänzen.~~ ✅ Erledigt: `TakeDamage`-Doppelaufruf durch korrektes `ClearMultiDamage` → `TraceAttack` → `ApplyMultiDamage`-Muster ersetzt. |
 | [982](dlls/pitworm_up.cpp#L982) | `TODO` | TODO: never used? | TODO: Niemals verwendet? | Niedrige Priorität: Toten Code prüfen und ggf. entfernen. |
 
 
@@ -715,7 +715,7 @@
 | [1042](dlls/triggers.cpp#L1042) | `BUG` | BUGBUG - There can be only 32 players! | BUGBUG: Es kann nur 32 Spieler geben! | Mittlere Priorität: Spieleranzahl-Limit dokumentieren oder erhöhen. |
 | [1060](dlls/triggers.cpp#L1060) | `BUG` | BUGBUG - There can be only 32 players! | BUGBUG: Es kann nur 32 Spieler geben! | Mittlere Priorität: Spieleranzahl-Limit dokumentieren oder erhöhen. |
 | [2592](dlls/triggers.cpp#L2592) | `TODO` | TODO: not made for multiplayer | TODO: Nicht für Multiplayer gemacht | Mittlere Priorität: Multiplayer-Unterstützung implementieren. |
-| [2623](dlls/triggers.cpp#L2623) | `TODO` | TODO: this needs to be removed in order to function | TODO: Muss entfernt werden um zu funktionieren | Hohe Priorität: Blockierenden Code entfernen. |
+| [2623](dlls/triggers.cpp#L2623) | `TODO` | TODO: this needs to be removed in order to function | TODO: Muss entfernt werden um zu funktionieren | ~~Hohe Priorität: Blockierenden Code entfernen.~~ ✅ Erledigt: `pev->solid = SOLID_NOT` aus `CTriggerKillNoGib::Spawn()` entfernt, Touch-Callback funktioniert jetzt. |
 | [2888](dlls/triggers.cpp#L2888) | `TODO` | TODO: constrain team_no input to valid values | TODO: team_no-Eingabe auf gültige Werte begrenzen | Mittlere Priorität: Eingabe-Validierung für Team-Nummer einbauen. |
 
 

@@ -138,8 +138,12 @@ void CBlowerCannon::BlowerCannonStop(CBaseEntity* pActivator, CBaseEntity* pCall
 
 void CBlowerCannon::BlowerCannonThink()
 {
-	//TODO: can crash if target has been removed
-	auto pTarget = GetNextTarget()->pev;
+	auto pNextTarget = GetNextTarget();
+
+	if (!pNextTarget)
+		return;
+
+	auto pTarget = pNextTarget->pev;
 
 	auto distance = pTarget->origin - pev->origin;
 	distance.z += m_iZOffset;

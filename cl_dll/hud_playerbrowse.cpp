@@ -133,8 +133,13 @@ bool CHudPlayerBrowse::MsgFunc_PlyrBrowse(const char* pszName, int iSize, void* 
 		strcpy(m_szNewLineBuffer, identifier);
 	}
 
-	//TODO: unsafe use of strncat count parameter
-	strncat(m_szNewLineBuffer, READ_STRING(), iSize - 3);
+	const char* playerName = READ_STRING();
+	const size_t bufUsed = strlen(m_szNewLineBuffer);
+	if (bufUsed < sizeof(m_szNewLineBuffer) - 1)
+	{
+		const size_t bufRemaining = sizeof(m_szNewLineBuffer) - bufUsed - 1;
+		strncat(m_szNewLineBuffer, playerName, bufRemaining);
+	}
 
 	if ('\0' != m_szNewLineBuffer[0])
 	{
@@ -198,8 +203,8 @@ bool CHudPlayerBrowse::MsgFunc_PlyrBrowse(const char* pszName, int iSize, void* 
 
 		if (m_fFriendly || 0 == m_iNewTeamNum)
 		{
-			//TODO: unsafe
-			sprintf(&m_szNewLineBuffer[strlen(m_szNewLineBuffer)], " (%d/%d)", m_iHealth, m_iArmor);
+			const size_t len = strlen(m_szNewLineBuffer);
+			snprintf(m_szNewLineBuffer + len, sizeof(m_szNewLineBuffer) - len, " (%d/%d)", m_iHealth, m_iArmor);
 		}
 
 		strcpy(m_szLineBuffer, m_szNewLineBuffer);

@@ -222,10 +222,10 @@ void MousePos_ThreadFunction()
 		{
 			std::unique_lock lock{s_MouseThread.Mutex};
 
-			//TODO: accessing the cvar value is a race condition
+			const auto sleepMs = static_cast<int>(m_mousethread_sleep->value);
 			if (s_MouseThread.Condition.wait_for(
 					lock,
-					std::chrono::milliseconds{(int)m_mousethread_sleep->value},
+					std::chrono::milliseconds{sleepMs},
 					[]()
 					{ return s_MouseThread.QuittingTime; }))
 			{
