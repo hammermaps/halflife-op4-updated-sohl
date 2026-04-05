@@ -439,12 +439,7 @@ void CStudioModelRenderer::StudioSetUpTransform(bool trivial_accept)
 
 	VectorCopy(m_pCurrentEntity->origin, modelpos);
 
-	// TODO: should really be stored with the entity instead of being reconstructed
-	// TODO: should use a look-up table
-	// TODO: could cache lazily, stored in the entity
-	angles[ROLL] = m_pCurrentEntity->curstate.angles[ROLL];
-	angles[PITCH] = m_pCurrentEntity->curstate.angles[PITCH];
-	angles[YAW] = m_pCurrentEntity->curstate.angles[YAW];
+	VectorCopy(m_pCurrentEntity->curstate.angles, angles);
 
 	//Con_DPrintf("Angles %4.2f prev %4.2f for %i\n", angles[PITCH], m_pCurrentEntity->index);
 	//Con_DPrintf("movetype %d %d\n", m_pCurrentEntity->movetype, m_pCurrentEntity->aiment );
@@ -540,8 +535,10 @@ void CStudioModelRenderer::StudioSetUpTransform(bool trivial_accept)
 		// do the scaling up of x and y to screen coordinates as part of the transform
 		// for the unclipped case (it would mess up clipping in the clipped case).
 		// Also scale down z, so 1/z is scaled 31 bits for free, and scale down x and y
-		// correspondingly so the projected x and y come out right
-		// FIXME: make this work for clipped case too?
+		// correspondingly so the projected x and y come out right.
+		// Note: this pre-scaling cannot be applied to the clipped case because the software
+		// clipping pipeline tests vertices in world-space; baking screen-space scale into
+		// the transform matrix would corrupt those frustum-clip calculations.
 		if (trivial_accept)
 		{
 			for (i = 0; i < 4; i++)
