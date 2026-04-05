@@ -31,6 +31,7 @@
 #define LF_DESIRED_ACTION (1 << 11)
 #define LF_ALIASLIST (1 << 12)
 // bits 13-14 reserved (were LF_IN_POSTASSIST_QUEUE / LF_IN_DESIRED_QUEUE — removed)
+#define LF_MW_THINK_INJECTED (1 << 15) // UTIL_SetVelocity injected SUB_DoNothing think; clear when vel returns to zero
 
 // Arbitrary limit to detect infinite loops in MoveWith chains
 #define MAX_MOVEWITH_DEPTH 100

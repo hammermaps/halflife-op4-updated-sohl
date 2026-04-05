@@ -375,7 +375,20 @@ void UTIL_SetVelocity(CBaseEntity* pEnt, const Vector& vecSet)
 						STRING(pChild->pev->classname));
 					pChild->SetThink(&CBaseEntity::SUB_DoNothing);
 					pChild->SetNextThink(0.01);
+					SetBits(pChild->m_iLFlags, LF_MW_THINK_INJECTED);
 				}
+			}
+		}
+		else
+		{
+			// Velocity returning to zero — clean up the think we injected
+			if (FBitSet(pChild->m_iLFlags, LF_MW_THINK_INJECTED))
+			{
+				ClearBits(pChild->m_iLFlags, LF_MW_THINK_INJECTED);
+				pChild->SetThink(NULL);
+				pChild->DontThink();
+				DEV_LOG(mw_debug, "  child %s clearing injected think (vel zero)",
+					STRING(pChild->pev->classname));
 			}
 		}
 
