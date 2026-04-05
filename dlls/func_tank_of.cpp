@@ -139,8 +139,6 @@ protected:
 	int m_spread;		  // firing spread
 	int m_iszMaster;	  // Master entity (game_team_master or multisource)
 
-	//Not saved, will reacquire after restore
-	//TODO: could be exploited to make a tank change targets
 	EHANDLE m_hEnemy;
 
 	//0 - player only
@@ -178,6 +176,7 @@ TYPEDESCRIPTION COFFuncTank::m_SaveData[] =
 		DEFINE_FIELD(COFFuncTank, m_iBulletDamage, FIELD_INTEGER),
 		DEFINE_FIELD(COFFuncTank, m_iszMaster, FIELD_STRING),
 		DEFINE_FIELD(COFFuncTank, m_iEnemyType, FIELD_INTEGER),
+		DEFINE_FIELD(COFFuncTank, m_hEnemy, FIELD_EHANDLE),
 };
 
 IMPLEMENT_SAVERESTORE(COFFuncTank, CBaseEntity);

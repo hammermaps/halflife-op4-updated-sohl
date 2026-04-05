@@ -500,10 +500,9 @@ void CHalfLifeCTFplay::Think()
 				}
 			}
 
-			--m_iStatsPlayer;
-
-			//TODO: checks against an index that may not have been sent
-			if (gpGlobals->maxClients <= (m_iStatsPlayer + 1))
+			// m_iStatsPlayer was already incremented past the last slot examined.
+			// Transition to OpenMenu once we've iterated past all client slots.
+			if (m_iStatsPlayer > gpGlobals->maxClients)
 				m_iStatsPhase = StatsPhase::OpenMenu;
 			break;
 		case StatsPhase::SendTeam2:

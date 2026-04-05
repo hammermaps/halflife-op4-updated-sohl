@@ -663,8 +663,11 @@ bool CBaseMonster::ExitScriptedSequence()
 {
 	if (pev->deadflag == DEAD_DYING)
 	{
-		// is this legal?
-		// BUGBUG -- This doesn't call Killed()
+		// Killed() was blocked in TakeDamage while in MONSTERSTATE_SCRIPT.
+		// Call it now to ensure proper death processing (weapon drop,
+		// owner notification, etc.).  The original attacker is no longer
+		// available; pass pev as a neutral stand-in.
+		Killed(pev, GIB_NORMAL);
 		m_IdealMonsterState = MONSTERSTATE_DEAD;
 		return false;
 	}
@@ -868,8 +871,14 @@ bool CBaseMonster::CineCleanup()
 
 		if (pOldCine && FBitSet(pOldCine->pev->spawnflags, SF_SCRIPT_LEAVECORPSE))
 		{
-			SetUse(NULL);	// BUGBUG -- This doesn't call Killed()
-			SetThink(NULL); // This will probably break some stuff
+			// Killed() was never called because TakeDamage short-circuits for
+			// MONSTERSTATE_SCRIPT monsters; call it now so that weapons are
+			// dropped and the owner is notified.  bits_MEMORY_KILLED guards
+			// against double-processing if it was somehow already called.
+			// GIB_NEVER preserves the corpse as required by LEAVECORPSE.
+			Killed(pev, GIB_NEVER);
+			SetUse(NULL);
+			SetThink(NULL);
 			SetTouch(NULL);
 		}
 		else

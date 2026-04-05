@@ -23,6 +23,62 @@
 #include "parsemsg.h"
 #include "vgui_StatsMenuPanel.h"
 
+// Neutralise %n specifiers in a format string loaded from an external file.
+// %n writes a character count to a caller-supplied pointer and must never be
+// reachable via a server-controlled format string.  Replacing the 'n' with
+// 'd' keeps argument-slot alignment intact (both consume one int-sized slot)
+// while making the specifier harmless.
+static void SanitizeFormatString(char* fmt)
+{
+	char* p = fmt;
+	while (*p != '\0')
+	{
+		if (*p != '%')
+		{
+			++p;
+			continue;
+		}
+		++p;
+		if (*p == '%') // literal "%%"
+		{
+			++p;
+			continue;
+		}
+		// Skip flags: -, +, space, 0, #
+		while (*p == '-' || *p == '+' || *p == ' ' || *p == '0' || *p == '#')
+			++p;
+		// Skip optional field width (numeric literal or '*' for argument-supplied width)
+		if (*p == '*')
+			++p;
+		else
+		{
+			while (*p >= '0' && *p <= '9')
+				++p;
+		}
+		// Skip optional precision
+		if (*p == '.')
+		{
+			++p;
+			if (*p == '*')
+				++p;
+			else
+			{
+				while (*p >= '0' && *p <= '9')
+					++p;
+			}
+		}
+		// Skip length modifiers: h, hh, l, ll, j, z, t, L
+		while (*p == 'h' || *p == 'l' || *p == 'j' || *p == 'z' || *p == 't' || *p == 'L')
+			++p;
+		// Replace the dangerous %n specifier with %d; both consume one
+		// int-sized argument so the remaining arguments stay aligned.
+		if (*p == 'n')
+			*p = 'd';
+		if (*p != '\0')
+			++p;
+	}
+}
+
 struct team_stat_info_t
 {
 	byte bChunksRead;
@@ -365,8 +421,7 @@ bool CStatsMenuPanel::MsgFunc_StatsInfo(const char* pszName, int iSize, void* pb
 			{
 				gViewPort->GetAllPlayersInfo();
 
-				//TODO: this passes an arbitrary string as the format string which is incredibly dangerous (also in vanilla)
-				//Overcomplicated time calculations, can just use modulo instead for seconds
+				SanitizeFormatString(pfile);
 				sprintf(
 					szStatsBuf[teamNum],
 					pfile,
@@ -450,8 +505,7 @@ bool CStatsMenuPanel::MsgFunc_StatsPlayer(const char* pszName, int iSize, void* 
 
 		if (pfile)
 		{
-			//TODO: this passes an arbitrary string as the format string which is incredibly dangerous (also in vanilla)
-			//Overcomplicated time calculations, can just use modulo instead for seconds
+			SanitizeFormatString(pfile);
 			sprintf(
 				szStatsBuf[3],
 				pfile,
