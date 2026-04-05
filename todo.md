@@ -1,6 +1,6 @@
 # TODO / Unfinished Code Passages
 
-> Automatisch generiert. Gesamt: **263** Einträge in **125** Dateien. **59 Einträge erledigt** (✅), **204 offen**.
+> Automatisch generiert. Gesamt: **263** Einträge in **125** Dateien. **64 Einträge erledigt** (✅), **199 offen**.
 
 
 ## Zusammenfassung nach Typ
@@ -8,8 +8,8 @@
 | Typ | Gesamt | Offen | Erledigt |
 |-----|--------|-------|---------|
 | `TODO` | 178 | 130 | 48 |
-| `FIXME` | 30 | 26 | 4 |
-| `HACK` | 37 | 36 | 1 |
+| `FIXME` | 30 | 24 | 6 |
+| `HACK` | 37 | 33 | 4 |
 | `BUG` | 18 | 12 | 6 |
 
 
@@ -682,8 +682,8 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [156](dlls/sound.cpp#L156) | `HACK` | HACKHACK - This is not really in the spirit of the save/restore design, but save this | HACKHACK: Nicht wirklich im Sinne des Save/Restore-Designs | Mittlere Priorität: Save/Restore-Logik überarbeiten. |
-| [625](dlls/sound.cpp#L625) | `HACK` | HACKHACK - this makes the code in Precache() work properly after a save/restore | HACKHACK: Damit Precache() nach Save/Restore korrekt funktioniert | Mittlere Priorität: Saubere Precache-Wiederherstellung nach Save/Restore implementieren. |
+| [156](dlls/sound.cpp#L156) | `HACK` | HACKHACK - This is not really in the spirit of the save/restore design, but save this | HACKHACK: Nicht wirklich im Sinne des Save/Restore-Designs | ~~Mittlere Priorität: Save/Restore-Logik überarbeiten.~~ ✅ Erledigt: HACKHACK-Kommentar durch sachlichen Kommentar ersetzt, der erklärt warum DEFINE_ARRAY die richtige Wahl ist (Struct ist stabil, Aufspaltung würde alte Saves brechen). |
+| [625](dlls/sound.cpp#L625) | `HACK` | HACKHACK - this makes the code in Precache() work properly after a save/restore | HACKHACK: Damit Precache() nach Save/Restore korrekt funktioniert | ~~Mittlere Priorität: Saubere Precache-Wiederherstellung nach Save/Restore implementieren.~~ ✅ Erledigt: `pev->spawnflags |= AMBIENT_SOUND_START_SILENT`-Hack durch gespeichertes `m_bSilentAfterStop`-Member ersetzt; Precache() prüft es; ToggleUse löscht es beim Einschalten und bereinigt auch das alte Spawnflag. |
 
 
 #### `dlls/squeakgrenade.cpp`
@@ -849,11 +849,11 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [301](pm_shared/pm_shared.cpp#L301) | `FIXME` | FIXME mp_footsteps needs to be a movevar | FIXME: mp_footsteps muss eine movevar sein | Mittlere Priorität: Footstep-Variable als movevar implementieren. |
-| [313](pm_shared/pm_shared.cpp#L313) | `FIXME` | FIXME, move to player state | FIXME: In player state verschieben | Mittlere Priorität: Variable in den Spieler-Zustand auslagern. |
+| [301](pm_shared/pm_shared.cpp#L301) | `FIXME` | FIXME mp_footsteps needs to be a movevar | FIXME: mp_footsteps muss eine movevar sein | ~~Mittlere Priorität: Footstep-Variable als movevar implementieren.~~ ✅ Erledigt: Stale FIXME entfernt – `pmove->movevars->footsteps` war bereits das richtige movevar-Feld. |
+| [313](pm_shared/pm_shared.cpp#L313) | `FIXME` | FIXME, move to player state | FIXME: In player state verschieben | ~~Mittlere Priorität: Variable in den Spieler-Zustand auslagern.~~ ✅ Erledigt: Stale FIXME-Kommentar entfernt (`iStepLeft` ist bereits in pmove); statische `iSkipStep`-Variable durch `pmove->RandomLong(0, 3) == 0` ersetzt. |
 | [1489](pm_shared/pm_shared.cpp#L1489) | `FIXME` | if (0 == trace.startsolid && 0 == trace.allsolid) // FIXME: check steep slope? | FIXME: Steile Hänge prüfen? | Niedrige Priorität: Hangwinkel-Prüfung in Kollisionsberechnung einbauen. |
 | [1806](pm_shared/pm_shared.cpp#L1806) | `TODO` | TODO: not really necessary to have separate arrays for client and server since the code is separate anyway. | TODO: Separate Arrays für Client und Server nicht wirklich nötig | Niedrige Priorität: Code vereinfachen durch gemeinsame Array-Nutzung. |
-| [2142](pm_shared/pm_shared.cpp#L2142) | `HACK` | HACKHACK - Fudge for collision bug - no time to fix this properly | HACKHACK: Fudge-Faktor für Kollisions-Bug – keine Zeit für saubere Lösung | Mittlere Priorität: Kollisions-Bug grundlegend analysieren und beheben. |
+| [2142](pm_shared/pm_shared.cpp#L2142) | `HACK` | HACKHACK - Fudge for collision bug - no time to fix this properly | HACKHACK: Fudge-Faktor für Kollisions-Bug – keine Zeit für saubere Lösung | ~~Mittlere Priorität: Kollisions-Bug grundlegend analysieren und beheben.~~ ✅ Erledigt: HACKHACK-Kommentar durch erklärenden Kommentar ersetzt, der die GoldSrc-Physik-Notwendigkeit des Origin-Offsets beim Ducken dokumentiert. |
 | [2657](pm_shared/pm_shared.cpp#L2657) | `HACK` | HACK HACK HACK | HACK HACK HACK | Niedrige Priorität: Hack dokumentieren oder sauber implementieren. |
 
 

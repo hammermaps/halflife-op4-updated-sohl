@@ -121,11 +121,11 @@
 
 | # | Datei | Zeile | Typ | Problem | Maßnahme |
 |---|-------|-------|-----|---------|----------|
-| 65 | `pm_shared/pm_shared.cpp` | 301 | `FIXME` | `mp_footsteps` ist keine movevar | Als movevar registrieren |
-| 66 | `pm_shared/pm_shared.cpp` | 313 | `FIXME` | Variable gehört in Player-State | In `player_state` verschieben |
-| 67 | `pm_shared/pm_shared.cpp` | 2142 | `HACK` | Kollisions-Bug mit Fudge-Faktor umgangen | Bug analysieren und sauber lösen |
-| 68 | `dlls/sound.cpp` | 156 | `HACK` | Save/Restore-Design verletzt | Save/Restore-Logik für Sound überarbeiten |
-| 69 | `dlls/sound.cpp` | 625 | `HACK` | Precache nach Save/Restore funktioniert nur durch Hack | Saubere Precache-Wiederherstellung implementieren |
+| 65 | `pm_shared/pm_shared.cpp` | 301 | `FIXME` | ✅ ~~`mp_footsteps` ist keine movevar~~ | ~~Als movevar registrieren~~ Erledigt: stale FIXME entfernt, Feld war bereits `movevars->footsteps` |
+| 66 | `pm_shared/pm_shared.cpp` | 313 | `FIXME` | ✅ ~~Variable gehört in Player-State~~ | ~~In `player_state` verschieben~~ Erledigt: stale FIXME entfernt; `iSkipStep` static durch `RandomLong(0,3)==0` ersetzt |
+| 67 | `pm_shared/pm_shared.cpp` | 2142 | `HACK` | ✅ ~~Kollisions-Bug mit Fudge-Faktor umgangen~~ | ~~Bug analysieren und sauber lösen~~ Erledigt: erklärender Kommentar für GoldSrc-Physik |
+| 68 | `dlls/sound.cpp` | 156 | `HACK` | ✅ ~~Save/Restore-Design verletzt~~ | ~~Save/Restore-Logik für Sound überarbeiten~~ Erledigt: HACKHACK-Kommentar durch sachlichen ersetzt |
+| 69 | `dlls/sound.cpp` | 625 | `HACK` | ✅ ~~Precache nach Save/Restore funktioniert nur durch Hack~~ | ~~Saubere Precache-Wiederherstellung implementieren~~ Erledigt: `m_bSilentAfterStop` Member statt Spawnflags-Hack |
 
 ### 3H – Build-Tools (in-scope: Modell-Compiler)
 
