@@ -173,7 +173,9 @@ bool CKnife::Swing(const bool bFirst)
 
 				const Vector ownerForwardDirection = gpGlobals->v_forward;
 
-				const bool isBehindTarget = CrossProduct(targetRightDirection, ownerForwardDirection).z > 0;
+				// Backstab: z-component of cross(targetRight, ownerForward) > 0 means the
+			// attacker is behind the target (attacker's forward is on the same side as the target's forward).
+			const bool isBehindTarget = CrossProduct(targetRightDirection, ownerForwardDirection).z > 0;
 
 				if (isBehindTarget)
 				{

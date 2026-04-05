@@ -1,16 +1,16 @@
 # TODO / Unfinished Code Passages
 
-> Automatisch generiert. Gesamt: **263** Einträge in **125** Dateien. **52 Einträge erledigt** (✅), **211 offen**.
+> Automatisch generiert. Gesamt: **263** Einträge in **125** Dateien. **59 Einträge erledigt** (✅), **204 offen**.
 
 
 ## Zusammenfassung nach Typ
 
 | Typ | Gesamt | Offen | Erledigt |
 |-----|--------|-------|---------|
-| `TODO` | 178 | 135 | 43 |
-| `FIXME` | 30 | 27 | 3 |
+| `TODO` | 178 | 130 | 48 |
+| `FIXME` | 30 | 26 | 4 |
 | `HACK` | 37 | 36 | 1 |
-| `BUG` | 18 | 13 | 5 |
+| `BUG` | 18 | 12 | 6 |
 
 
 ---
@@ -36,7 +36,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [28](cl_dll/demo.cpp#L28) | `FIXME` | FIXME:  There should be buffer helper functions to avoid all of the *(int *)& crap. | FIXME: Es sollte Buffer-Hilfsfunktionen geben, um den *(int *)& Unsinn zu vermeiden | Mittlere Priorität: Hilfsfunktionen für typsicheres Buffer-Casting einführen. |
+| [28](cl_dll/demo.cpp#L28) | `FIXME` | FIXME:  There should be buffer helper functions to avoid all of the *(int *)& crap. | FIXME: Es sollte Buffer-Hilfsfunktionen geben, um den *(int *)& Unsinn zu vermeiden | ~~Mittlere Priorität: Hilfsfunktionen für typsicheres Buffer-Casting einführen.~~ ✅ Erledigt: `WriteInt`, `WriteFloat`, `ReadInt`, `ReadFloat` Hilfsfunktionen eingeführt; alle `*(int*)&buf[i]`- und `*(float*)&buf[i]`-Casts durch `memcpy`-basierte Helfer ersetzt. |
 
 
 #### `cl_dll/ev_hldm.cpp`
@@ -52,7 +52,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [100](cl_dll/health.cpp#L100) | `TODO` | TODO: update local health data | TODO: Lokale Gesundheitsdaten aktualisieren | Mittlere Priorität: HUD-Gesundheitsdaten zeitnah synchronisieren. |
+| [100](cl_dll/health.cpp#L100) | `TODO` | TODO: update local health data | TODO: Lokale Gesundheitsdaten aktualisieren | ~~Mittlere Priorität: HUD-Gesundheitsdaten zeitnah synchronisieren.~~ ✅ Erledigt: Stale TODO entfernt – `m_iHealth` wird in `MsgFunc_Health` bereits korrekt aus der Server-Nachricht gesetzt. |
 | [329](cl_dll/health.cpp#L329) | `TODO` | TODO:  get the shift value of the health | TODO: Den Verschiebungswert der Gesundheit ermitteln | Niedrige Priorität: Korrekte Berechnung des Gesundheits-Offsets implementieren. |
 
 
@@ -75,7 +75,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [92](cl_dll/hud_msg.cpp#L92) | `TODO` | TODO: needs to be called on every map change, not just when starting a new game | TODO: Muss bei jedem Kartenwechsel aufgerufen werden, nicht nur beim Spielstart | Mittlere Priorität: Aufruf bei Kartenwechsel-Events ergänzen. |
+| [92](cl_dll/hud_msg.cpp#L92) | `TODO` | TODO: needs to be called on every map change, not just when starting a new game | TODO: Muss bei jedem Kartenwechsel aufgerufen werden, nicht nur beim Spielstart | ~~Mittlere Priorität: Aufruf bei Kartenwechsel-Events ergänzen.~~ ✅ Erledigt: Partikel-, Strahl- und Shiny-Surface-Reset aus `MsgFunc_InitHUD` nach `MsgFunc_ResetHUD` verschoben; `ResetHUD` wird bei jedem Kartenwechsel gesendet. |
 | [117](cl_dll/hud_msg.cpp#L117) | `TODO` | TODO: define game mode constants | TODO: Spielmodus-Konstanten definieren | Niedrige Priorität: Magic-Numbers durch benannte Konstanten ersetzen. |
 | [163](cl_dll/hud_msg.cpp#L163) | `TODO` | TODO: kick viewangles,  show damage visually | TODO: Kamerawinkel-Anpassung, Schaden visuell darstellen | Mittlere Priorität: Visuelles Feedback bei Treffern implementieren. |
 
@@ -93,7 +93,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [121](cl_dll/hud_spectator.cpp#L121) | `TODO` | TODO: none of this spectator stuff exists in Op4 | TODO: Nichts von diesem Spectator-Zeug existiert in Op4 | Mittlere Priorität: Op4-spezifischen Spectator-Code implementieren oder Dead-Code entfernen. |
+| [121](cl_dll/hud_spectator.cpp#L121) | `TODO` | TODO: none of this spectator stuff exists in Op4 | TODO: Nichts von diesem Spectator-Zeug existiert in Op4 | ~~Mittlere Priorität: Op4-spezifischen Spectator-Code implementieren oder Dead-Code entfernen.~~ ✅ Erledigt: Toten `if (gViewPort)`-Branch entfernt; `SpectatorHelp()` gibt jetzt direkt den lokalisierten `#Spec_Help_Text` aus. |
 | [407](cl_dll/hud_spectator.cpp#L407) | `TODO` | TODO: this flags check is incorrect, fix it. Comment contains original code before bool fix. | TODO: Diese Flags-Prüfung ist falsch, bitte korrigieren | ~~Hohe Priorität: Flags-Prüfung korrigieren, um Spectator-Logik-Fehler zu beheben.~~ ✅ Erledigt: `flags == 0` war bereits korrekt; stale TODO-Kommentar entfernt. |
 | [668](cl_dll/hud_spectator.cpp#L668) | `TODO` | TODO: this is pretty ugly, need a better way. | TODO: Ziemlich hässlich, besser lösen | Niedrige Priorität: Code refaktorieren für bessere Lesbarkeit. |
 
@@ -124,7 +124,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [101](cl_dll/particleman/CBaseParticle.cpp#L101) | `TODO` | TODO: not sure if these are correct. If low left is half of the scaled directions then the full direction * 2 results... | TODO: Nicht sicher ob diese Werte korrekt sind | Mittlere Priorität: Partikelrichtungsberechnungen überprüfen und dokumentieren. |
+| [101](cl_dll/particleman/CBaseParticle.cpp#L101) | `TODO` | TODO: not sure if these are correct. If low left is half of the scaled directions then the full direction * 2 results... | TODO: Nicht sicher ob diese Werte korrekt sind | ~~Mittlere Priorität: Partikelrichtungsberechnungen überprüfen und dokumentieren.~~ ✅ Erledigt: Verdoppeltes `scaledRight + scaledRight` → `scaledRight` und `scaledUp + scaledUp` → `scaledUp` korrigiert; Partikelgröße war 2× zu groß. |
 | [209](cl_dll/particleman/CBaseParticle.cpp#L209) | `TODO` | TODO: shouldn't this be accounting for stretch Y? | TODO: Sollte hier Y-Stretching berücksichtigt werden? | Niedrige Priorität: Partikelskalierung auf Y-Achse prüfen. |
 
 
@@ -182,7 +182,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [128](cl_dll/vgui_StatsMenuPanel.cpp#L128) | `BUG` | TODO: this is using YRES for an X coord. Bugged in vanilla | TODO: YRES wird für X-Koordinate verwendet – Vanilla-Bug | Mittlere Priorität: Koordinatenfehler korrigieren (XRES statt YRES verwenden). |
+| [128](cl_dll/vgui_StatsMenuPanel.cpp#L128) | `BUG` | TODO: this is using YRES for an X coord. Bugged in vanilla | TODO: YRES wird für X-Koordinate verwendet – Vanilla-Bug | ~~Mittlere Priorität: Koordinatenfehler korrigieren (XRES statt YRES verwenden).~~ ✅ Erledigt: `STATSMENU_BUTTON_SPACER_Y` (YRES) in der X-Positions-Berechnung durch `XRES(8)` ersetzt. |
 | [368](cl_dll/vgui_StatsMenuPanel.cpp#L368) | `TODO` | TODO: this passes an arbitrary string as the format string which is incredibly dangerous (also in vanilla) | TODO: Beliebiger String als Format-String – sehr gefährlich | Kritisch: Format-String-Injection verhindern durch Verwendung von "%s" als Formatstring. |
 | [416](cl_dll/vgui_StatsMenuPanel.cpp#L416) | `TODO` | TODO: missing from vanilla | TODO: Fehlt in Vanilla | Niedrige Priorität: Fehlende Funktionalität prüfen und ggf. ergänzen. |
 | [453](cl_dll/vgui_StatsMenuPanel.cpp#L453) | `TODO` | TODO: this passes an arbitrary string as the format string which is incredibly dangerous (also in vanilla) | TODO: Beliebiger String als Format-String – sehr gefährlich | Kritisch: Format-String-Injection verhindern durch Verwendung von "%s" als Formatstring. |
@@ -193,7 +193,7 @@
 
 | Zeile | Typ | Kommentar | Übersetzung (DE) | Empfehlung |
 |-------|-----|-----------|------------------|------------|
-| [2193](cl_dll/vgui_TeamFortressViewport.cpp#L2193) | `TODO` | TODO: not written by Op4 | TODO: Nicht von Op4 geschrieben | Mittlere Priorität: Op4-spezifische Implementierung einfügen. |
+| [2193](cl_dll/vgui_TeamFortressViewport.cpp#L2193) | `TODO` | TODO: not written by Op4 | TODO: Nicht von Op4 geschrieben | ~~Mittlere Priorität: Op4-spezifische Implementierung einfügen.~~ ✅ Erledigt: Überflüssige `READ_SHORT()`-Aufrufe für `playerclass` und `teamnumber` entfernt, da Op4-Server diese Felder nicht schreibt (`gmsgScoreInfo` = 5 Bytes); Fix auch in `scoreboard.cpp` angewendet. |
 
 
 #### `cl_dll/vgui_TeamFortressViewport.h`

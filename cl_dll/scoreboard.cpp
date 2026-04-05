@@ -564,15 +564,11 @@ bool CHudScoreboard::MsgFunc_ScoreInfo(const char* pszName, int iSize, void* pbu
 	short cl = READ_BYTE();
 	short frags = READ_SHORT();
 	short deaths = READ_SHORT();
-	short playerclass = READ_SHORT();
-	short teamnumber = READ_SHORT();
 
 	if (cl > 0 && cl <= MAX_PLAYERS_HUD)
 	{
 		g_PlayerExtraInfo[cl].frags = frags;
 		g_PlayerExtraInfo[cl].deaths = deaths;
-		g_PlayerExtraInfo[cl].playerclass = playerclass;
-		g_PlayerExtraInfo[cl].teamnumber = teamnumber;
 
 		gViewPort->UpdateOnPlayerInfo();
 	}

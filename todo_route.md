@@ -106,16 +106,16 @@
 
 | # | Datei | Zeile | Typ | Problem | Maßnahme |
 |---|-------|-------|-----|---------|----------|
-| 55 | `cl_dll/vgui_StatsMenuPanel.cpp` | 128 | `BUG` | YRES wird für X-Koordinate verwendet | Durch XRES ersetzen |
-| 56 | `cl_dll/hud_msg.cpp` | 92 | `TODO` | Reset nicht bei Kartenwechsel | Bei `HUD_RESET`-Event aufrufen |
+| 55 | `cl_dll/vgui_StatsMenuPanel.cpp` | 128 | `BUG` | ✅ ~~YRES wird für X-Koordinate verwendet~~ | ~~Durch XRES ersetzen~~ Erledigt |
+| 56 | `cl_dll/hud_msg.cpp` | 92 | `TODO` | ✅ ~~Reset nicht bei Kartenwechsel~~ | ~~Bei `HUD_RESET`-Event aufrufen~~ Erledigt: in MsgFunc_ResetHUD verschoben |
 | 57 | `cl_dll/hud_msg.cpp` | 163 | `TODO` | Visuelles Treffer-Feedback fehlt | Kamera-Kick und Schadens-Visualisierung implementieren |
-| 58 | `cl_dll/health.cpp` | 100 | `TODO` | Lokale Gesundheitsdaten werden nicht aktualisiert | Synchronisation mit Server-Health-Daten einbauen |
-| 59 | `cl_dll/hud_spectator.cpp` | 121 | `TODO` | Spectator-Code für Op4 fehlt oder ist Dead-Code | Op4-Spectator implementieren oder toten Code entfernen |
+| 58 | `cl_dll/health.cpp` | 100 | `TODO` | ✅ ~~Lokale Gesundheitsdaten werden nicht aktualisiert~~ | ~~Synchronisation mit Server-Health-Daten einbauen~~ Erledigt: stale TODO entfernt |
+| 59 | `cl_dll/hud_spectator.cpp` | 121 | `TODO` | ✅ ~~Spectator-Code für Op4 fehlt oder ist Dead-Code~~ | ~~Op4-Spectator implementieren oder toten Code entfernen~~ Erledigt: Dead-Code entfernt |
 | 60 | `cl_dll/ev_hldm.cpp` | 1285 | `TODO` | Clientseitige Vorhersage für fliegenden Bolzen fehlt | Bolzen-Vorhersage implementieren |
-| 61 | `cl_dll/vgui_TeamFortressViewport.cpp` | 2193 | `TODO` | Op4-spezifische Implementierung fehlt | Implementierung ergänzen |
-| 62 | `cl_dll/demo.cpp` | 28 | `FIXME` | Kein typsicheres Buffer-Casting | Hilfsfunktionen für Buffer-Casting einführen |
+| 61 | `cl_dll/vgui_TeamFortressViewport.cpp` | 2193 | `TODO` | ✅ ~~Op4-spezifische Implementierung fehlt~~ | ~~Implementierung ergänzen~~ Erledigt: überzählige READ_SHORT() entfernt, auch in scoreboard.cpp |
+| 62 | `cl_dll/demo.cpp` | 28 | `FIXME` | ✅ ~~Kein typsicheres Buffer-Casting~~ | ~~Hilfsfunktionen für Buffer-Casting einführen~~ Erledigt: WriteInt/WriteFloat/ReadInt/ReadFloat + memcpy |
 | 63 | `cl_dll/hl/hl_weapons.cpp` | 659 | `FIXME` | Waffenlogik sollte als Methode je Waffe implementiert sein | Waffenspezifische Methode mit `entity_state_t*` einführen |
-| 64 | `cl_dll/particleman/CBaseParticle.cpp` | 101 | `TODO` | Partikelrichtungs-Berechnung möglicherweise falsch | Berechnung verifizieren und dokumentieren |
+| 64 | `cl_dll/particleman/CBaseParticle.cpp` | 101 | `TODO` | ✅ ~~Partikelrichtungs-Berechnung möglicherweise falsch~~ | ~~Berechnung verifizieren und dokumentieren~~ Erledigt: `scaledRight*2` → `scaledRight`; Partikelgröße war 2× zu groß |
 
 ### 3G – Shared Player-Movement & Sound
 

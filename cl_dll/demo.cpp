@@ -25,7 +25,34 @@ float g_demosniperorg[3];
 float g_demosniperangles[3];
 float g_demozoom;
 
-// FIXME:  There should be buffer helper functions to avoid all of the *(int *)& crap.
+// Buffer read/write helpers that avoid type-punning via pointer casts.
+static void WriteInt(unsigned char* buf, int& pos, int value)
+{
+	memcpy(&buf[pos], &value, sizeof(value));
+	pos += sizeof(value);
+}
+
+static void WriteFloat(unsigned char* buf, int& pos, float value)
+{
+	memcpy(&buf[pos], &value, sizeof(value));
+	pos += sizeof(value);
+}
+
+static int ReadInt(const unsigned char* buf, int& pos)
+{
+	int value;
+	memcpy(&value, &buf[pos], sizeof(value));
+	pos += sizeof(value);
+	return value;
+}
+
+static float ReadFloat(const unsigned char* buf, int& pos)
+{
+	float value;
+	memcpy(&value, &buf[pos], sizeof(value));
+	pos += sizeof(value);
+	return value;
+}
 
 /*
 =====================
@@ -38,8 +65,7 @@ void Demo_WriteBuffer(int type, int size, unsigned char* buffer)
 {
 	int pos = 0;
 	unsigned char buf[32 * 1024];
-	*(int*)&buf[pos] = type;
-	pos += sizeof(int);
+	WriteInt(buf, pos, type);
 
 	memcpy(&buf[pos], buffer, size);
 
@@ -58,39 +84,28 @@ void DLLEXPORT Demo_ReadBuffer(int size, unsigned char* buffer)
 {
 	//	RecClReadDemoBuffer(size, buffer);
 
-	int type;
 	int i = 0;
 
-	type = *(int*)buffer;
-	i += sizeof(int);
+	int type = ReadInt(buffer, i);
 	switch (type)
 	{
 	case TYPE_SNIPERDOT:
-		g_demosniper = *(int*)&buffer[i];
-		i += sizeof(int);
+		g_demosniper = ReadInt(buffer, i);
 
 		if (0 != g_demosniper)
 		{
-			g_demosniperdamage = *(int*)&buffer[i];
-			i += sizeof(int);
+			g_demosniperdamage = ReadInt(buffer, i);
 
-			g_demosniperangles[0] = *(float*)&buffer[i];
-			i += sizeof(float);
-			g_demosniperangles[1] = *(float*)&buffer[i];
-			i += sizeof(float);
-			g_demosniperangles[2] = *(float*)&buffer[i];
-			i += sizeof(float);
-			g_demosniperorg[0] = *(float*)&buffer[i];
-			i += sizeof(float);
-			g_demosniperorg[1] = *(float*)&buffer[i];
-			i += sizeof(float);
-			g_demosniperorg[2] = *(float*)&buffer[i];
-			i += sizeof(float);
+			g_demosniperangles[0] = ReadFloat(buffer, i);
+			g_demosniperangles[1] = ReadFloat(buffer, i);
+			g_demosniperangles[2] = ReadFloat(buffer, i);
+			g_demosniperorg[0] = ReadFloat(buffer, i);
+			g_demosniperorg[1] = ReadFloat(buffer, i);
+			g_demosniperorg[2] = ReadFloat(buffer, i);
 		}
 		break;
 	case TYPE_ZOOM:
-		g_demozoom = *(float*)&buffer[i];
-		i += sizeof(float);
+		g_demozoom = ReadFloat(buffer, i);
 		break;
 	default:
 		gEngfuncs.Con_DPrintf("Unknown demo buffer type, skipping.\n");

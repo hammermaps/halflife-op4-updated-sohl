@@ -66,6 +66,22 @@ bool CHud::MsgFunc_ResetHUD(const char* pszName, int iSize, void* pbuf)
 	// reset sky
 	m_iSkyMode = SKY_OFF;
 
+	// clear particles and effects left over from the previous map
+	if (g_pParticleMan)
+		g_pParticleMan->ResetParticles();
+
+	if (g_pParticleSystems)
+		g_pParticleSystems->ClearSystems();
+
+	pBeam = pBeam2 = NULL;
+
+	// clear shiny surfaces
+	if (m_pShinySurface)
+	{
+		delete m_pShinySurface;
+		m_pShinySurface = NULL;
+	}
+
 	return true;
 }
 
@@ -86,24 +102,6 @@ void CHud::MsgFunc_InitHUD(const char* pszName, int iSize, void* pbuf)
 		if (pList->p)
 			pList->p->InitHUDData();
 		pList = pList->pNext;
-	}
-
-
-	//TODO: needs to be called on every map change, not just when starting a new game
-	if (g_pParticleMan)
-		g_pParticleMan->ResetParticles();
-
-	if (g_pParticleSystems)
-		g_pParticleSystems->ClearSystems();
-
-	//Probably not a good place to put this.
-	pBeam = pBeam2 = NULL;
-
-	// Clear shiny surfaces
-	if (m_pShinySurface)
-	{
-		delete m_pShinySurface;
-		m_pShinySurface = NULL;
 	}
 }
 

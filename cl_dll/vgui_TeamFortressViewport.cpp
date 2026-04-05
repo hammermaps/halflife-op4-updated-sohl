@@ -2190,20 +2190,11 @@ bool TeamFortressViewport::MsgFunc_ScoreInfo(const char* pszName, int iSize, voi
 	short cl = READ_BYTE();
 	short frags = READ_SHORT();
 	short deaths = READ_SHORT();
-	//TODO: not written by Op4
-	short playerclass = READ_SHORT();
-	short teamnumber = READ_SHORT();
 
 	if (cl > 0 && cl <= MAX_PLAYERS_HUD)
 	{
 		g_PlayerExtraInfo[cl].frags = frags;
 		g_PlayerExtraInfo[cl].deaths = deaths;
-		g_PlayerExtraInfo[cl].playerclass = playerclass;
-		g_PlayerExtraInfo[cl].teamnumber = teamnumber;
-
-		//Dont go bellow 0!
-		if (g_PlayerExtraInfo[cl].teamnumber < 0)
-			g_PlayerExtraInfo[cl].teamnumber = 0;
 
 		UpdateOnPlayerInfo();
 	}
