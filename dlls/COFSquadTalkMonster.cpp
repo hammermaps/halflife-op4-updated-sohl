@@ -255,14 +255,14 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 		return;
 	}
 
+	if (!pEnemy)
+	{
+		LOG_ERROR("SquadMakeEnemy() - pEnemy is NULL!");
+		return;
+	}
+
 	if (!InSquad())
 	{
-		if (!pEnemy)
-		{
-			LOG_ERROR("SquadMakeEnemy() - pEnemy is NULL!");
-			return;
-		}
-
 		if (m_hEnemy != NULL)
 		{
 			// remember their current enemy
@@ -275,12 +275,6 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 		m_hEnemy = pEnemy;
 		m_vecEnemyLKP = pEnemy->pev->origin;
 		SetConditions(bits_COND_NEW_ENEMY);
-	}
-
-	if (!pEnemy)
-	{
-		LOG_ERROR("SquadMakeEnemy() - pEnemy is NULL!");
-		return;
 	}
 
 	auto squadLeader = MySquadLeader();

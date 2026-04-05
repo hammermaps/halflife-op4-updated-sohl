@@ -135,8 +135,11 @@ bool CHudPlayerBrowse::MsgFunc_PlyrBrowse(const char* pszName, int iSize, void* 
 
 	const char* playerName = READ_STRING();
 	const size_t bufUsed = strlen(m_szNewLineBuffer);
-	const size_t bufRemaining = sizeof(m_szNewLineBuffer) - bufUsed - 1;
-	strncat(m_szNewLineBuffer, playerName, bufRemaining);
+	if (bufUsed < sizeof(m_szNewLineBuffer) - 1)
+	{
+		const size_t bufRemaining = sizeof(m_szNewLineBuffer) - bufUsed - 1;
+		strncat(m_szNewLineBuffer, playerName, bufRemaining);
+	}
 
 	if ('\0' != m_szNewLineBuffer[0])
 	{
