@@ -363,20 +363,29 @@ void UTIL_SetVelocity(CBaseEntity* pEnt, const Vector& vecSet)
 			break;
 		}
 
-		// velocity is ignored on entities that aren't thinking!
-		// ensure we have a think set, so the velocity takes effect
+		// The engine ignores velocity on entities that aren't thinking.
+		// For MOVETYPE_PUSH this is critical: SV_Physics_Pusher calculates
+		// movetime from nextthink, so nextthink MUST be in the future.
+		// For non-PUSH types the engine always applies velocity, but a
+		// think-injection is still harmless and keeps the logic uniform.
 		if (vecSet != g_vecZero)
 		{
-			if (pChild->pev->movetype != MOVETYPE_PUSH)
+			if (pChild->m_pfnThink == NULL)
 			{
-				if (pChild->m_pfnThink == NULL)
-				{
-					DEV_LOG(mw_debug, "  child %s has no think! Setting SUB_DoNothing to enable velocity",
-						STRING(pChild->pev->classname));
-					pChild->SetThink(&CBaseEntity::SUB_DoNothing);
-					pChild->SetNextThink(0.01);
-					SetBits(pChild->m_iLFlags, LF_MW_THINK_INJECTED);
-				}
+				DEV_LOG(mw_debug, "  child %s has no think — injecting SUB_DoNothing",
+					STRING(pChild->pev->classname));
+				pChild->SetThink(&CBaseEntity::SUB_DoNothing);
+				pChild->SetNextThink(1e6);
+				SetBits(pChild->m_iLFlags, LF_MW_THINK_INJECTED);
+			}
+			else if (pChild->pev->movetype == MOVETYPE_PUSH
+				&& pChild->pev->nextthink <= pChild->pev->ltime)
+			{
+				// Child has a think but nextthink is not scheduled (or in
+				// the past).  MOVETYPE_PUSH needs a future nextthink for
+				// the engine to apply any velocity at all.
+				pChild->pev->nextthink = pChild->pev->ltime + 1e6;
+				pChild->m_fPevNextThink = pChild->pev->nextthink;
 			}
 		}
 		else
