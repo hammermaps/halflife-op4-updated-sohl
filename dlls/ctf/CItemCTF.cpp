@@ -20,6 +20,7 @@
 #include "CItemSpawnCTF.h"
 #include "gamerules.h"
 #include "ctfplay_gamerules.h"
+#include "logger.h"
 
 const auto SF_ITEMCTF_RANDOM_SPAWN = 1 << 2;
 const auto SF_ITEMCTF_IGNORE_TEAM = 1 << 3;
@@ -60,7 +61,7 @@ void CItemCTF::Spawn()
 
 	if (DROP_TO_FLOOR(edict()) == 0)
 	{
-		ALERT(at_error, "Item %s fell out of level at %f,%f,%f", STRING(pev->classname), pev->origin.x, pev->origin.y, pev->origin.z);
+		LOG_ERROR("Item %s fell out of level at %f,%f,%f", STRING(pev->classname), pev->origin.x, pev->origin.y, pev->origin.z);
 		UTIL_Remove(this);
 		return;
 	}
@@ -201,13 +202,13 @@ void CItemCTF::DropThink()
 	m_pLastSpawn = spawn;
 
 	if (!spawn && nTested > 0)
-		ALERT(at_console, "Warning: No available spawn points found.  Powerup returned to original coordinates.");
+		LOG_INFO("Warning: No available spawn points found.  Powerup returned to original coordinates.");
 
 	UTIL_SetOrigin(pev, pev->origin);
 
 	if (g_engfuncs.pfnDropToFloor(edict()) == 0)
 	{
-		ALERT(at_error, "Item %s fell out of level at %f,%f,%f",
+		LOG_ERROR("Item %s fell out of level at %f,%f,%f",
 			STRING(pev->classname), pev->origin.x, pev->origin.y, pev->origin.z);
 		UTIL_Remove(this);
 	}

@@ -23,6 +23,7 @@
 #include "defaultai.h"
 #include "soundent.h"
 #include "scripted.h"
+#include "logger.h"
 
 //=========================================================
 // Fail
@@ -946,7 +947,7 @@ Schedule_t* CBaseMonster::ScheduleInList(const char* pName, Schedule_t** pList, 
 
 	if (!pName)
 	{
-		ALERT(at_console, "%s set to unnamed schedule!\n", STRING(pev->classname));
+		LOG_INFO("%s set to unnamed schedule!", STRING(pev->classname));
 		return NULL;
 	}
 
@@ -955,7 +956,7 @@ Schedule_t* CBaseMonster::ScheduleInList(const char* pName, Schedule_t** pList, 
 	{
 		if (!pList[i]->pName)
 		{
-			ALERT(at_console, "Unnamed schedule!\n");
+			LOG_INFO("Unnamed schedule!");
 			continue;
 		}
 		if (stricmp(pName, pList[i]->pName) == 0)
@@ -979,7 +980,7 @@ Schedule_t* CBaseMonster::GetScheduleOfType(int Type)
 		ASSERT(m_pCine != NULL);
 		if (!m_pCine)
 		{
-			ALERT(at_aiconsole, "Script failed for %s\n", STRING(pev->classname));
+			LOG_DEBUG("Script failed for %s", STRING(pev->classname));
 			CineCleanup();
 			return GetScheduleOfType(SCHED_IDLE_STAND);
 		}
@@ -1135,7 +1136,7 @@ Schedule_t* CBaseMonster::GetScheduleOfType(int Type)
 	}
 	default:
 	{
-		ALERT(at_console, "GetScheduleOfType()\nNo CASE for Schedule Type %d!\n", Type);
+		LOG_INFO("GetScheduleOfType()\nNo CASE for Schedule Type %d!", Type);
 
 		return &slIdleStand[0];
 		break;

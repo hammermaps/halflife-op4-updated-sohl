@@ -17,6 +17,7 @@
 //=========================================================
 
 #include "zombie_base.h"
+#include "logger.h"
 
 class CZombieSoldier : public CZombieBase
 {
@@ -109,7 +110,7 @@ void CDeadZombieSoldier::Spawn()
 
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead zombie soldier with bad pose\n");
+		LOG_INFO("Dead zombie soldier with bad pose");
 	}
 
 	// Corpses have less health

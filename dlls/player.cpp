@@ -49,6 +49,7 @@
 #include "client.h"
 
 #include "rope/CRope.h"
+#include "logger.h"
 
 // #define DUCKFIX
 
@@ -1948,11 +1949,11 @@ void CBasePlayer::PreThink()
 	{
 		if (!WorldGraph.FSetGraphPointers())
 		{
-			ALERT(at_console, "**Graph pointers were not set!\n");
+			LOG_INFO("**Graph pointers were not set!");
 		}
 		else
 		{
-			ALERT(at_console, "**Graph Pointers Set!\n");
+			LOG_INFO("**Graph Pointers Set!");
 		}
 	}
 
@@ -2671,7 +2672,7 @@ void CBasePlayer::UpdatePlayerSound()
 
 	if (!pSound)
 	{
-		ALERT(at_console, "Client lost reserved sound!\n");
+		LOG_INFO("Client lost reserved sound!");
 		return;
 	}
 
@@ -3114,7 +3115,7 @@ edict_t* EntSelectSpawnPoint(CBasePlayer* pPlayer)
 ReturnSpot:
 	if (FNullEnt(pSpot))
 	{
-		ALERT(at_error, "PutClientInServer: no info_player_start on level");
+		LOG_ERROR("PutClientInServer: no info_player_start on level");
 		return CWorld::World->edict();
 	}
 
@@ -3210,7 +3211,7 @@ void CBasePlayer::Spawn()
 
 	if (m_iPlayerSound == SOUNDLIST_EMPTY)
 	{
-		ALERT(at_console, "Couldn't alloc player sound slot!\n");
+		LOG_INFO("Couldn't alloc player sound slot!");
 	}
 
 	m_fNoPlayerSound = false; // normal sound behavior.
@@ -3324,7 +3325,7 @@ bool CBasePlayer::Restore(CRestore& restore)
 	// landmark isn't present.
 	if (0 == pSaveData->fUseLandmark)
 	{
-		ALERT(at_console, "No Landmark:%s\n", pSaveData->szLandmarkName);
+		LOG_INFO("No Landmark:%s", pSaveData->szLandmarkName);
 
 		// default to normal spawn
 		edict_t* pentSpawnSpot = EntSelectSpawnPoint(this);
@@ -3625,7 +3626,7 @@ static edict_t* GiveNamedItem_Common(entvars_t* pev, const char* pszName)
 	edict_t* pent = CREATE_NAMED_ENTITY(istr);
 	if (FNullEnt(pent))
 	{
-		ALERT(at_console, "NULL Ent in GiveNamedItem!\n");
+		LOG_INFO("NULL Ent in GiveNamedItem!");
 		return nullptr;
 	}
 	VARS(pent)->origin = pev->origin;
@@ -3877,7 +3878,7 @@ void CBasePlayer::CheatImpulseCommands(int iImpulse)
 		if (!giPrecacheGrunt)
 		{
 			giPrecacheGrunt = true;
-			ALERT(at_console, "You must now restart to use Grunt-o-matic.\n");
+			LOG_INFO("You must now restart to use Grunt-o-matic.");
 		}
 		else
 		{
@@ -3955,12 +3956,12 @@ void CBasePlayer::CheatImpulseCommands(int iImpulse)
 	{
 		if (m_fNoPlayerSound)
 		{
-			ALERT(at_console, "Player is audible\n");
+			LOG_INFO("Player is audible");
 			m_fNoPlayerSound = false;
 		}
 		else
 		{
-			ALERT(at_console, "Player is silent\n");
+			LOG_INFO("Player is silent");
 			m_fNoPlayerSound = true;
 		}
 		break;
@@ -3971,20 +3972,20 @@ void CBasePlayer::CheatImpulseCommands(int iImpulse)
 		pEntity = UTIL_FindEntityForward(this);
 		if (pEntity)
 		{
-			ALERT(at_console, "Classname: %s", STRING(pEntity->pev->classname));
+			LOG_INFO("Classname: %s", STRING(pEntity->pev->classname));
 
 			if (!FStringNull(pEntity->pev->targetname))
 			{
-				ALERT(at_console, " - Targetname: %s\n", STRING(pEntity->pev->targetname));
+				LOG_INFO(" - Targetname: %s", STRING(pEntity->pev->targetname));
 			}
 			else
 			{
-				ALERT(at_console, " - TargetName: No Targetname\n");
+				LOG_INFO(" - TargetName: No Targetname");
 			}
 
-			ALERT(at_console, "Model: %s\n", STRING(pEntity->pev->model));
+			LOG_INFO("Model: %s", STRING(pEntity->pev->model));
 			if (!FStringNull(pEntity->pev->globalname))
-				ALERT(at_console, "Globalname: %s\n", STRING(pEntity->pev->globalname));
+				LOG_INFO("Globalname: %s", STRING(pEntity->pev->globalname));
 		}
 		break;
 
@@ -4001,7 +4002,7 @@ void CBasePlayer::CheatImpulseCommands(int iImpulse)
 			pWorld = tr.pHit;
 		const char* pTextureName = TRACE_TEXTURE(pWorld, start, end);
 		if (pTextureName)
-			ALERT(at_console, "Texture: %s (%c)\n", pTextureName, PM_FindTextureType(pTextureName));
+			LOG_INFO("Texture: %s (%c)", pTextureName, PM_FindTextureType(pTextureName));
 	}
 	break;
 	case 195: // show shortest paths for entire level to nearest node
@@ -4021,7 +4022,7 @@ void CBasePlayer::CheatImpulseCommands(int iImpulse)
 	break;
 	case 199: // show nearest node and all connections
 	{
-		ALERT(at_console, "%d\n", WorldGraph.FindNearestNode(pev->origin, bits_NODE_GROUP_REALM));
+		LOG_INFO("%d", WorldGraph.FindNearestNode(pev->origin, bits_NODE_GROUP_REALM));
 		WorldGraph.ShowNodeConnections(WorldGraph.FindNearestNode(pev->origin, bits_NODE_GROUP_REALM));
 	}
 	break;
@@ -5588,7 +5589,7 @@ void CDeadHEV::Spawn()
 
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead hevsuit with bad pose\n");
+		LOG_INFO("Dead hevsuit with bad pose");
 		pev->sequence = 0;
 		pev->effects = EF_BRIGHTFIELD;
 	}

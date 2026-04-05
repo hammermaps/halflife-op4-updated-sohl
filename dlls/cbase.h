@@ -50,6 +50,9 @@ constexpr int FCAP_FORCE_TRANSITION = 0x00000080; // ALWAYS goes across transiti
 #include "saverestore.h"
 #include "schedule.h"
 #include "monsterevent.h"
+#ifndef CLIENT_DLL
+#include "logger.h"
+#endif
 
 // C functions for external declarations that call the appropriate C++ methods
 
@@ -395,7 +398,11 @@ public:
 	void FunctionCheck(void* pFunction, const char* name)
 	{
 		if (pFunction && !NAME_FOR_FUNCTION((uint32)pFunction))
+			#ifndef CLIENT_DLL
+			LOG_ERROR("No EXPORT: %s:%s (%08lx)", STRING(pev->classname), name, (uint32)pFunction);
+			#else
 			ALERT(at_error, "No EXPORT: %s:%s (%08lx)\n", STRING(pev->classname), name, (uint32)pFunction);
+			#endif
 	}
 
 	BASEPTR ThinkSet(BASEPTR func, const char* name)

@@ -26,6 +26,7 @@
 #include "scripted.h"
 #include "animation.h"
 #include "soundent.h"
+#include "logger.h"
 
 
 #define NUM_SCIENTIST_HEADS 4			 // four heads available for scientist model
@@ -1217,7 +1218,7 @@ void CDeadScientist::Spawn()
 	pev->sequence = LookupSequence(m_szPoses[m_iPose]);
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead scientist with bad pose\n");
+		LOG_INFO("Dead scientist with bad pose");
 	}
 
 	//	pev->skin += 2; // use bloody skin -- UNDONE: Turn this back on when we have a bloody skin again!

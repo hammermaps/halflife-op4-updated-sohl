@@ -25,6 +25,7 @@
 #include "cbase.h"
 #include "animation.h"
 #include "saverestore.h"
+#include "logger.h"
 
 TYPEDESCRIPTION CBaseAnimating::m_SaveData[] =
 	{
@@ -141,7 +142,7 @@ void CBaseAnimating::DispatchAnimEvents(float flInterval)
 
 	if (!pmodel)
 	{
-		ALERT(at_aiconsole, "Gibbed monster is thinking!\n");
+		LOG_DEBUG("Gibbed monster is thinking!");
 		return;
 	}
 

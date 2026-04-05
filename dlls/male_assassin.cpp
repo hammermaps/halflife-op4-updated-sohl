@@ -41,6 +41,7 @@
 #include "soundent.h"
 #include "effects.h"
 #include "customentity.h"
+#include "logger.h"
 
 extern DLL_GLOBAL int g_iSkillLevel;
 
@@ -1850,7 +1851,7 @@ void CMOFAssassin::SetActivity(Activity NewActivity)
 	else
 	{
 		// Not available try to get default anim
-		ALERT(at_console, "%s has no sequence for act:%d\n", STRING(pev->classname), NewActivity);
+		LOG_INFO("%s has no sequence for act:%d", STRING(pev->classname), NewActivity);
 		pev->sequence = 0; // Set to the reset anim (if it's there)
 	}
 }
@@ -2320,7 +2321,7 @@ void CDeadMOFAssassin::Spawn()
 
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead hgrunt with bad pose\n");
+		LOG_INFO("Dead hgrunt with bad pose");
 	}
 
 	// Corpses have less health

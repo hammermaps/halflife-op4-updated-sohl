@@ -1593,7 +1593,7 @@ void FireHurtTargets(const char* targetName, CBaseEntity* pActivator, CBaseEntit
 	if (!targetName)
 		return;
 
-	ALERT(at_aiconsole, "Firing: (%s)\n", targetName);
+	LOG_DEBUG("Firing: (%s)", targetName);
 
 	for (;;)
 	{
@@ -1606,7 +1606,7 @@ void FireHurtTargets(const char* targetName, CBaseEntity* pActivator, CBaseEntit
 		//Fire only those targets that were toggled by the last hurt event
 		if (pTarget && !(useType == USE_OFF && pTarget->pev->solid == SOLID_NOT) && !(useType == USE_ON && pTarget->pev->solid == SOLID_TRIGGER) && (pTarget->pev->flags & FL_KILLME) == 0) // Don't use dying ents
 		{
-			ALERT(at_aiconsole, "Found: %s, firing (%s)\n", STRING(pTarget->pev->classname), targetName);
+			LOG_DEBUG("Found: %s, firing (%s)", STRING(pTarget->pev->classname), targetName);
 			pTarget->Use(pActivator, pCaller, useType, value);
 		}
 	}

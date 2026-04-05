@@ -827,7 +827,7 @@ void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
 		}
 		else
 		{
-			ALERT(at_console, "Can't instance %s\n", STRING(pEdictList[i].v.classname));
+			LOG_INFO("Can't instance %s", STRING(pEdictList[i].v.classname));
 		}
 	}
 
@@ -1191,13 +1191,13 @@ void PlayerCustomization(edict_t* pEntity, customization_t* pCust)
 
 	if (!pPlayer)
 	{
-		ALERT(at_console, "PlayerCustomization:  Couldn't get player!\n");
+		LOG_INFO("PlayerCustomization:  Couldn't get player!");
 		return;
 	}
 
 	if (!pCust)
 	{
-		ALERT(at_console, "PlayerCustomization:  NULL customization!\n");
+		LOG_INFO("PlayerCustomization:  NULL customization!");
 		return;
 	}
 
@@ -1212,7 +1212,7 @@ void PlayerCustomization(edict_t* pEntity, customization_t* pCust)
 		// Ignore for now.
 		break;
 	default:
-		ALERT(at_console, "PlayerCustomization:  Unknown customization type!\n");
+		LOG_INFO("PlayerCustomization:  Unknown customization type!");
 		break;
 	}
 }
@@ -1312,6 +1312,7 @@ void SetupVisibility(edict_t* pViewEntity, edict_t* pClient, unsigned char** pvs
 }
 
 #include "entity_state.h"
+#include "logger.h"
 
 /*
 AddToFullPack

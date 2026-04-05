@@ -15,6 +15,7 @@
 #include "extdll.h"
 #include "util.h"
 #include "cbase.h"
+#include "logger.h"
 
 const auto SF_ITEMGENERIC_DROP_TO_FLOOR = 1 << 0;
 
@@ -83,7 +84,7 @@ void CGenericItem::Spawn()
 	{
 		if (0 == g_engfuncs.pfnDropToFloor(pev->pContainingEntity))
 		{
-			ALERT(at_error, "Item %s fell out of level at %f,%f,%f", STRING(pev->classname), pev->origin.x, pev->origin.y, pev->origin.z);
+			LOG_ERROR("Item %s fell out of level at %f,%f,%f", STRING(pev->classname), pev->origin.x, pev->origin.y, pev->origin.z);
 			UTIL_Remove(this);
 		}
 	}

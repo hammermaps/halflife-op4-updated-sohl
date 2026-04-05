@@ -100,7 +100,7 @@ void CPathCorner:: Touch( CBaseEntity *pOther )
 	// UNDONE: support non-zero flWait
 	/*
 	if (m_flWait != 0)
-		ALERT(at_warning, "Non-zero path-cornder waits NYI");
+		LOG_WARNING("Non-zero path-cornder waits NYI");
 	*/
 
 	// Find the next "stop" on the path, make it the goal of the "toucher".
@@ -114,7 +114,7 @@ void CPathCorner:: Touch( CBaseEntity *pOther )
 	// If "next spot" was not found (does not exist - level design error)
 	if ( !pOther->m_pGoalEnt )
 	{
-		ALERT(at_console, "PathCornerTouch--%s couldn't find next stop in path: %s", STRING(pev->classname), STRING(pev->target));
+		LOG_INFO("PathCornerTouch--%s couldn't find next stop in path: %s", STRING(pev->classname), STRING(pev->target));
 		return;
 	}
 
@@ -205,7 +205,7 @@ void CPathTrack::Link()
 			}
 		}
 		else
-			ALERT(at_console, "Dead end link %s\n", STRING(pev->target));
+			LOG_INFO("Dead end link %s", STRING(pev->target));
 	}
 
 	// Find "alternate" path

@@ -508,10 +508,10 @@ edict_t* DBG_EntOfVars(const entvars_t* pev)
 {
 	if (pev->pContainingEntity != NULL)
 		return pev->pContainingEntity;
-	ALERT(at_console, "entvars_t pContainingEntity is NULL, calling into engine");
+	LOG_INFO("entvars_t pContainingEntity is NULL, calling into engine");
 	edict_t* pent = (*g_engfuncs.pfnFindEntityByVars)((entvars_t*)pev);
 	if (pent == NULL)
-		ALERT(at_console, "DAMN!  Even the engine couldn't FindEntityByVars!");
+		LOG_INFO("DAMN!  Even the engine couldn't FindEntityByVars!");
 	((entvars_t*)pev)->pContainingEntity = pent;
 	return pent;
 }
@@ -533,7 +533,7 @@ void DBG_AssertFunction(
 		snprintf(szOut, sizeof(szOut), "ASSERT FAILED:\n %s \n(%s@%d)\n%s", szExpr, szFile, szLine, szMessage);
 	else
 		snprintf(szOut, sizeof(szOut), "ASSERT FAILED:\n %s \n(%s@%d)", szExpr, szFile, szLine);
-	ALERT(at_console, szOut);
+	LOG_INFO(szOut);
 }
 #endif // DEBUG
 
@@ -1571,7 +1571,7 @@ bool UTIL_IsMasterTriggered(string_t sMaster, CBaseEntity* pActivator)
 				return pMaster->IsTriggered(pActivator);
 		}
 
-		ALERT(at_console, "Master was null or not a master!\n");
+		LOG_INFO("Master was null or not a master!");
 	}
 
 	// if this isn't a master entity, just say yes.
@@ -2040,7 +2040,7 @@ void UTIL_PrecacheOther(const char* szClassname)
 	pent = CREATE_NAMED_ENTITY(MAKE_STRING(szClassname));
 	if (FNullEnt(pent))
 	{
-		ALERT(at_console, "NULL Ent in UTIL_PrecacheOther\n");
+		LOG_INFO("NULL Ent in UTIL_PrecacheOther");
 		return;
 	}
 
@@ -2064,7 +2064,7 @@ void UTIL_LogPrintf(const char* fmt, ...)
 	va_end(argptr);
 
 	// Print to server console and to the log file.
-	ALERT(at_logged, "%s", string);
+	LOG_INFO("%s", string);
 	g_Logger.Write(LogLevel::INFO, "game", "%s", string);
 }
 
@@ -2361,7 +2361,7 @@ void CSave::WriteString(const char* pname, const int* stringId, int count)
 #else
 #if 0
 	if ( count != 1 )
-		ALERT( at_error, "No string arrays!\n" );
+		LOG_ERROR("No string arrays!");
 	WriteString( pname, (char *)STRING(*stringId) );
 #endif
 
@@ -2842,7 +2842,7 @@ int CRestore::ReadField(void* pBaseData, TYPEDESCRIPTION* pFields, int fieldCoun
 #if 0
 			else
 			{
-				ALERT( at_console, "Skipping global field %s\n", pName );
+				LOG_INFO("Skipping global field %s", pName);
 			}
 #endif
 			return fieldNumber;

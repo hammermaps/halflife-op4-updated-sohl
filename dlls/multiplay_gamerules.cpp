@@ -30,6 +30,7 @@
 #include "UserMessages.h"
 
 #include "ctf/ctfplay_gamerules.h"
+#include "logger.h"
 
 // longest the intermission can last, in seconds
 #define MAX_INTERMISSION_TIME 120
@@ -86,7 +87,7 @@ CHalfLifeMultiplay::CHalfLifeMultiplay()
 		{
 			char szCommand[256];
 
-			ALERT(at_console, "Executing listen server config file\n");
+			LOG_INFO("Executing listen server config file");
 			snprintf(szCommand, sizeof(szCommand), "exec %s\n", lservercfgfile);
 			SERVER_COMMAND(szCommand);
 		}
@@ -1541,7 +1542,7 @@ bool ReloadMapCycleFile(char* filename, mapcycle_t* cycle)
 			}
 			else
 			{
-				ALERT(at_console, "Skipping %s from mapcycle, not a valid map\n", szMap);
+				LOG_INFO("Skipping %s from mapcycle, not a valid map", szMap);
 			}
 		}
 
@@ -1698,7 +1699,7 @@ void CHalfLifeMultiplay::ChangeLevel()
 
 		if (!ReloadMapCycleFile(mapcfile, &mapcycle) || (!mapcycle.items))
 		{
-			ALERT(at_console, "Unable to load map cycle file %s\n", mapcfile);
+			LOG_INFO("Unable to load map cycle file %s", mapcfile);
 			do_cycle = false;
 		}
 	}
@@ -1775,14 +1776,14 @@ void CHalfLifeMultiplay::ChangeLevel()
 
 	g_fGameOver = true;
 
-	ALERT(at_console, "CHANGE LEVEL: %s\n", szNextMap);
+	LOG_INFO("CHANGE LEVEL: %s", szNextMap);
 	if (0 != minplayers || 0 != maxplayers)
 	{
-		ALERT(at_console, "PLAYER COUNT:  min %i max %i current %i\n", minplayers, maxplayers, curplayers);
+		LOG_INFO("PLAYER COUNT:  min %i max %i current %i", minplayers, maxplayers, curplayers);
 	}
 	if (strlen(szRules) > 0)
 	{
-		ALERT(at_console, "RULES:  %s\n", szRules);
+		LOG_INFO("RULES:  %s", szRules);
 	}
 
 	CHANGE_LEVEL(szNextMap, NULL);

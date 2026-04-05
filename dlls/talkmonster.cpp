@@ -22,6 +22,7 @@
 #include "scripted.h"
 #include "soundent.h"
 #include "animation.h"
+#include "logger.h"
 
 //=========================================================
 // Talking monster base class
@@ -1314,7 +1315,7 @@ void CTalkMonster::PrescheduleThink()
 	{
 		if (!HasMemory(bits_MEMORY_PROVOKED))
 		{
-			ALERT(at_console, "Talk Monster Pre-Provoked\n");
+			LOG_INFO("Talk Monster Pre-Provoked");
 			Remember(bits_MEMORY_PROVOKED);
 		}
 	}
@@ -1425,7 +1426,7 @@ void CTalkMonster::FollowerUse(CBaseEntity* pActivator, CBaseEntity* pCaller, US
 			LimitFollowers(pCaller, 1);
 
 			if ((m_afMemory & bits_MEMORY_PROVOKED) != 0)
-				ALERT(at_console, "I'm not following you, you evil person!\n");
+				LOG_INFO("I'm not following you, you evil person!");
 			else
 			{
 				StartFollowing(pCaller);

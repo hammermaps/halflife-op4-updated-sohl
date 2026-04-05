@@ -1,3 +1,4 @@
+#include "logger.h"
 /***
  *
  *	Copyright (c) 1996-2001, Valve LLC. All rights reserved.
@@ -47,7 +48,7 @@ public:
 	// LRC - change the alias value to a string
 	virtual void ChangeValue(string_t iszValue)
 	{
-		ALERT(at_error, "%s entities cannot change value!\n", STRING(pev->classname));
+		LOG_ERROR("%s entities cannot change value!", STRING(pev->classname));
 	}
 	// LRC - change the alias value using another entity's targetname
 	virtual void ChangeValue(CBaseEntity* pValue) { ChangeValue(pValue->pev->targetname); }

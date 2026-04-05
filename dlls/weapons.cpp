@@ -31,6 +31,7 @@
 #include "gamerules.h"
 #include "game.h"
 #include "UserMessages.h"
+#include "logger.h"
 
 #define NOT_USED 255
 
@@ -71,7 +72,7 @@ int MaxAmmoCarry(int iszName)
 			return CBasePlayerItem::ItemInfoArray[i].iMaxAmmo2;
 	}
 
-	ALERT(at_console, "MaxAmmoCarry() doesn't recognize '%s'!\n", STRING(iszName));
+	LOG_INFO("MaxAmmoCarry() doesn't recognize '%s'!", STRING(iszName));
 	return -1;
 }
 
@@ -242,7 +243,7 @@ void UTIL_PrecacheOtherWeapon(const char* szClassname)
 	pent = CREATE_NAMED_ENTITY(MAKE_STRING(szClassname));
 	if (FNullEnt(pent))
 	{
-		ALERT(at_console, "NULL Ent in UTIL_PrecacheOtherWeapon\n");
+		LOG_INFO("NULL Ent in UTIL_PrecacheOtherWeapon");
 		return;
 	}
 
@@ -575,7 +576,7 @@ CBaseEntity* CBasePlayerItem::Respawn()
 	}
 	else
 	{
-		ALERT(at_console, "Respawn failed to create %s!\n", STRING(pev->classname));
+		LOG_INFO("Respawn failed to create %s!", STRING(pev->classname));
 	}
 
 	return pNewWeapon;
@@ -1134,7 +1135,7 @@ bool CWeaponBox::KeyValue(KeyValueData* pkvd)
 	}
 	else
 	{
-		ALERT(at_console, "WeaponBox too full! only %d ammotypes allowed\n", MAX_AMMO_SLOTS);
+		LOG_INFO("WeaponBox too full! only %d ammotypes allowed", MAX_AMMO_SLOTS);
 	}
 
 	return false;
@@ -1314,7 +1315,7 @@ bool CWeaponBox::PackAmmo(int iszName, int iCount)
 	if (FStringNull(iszName))
 	{
 		// error here
-		ALERT(at_console, "NULL String in PackAmmo!\n");
+		LOG_INFO("NULL String in PackAmmo!");
 		return false;
 	}
 
@@ -1364,7 +1365,7 @@ int CWeaponBox::GiveAmmo(int iCount, const char* szName, int iMax, int* pIndex /
 
 		return i;
 	}
-	ALERT(at_console, "out of named ammo slots\n");
+	LOG_INFO("out of named ammo slots");
 	return i;
 }
 
@@ -1426,17 +1427,17 @@ void CWeaponBox::SetObjectCollisionBox()
 
 void CBasePlayerWeapon::PrintState()
 {
-	ALERT(at_console, "primary:  %f\n", m_flNextPrimaryAttack);
-	ALERT(at_console, "idle   :  %f\n", m_flTimeWeaponIdle);
+	LOG_INFO("primary:  %f", m_flNextPrimaryAttack);
+	LOG_INFO("idle   :  %f", m_flTimeWeaponIdle);
 
 	//	ALERT( at_console, "nextrl :  %f\n", m_flNextReload );
 	//	ALERT( at_console, "nextpum:  %f\n", m_flPumpTime );
 
 	//	ALERT( at_console, "m_frt  :  %f\n", m_fReloadTime );
-	ALERT(at_console, "m_finre:  %i\n", static_cast<int>(m_fInReload));
+	LOG_INFO("m_finre:  %i", static_cast<int>(m_fInReload));
 	//	ALERT( at_console, "m_finsr:  %i\n", m_fInSpecialReload );
 
-	ALERT(at_console, "m_iclip:  %i\n", m_iClip);
+	LOG_INFO("m_iclip:  %i", m_iClip);
 }
 
 TYPEDESCRIPTION CRpg::m_SaveData[] =

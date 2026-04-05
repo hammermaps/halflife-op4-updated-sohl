@@ -26,6 +26,7 @@
 #include "trains.h"
 #include "saverestore.h"
 #include "movewith.h" // LRC - UTIL_SetVelocity, UTIL_SetAvelocity
+#include "logger.h"
 
 static void PlatSpawnInsideTrigger(entvars_t* pevPlatform);
 
@@ -509,7 +510,7 @@ void CFuncPlat::HitTop()
 
 void CFuncPlat::Blocked(CBaseEntity* pOther)
 {
-	ALERT(at_aiconsole, "%s Blocked by %s\n", STRING(pev->classname), STRING(pOther->pev->classname));
+	LOG_DEBUG("%s Blocked by %s", STRING(pev->classname), STRING(pOther->pev->classname));
 	// Hurt the blocker a little
 	pOther->TakeDamage(pev, pev, 1, DMG_CRUSH);
 
@@ -808,7 +809,7 @@ void CFuncTrain::Next()
 	if (m_pevCurrentTarget && m_pevCurrentTarget->speed != 0)
 	{ // don't copy speed from target if it is 0 (uninitialized)
 		pev->speed = m_pevCurrentTarget->speed;
-		ALERT(at_aiconsole, "Train %s speed to %4.2f\n", STRING(pev->targetname), pev->speed);
+		LOG_DEBUG("Train %s speed to %4.2f", STRING(pev->targetname), pev->speed);
 	}
 	m_pevCurrentTarget = pTarg->pev; // keep track of this since path corners change our target for us.
 
@@ -883,7 +884,7 @@ void CFuncTrain::Spawn()
 		pev->speed = 100;
 
 	if (FStringNull(pev->target))
-		ALERT(at_console, "FuncTrain with no target");
+		LOG_INFO("FuncTrain with no target");
 
 	if (pev->dmg == 0)
 		pev->dmg = 2;
@@ -1168,7 +1169,7 @@ void CSpriteTrain::Next()
 	if (m_pevCurrentTarget && m_pevCurrentTarget->speed != 0)
 	{ // don't copy speed from target if it is 0 (uninitialized)
 		pev->speed = m_pevCurrentTarget->speed;
-		ALERT(at_aiconsole, "Train %s speed to %4.2f\n", STRING(pev->targetname), pev->speed);
+		LOG_DEBUG("Train %s speed to %4.2f", STRING(pev->targetname), pev->speed);
 	}
 	m_pevCurrentTarget = pTarg->pev; // keep track of this since path corners change our target for us.
 
@@ -1244,7 +1245,7 @@ void CSpriteTrain::Spawn()
 	pev->renderamt = 255;
 
 	if (FStringNull(pev->target))
-		ALERT(at_console, "FuncTrain with no target");
+		LOG_INFO("FuncTrain with no target");
 
 	if (pev->dmg == 0)
 		pev->dmg = 2;
@@ -1464,7 +1465,7 @@ void CFuncTrackTrain::Blocked(CBaseEntity* pOther)
 	else
 		pevOther->velocity = (pevOther->origin - pev->origin).Normalize() * pev->dmg;
 
-	ALERT(at_aiconsole, "TRAIN(%s): Blocked by %s (dmg:%.2f)\n", STRING(pev->targetname), STRING(pOther->pev->classname), pev->dmg);
+	LOG_DEBUG("TRAIN(%s): Blocked by %s (dmg:%.2f)", STRING(pev->targetname), STRING(pOther->pev->classname), pev->dmg);
 	if (pev->dmg <= 0)
 		return;
 	if (pev->dmg == -1) // LRC - a train that doesn't crush people!
@@ -1513,7 +1514,7 @@ void CFuncTrackTrain::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYP
 		pev->speed = m_speed * delta;
 		m_vecBaseAvel = pev->avelocity; // LRC - save current avelocity for gear scaling
 		Next();
-		ALERT(at_aiconsole, "TRAIN(%s), speed to %.2f\n", STRING(pev->targetname), pev->speed);
+		LOG_DEBUG("TRAIN(%s), speed to %.2f", STRING(pev->targetname), pev->speed);
 	}
 }
 
@@ -1617,7 +1618,7 @@ void CFuncTrackTrain::Next()
 
 	if (0 == pev->speed)
 	{
-		ALERT(at_aiconsole, "TRAIN(%s): Speed is 0\n", STRING(pev->targetname));
+		LOG_DEBUG("TRAIN(%s): Speed is 0", STRING(pev->targetname));
 		StopSound();
 		return;
 	}
@@ -1626,7 +1627,7 @@ void CFuncTrackTrain::Next()
 	//		m_ppath = CPathTrack::Instance(FIND_ENTITY_BY_TARGETNAME( NULL, STRING(pev->target) ));
 	if (!m_ppath)
 	{
-		ALERT(at_aiconsole, "TRAIN(%s): Lost path\n", STRING(pev->targetname));
+		LOG_DEBUG("TRAIN(%s): Lost path", STRING(pev->targetname));
 		StopSound();
 		return;
 	}
@@ -1715,7 +1716,7 @@ void CFuncTrackTrain::Next()
 				if (pFire->pev->speed != 0)
 				{ // don't copy speed from target if it is 0 (uninitialized)
 					pev->speed = pFire->pev->speed;
-					ALERT(at_aiconsole, "TrackTrain %s speed to %4.2f\n", STRING(pev->targetname), pev->speed);
+					LOG_DEBUG("TrackTrain %s speed to %4.2f", STRING(pev->targetname), pev->speed);
 				}
 			}
 		}
@@ -1761,7 +1762,7 @@ void CFuncTrackTrain::DeadEnd()
 
 	pTrack = m_ppath;
 
-	ALERT(at_aiconsole, "TRAIN(%s): Dead end ", STRING(pev->targetname));
+	LOG_DEBUG("TRAIN(%s): Dead end ", STRING(pev->targetname));
 	// Find the dead end path node
 	// HACKHACK -- This is bugly, but the train can actually stop moving at a different node depending on it's speed
 	// so we have to traverse the list to it's end.
@@ -1792,12 +1793,12 @@ void CFuncTrackTrain::DeadEnd()
 		UTIL_SetAvelocity(this, g_vecZero); // LRC
 	if (pTrack)
 	{
-		ALERT(at_aiconsole, "at %s\n", STRING(pTrack->pev->targetname));
+		LOG_DEBUG("at %s", STRING(pTrack->pev->targetname));
 		if (!FStringNull(pTrack->pev->netname))
 			FireTargets(STRING(pTrack->pev->netname), this, this, USE_TOGGLE, 0);
 	}
 	else
-		ALERT(at_aiconsole, "\n");
+		LOG_DEBUG("");
 }
 
 
@@ -1841,7 +1842,7 @@ void CFuncTrackTrain::Find()
 	entvars_t* pevTarget = m_ppath->pev;
 	if (!FClassnameIs(pevTarget, "path_track"))
 	{
-		ALERT(at_error, "func_track_train must be on a path of path_track\n");
+		LOG_ERROR("func_track_train must be on a path of path_track");
 		m_ppath = NULL;
 		return;
 	}
@@ -1894,12 +1895,12 @@ void CFuncTrackTrain::NearestPath()
 
 	if (!pNearest)
 	{
-		ALERT(at_console, "Can't find a nearby track !!!\n");
+		LOG_INFO("Can't find a nearby track !!!");
 		SetThink(NULL);
 		return;
 	}
 
-	ALERT(at_aiconsole, "TRAIN: %s, Nearest track is %s\n", STRING(pev->targetname), STRING(pNearest->pev->targetname));
+	LOG_DEBUG("TRAIN: %s, Nearest track is %s", STRING(pev->targetname), STRING(pNearest->pev->targetname));
 	// If I'm closer to the next path_track on this path, then it's my real path
 	pTrack = ((CPathTrack*)pNearest)->GetNext();
 	if (pTrack)
@@ -1964,7 +1965,7 @@ void CFuncTrackTrain::Spawn()
 	m_dir = 1;
 
 	if (FStringNull(pev->target))
-		ALERT(at_console, "FuncTrain with no target");
+		LOG_INFO("FuncTrain with no target");
 
 	if ((pev->spawnflags & SF_TRACKTRAIN_PASSABLE) != 0)
 		pev->solid = SOLID_NOT;
@@ -2058,7 +2059,7 @@ void CFuncTrainControls::Find()
 
 	if (FNullEnt(pTarget))
 	{
-		ALERT(at_console, "No train %s\n", STRING(pev->target));
+		LOG_INFO("No train %s", STRING(pev->target));
 		return;
 	}
 
@@ -2265,7 +2266,7 @@ void CFuncTrackChange::Find()
 				m_train = CFuncTrackTrain::Instance(FIND_ENTITY_BY_TARGETNAME(NULL, STRING(m_trainName)));
 				if (!m_train)
 				{
-					ALERT(at_error, "Can't find train for track change! %s\n", STRING(m_trainName));
+					LOG_ERROR("Can't find train for track change! %s", STRING(m_trainName));
 					return;
 				}
 				Vector center = (pev->absmin + pev->absmax) * 0.5;
@@ -2277,15 +2278,15 @@ void CFuncTrackChange::Find()
 			}
 			else
 			{
-				ALERT(at_error, "Can't find train for track change! %s\n", STRING(m_trainName));
+				LOG_ERROR("Can't find train for track change! %s", STRING(m_trainName));
 				target = FIND_ENTITY_BY_TARGETNAME(NULL, STRING(m_trainName));
 			}
 		}
 		else
-			ALERT(at_error, "Can't find bottom track for track change! %s\n", STRING(m_trackBottomName));
+			LOG_ERROR("Can't find bottom track for track change! %s", STRING(m_trackBottomName));
 	}
 	else
-		ALERT(at_error, "Can't find top track for track change! %s\n", STRING(m_trackTopName));
+		LOG_ERROR("Can't find top track for track change! %s", STRING(m_trackTopName));
 }
 
 
@@ -2885,14 +2886,14 @@ if (GetState() == STATE_OFF)
 CBaseEntity* pEnt = UTIL_FindEntityByTargetname(nullptr, STRING(m_iszEntity));
 if (!pEnt)
 {
-ALERT(at_error, "scripted_trainsequence \"%s\": missing train \"%s\"!\n",
+LOG_ERROR("scripted_trainsequence \"%s\": missing train \"%s\"!",
 STRING(pev->targetname), STRING(m_iszEntity));
 return;
 }
 
 if (!FClassnameIs(pEnt->pev, "func_train"))
 {
-ALERT(at_error, "scripted_trainsequence \"%s\": \"%s\" is not a func_train!\n",
+LOG_ERROR("scripted_trainsequence \"%s\": \"%s\" is not a func_train!",
 STRING(pev->targetname), STRING(m_iszEntity));
 return;
 }
@@ -2952,7 +2953,7 @@ void CTrainSequence::ArrivalNotify()
 {
 if (!m_pTrain)
 {
-ALERT(at_error, "scripted_trainsequence: ArrivalNotify without a train!?\n");
+LOG_ERROR("scripted_trainsequence: ArrivalNotify without a train!?");
 return;
 }
 
@@ -2960,7 +2961,7 @@ return;
 if (m_pDestination && m_pTrain->m_pevCurrentTarget == m_pDestination->pev)
 {
 if (pev->spawnflags & SF_TRAINSEQ_DEBUG)
-ALERT(at_debug, "DEBUG: scripted_trainsequence \"%s\" reached destination.\n",
+LOG_DEBUG("DEBUG: scripted_trainsequence \"%s\" reached destination.",
 STRING(pev->targetname));
 EndThink();
 }
@@ -2992,7 +2993,7 @@ UTIL_Remove(this);
 }
 else
 {
-ALERT(at_error, "scripted_trainsequence: StopSequence without a train!?\n");
+LOG_ERROR("scripted_trainsequence: StopSequence without a train!?");
 return;
 }
 FireTargets(STRING(m_iszTerminate), this, this, USE_TOGGLE, 0);

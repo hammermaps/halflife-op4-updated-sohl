@@ -117,7 +117,7 @@ public:
 		const auto end = std::chrono::high_resolution_clock::now();
 		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - m_start);
 		const float ms = static_cast<float>(duration.count()) / 1000.0f;
-		ALERT(at_console, "[PROFILE] %s: %.3f ms\n", m_pszName, ms);
+		LOG_INFO("[PROFILE] %s: %.3f ms", m_pszName, ms);
 	}
 
 	// Non-copyable

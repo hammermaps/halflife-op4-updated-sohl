@@ -30,6 +30,7 @@
 #include "weapons.h"
 #include "func_break.h"
 #include "../engine/studio.h"
+#include "logger.h"
 
 extern Vector VecBModelOrigin(entvars_t* pevBModel);
 
@@ -1363,7 +1364,7 @@ void CBaseMonster::TraceAttack(entvars_t *pevAttacker, float flDamage, Vector ve
 {
 	Vector vecOrigin = ptr->vecEndPos - vecDir * 4;
 
-	ALERT ( at_console, "%d\n", ptr->iHitgroup );
+	LOG_INFO("%d", ptr->iHitgroup);
 
 
 	if ( pev->takedamage )

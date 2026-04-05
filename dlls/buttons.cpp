@@ -25,6 +25,7 @@
 #include "cbase.h"
 #include "saverestore.h"
 #include "doors.h"
+#include "logger.h"
 
 #define SF_BUTTON_DONTMOVE 1
 #define SF_ROTBUTTON_NOTSOLID 1
@@ -252,7 +253,7 @@ void CEnvState::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useT
 	if (!ShouldToggle(useType) || IsLockedByMaster())
 	{
 		if (pev->spawnflags & SF_ENVSTATE_DEBUG)
-			ALERT(at_debug, "DEBUG: env_state \"%s\" ignored trigger.\n", STRING(pev->targetname));
+			LOG_DEBUG("DEBUG: env_state \"%s\" ignored trigger.", STRING(pev->targetname));
 		return;
 	}
 
@@ -264,7 +265,7 @@ void CEnvState::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useT
 		{
 			m_iState = STATE_TURN_OFF;
 			if (pev->spawnflags & SF_ENVSTATE_DEBUG)
-				ALERT(at_debug, "DEBUG: env_state \"%s\" will turn off in %f seconds.\n",
+				LOG_DEBUG("DEBUG: env_state \"%s\" will turn off in %f seconds.",
 					STRING(pev->targetname), m_fTurnOffTime);
 			SetNextThink(m_fTurnOffTime);
 		}
@@ -272,7 +273,7 @@ void CEnvState::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useT
 		{
 			m_iState = STATE_OFF;
 			if (pev->spawnflags & SF_ENVSTATE_DEBUG)
-				ALERT(at_debug, "DEBUG: env_state \"%s\" turned off.\n", STRING(pev->targetname));
+				LOG_DEBUG("DEBUG: env_state \"%s\" turned off.", STRING(pev->targetname));
 			FireTargets(STRING(pev->target), pActivator, this, USE_OFF, 0);
 			FireTargets(STRING(pev->noise2), pActivator, this, USE_TOGGLE, 0);
 			DontThink();
@@ -284,7 +285,7 @@ void CEnvState::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useT
 		{
 			m_iState = STATE_TURN_ON;
 			if (pev->spawnflags & SF_ENVSTATE_DEBUG)
-				ALERT(at_debug, "DEBUG: env_state \"%s\" will turn on in %f seconds.\n",
+				LOG_DEBUG("DEBUG: env_state \"%s\" will turn on in %f seconds.",
 					STRING(pev->targetname), m_fTurnOnTime);
 			SetNextThink(m_fTurnOnTime);
 		}
@@ -292,7 +293,7 @@ void CEnvState::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useT
 		{
 			m_iState = STATE_ON;
 			if (pev->spawnflags & SF_ENVSTATE_DEBUG)
-				ALERT(at_debug, "DEBUG: env_state \"%s\" turned on.\n", STRING(pev->targetname));
+				LOG_DEBUG("DEBUG: env_state \"%s\" turned on.", STRING(pev->targetname));
 			FireTargets(STRING(pev->target), pActivator, this, USE_ON, 0);
 			FireTargets(STRING(pev->noise1), pActivator, this, USE_TOGGLE, 0);
 			DontThink();
@@ -307,7 +308,7 @@ void CEnvState::Think()
 	{
 		m_iState = STATE_ON;
 		if (pev->spawnflags & SF_ENVSTATE_DEBUG)
-			ALERT(at_debug, "DEBUG: env_state \"%s\" turned itself on.\n", STRING(pev->targetname));
+			LOG_DEBUG("DEBUG: env_state \"%s\" turned itself on.", STRING(pev->targetname));
 		FireTargets(STRING(pev->target), this, this, USE_ON, 0);
 		FireTargets(STRING(pev->noise1), this, this, USE_TOGGLE, 0);
 		DontThink();
@@ -316,7 +317,7 @@ void CEnvState::Think()
 	{
 		m_iState = STATE_OFF;
 		if (pev->spawnflags & SF_ENVSTATE_DEBUG)
-			ALERT(at_debug, "DEBUG: env_state \"%s\" turned itself off.\n", STRING(pev->targetname));
+			LOG_DEBUG("DEBUG: env_state \"%s\" turned itself off.", STRING(pev->targetname));
 		FireTargets(STRING(pev->target), this, this, USE_OFF, 0);
 		FireTargets(STRING(pev->noise2), this, this, USE_TOGGLE, 0);
 		DontThink();
@@ -370,7 +371,7 @@ void CMultiSource::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE u
 	// if we didn't find it, report error and leave
 	if (i > m_iTotal)
 	{
-		ALERT(at_console, "MultiSrc:Used by non member %s.\n", STRING(pCaller->pev->classname));
+		LOG_INFO("MultiSrc:Used by non member %s.", STRING(pCaller->pev->classname));
 		return;
 	}
 
@@ -391,7 +392,7 @@ void CMultiSource::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE u
 	//
 	if (IsTriggered(pActivator))
 	{
-		ALERT(at_aiconsole, "Multisource %s enabled (%d inputs)\n", STRING(pev->targetname), m_iTotal);
+		LOG_DEBUG("Multisource %s enabled (%d inputs)", STRING(pev->targetname), m_iTotal);
 		USE_TYPE useType = USE_TOGGLE;
 		if (!FStringNull(m_globalstate))
 			useType = USE_ON;

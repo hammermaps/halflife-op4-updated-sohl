@@ -20,6 +20,7 @@
 #include "soundent.h"
 #include "effects.h"
 #include "customentity.h"
+#include "logger.h"
 
 typedef struct
 {
@@ -228,7 +229,7 @@ void CBlackOpsOsprey::FindAllThink()
 
 	if (m_iUnits == 0)
 	{
-		ALERT(at_console, "blkop error: no grunts to resupply\n");
+		LOG_INFO("blkop error: no grunts to resupply");
 		UTIL_Remove(this);
 		return;
 	}
@@ -383,7 +384,7 @@ void CBlackOpsOsprey::UpdateGoal()
 	}
 	else
 	{
-		ALERT(at_console, "black ops osprey missing target");
+		LOG_INFO("black ops osprey missing target");
 	}
 }
 

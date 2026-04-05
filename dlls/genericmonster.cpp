@@ -21,6 +21,7 @@
 #include "monsters.h"
 #include "schedule.h"
 #include "soundent.h"
+#include "logger.h"
 
 // For holograms, make them not solid so the player can walk through them
 #define SF_GENERICMONSTER_NOTSOLID 4
@@ -100,7 +101,7 @@ void CGenericMonster::Spawn()
 
 	if (FStringNull(pev->model))
 	{
-		ALERT(at_error, "monster_generic with no model\n");
+		LOG_ERROR("monster_generic with no model");
 		UTIL_Remove(this);
 		return;
 	}
@@ -208,7 +209,7 @@ pev->sequence = LookupSequence(STRING(pev->netname));
 
 if (pev->sequence == -1)
 {
-ALERT(at_debug, "Invalid sequence name \"%s\" in monster_generic_dead\n", STRING(pev->netname));
+LOG_DEBUG("Invalid sequence name \"%s\" in monster_generic_dead", STRING(pev->netname));
 }
 }
 else

@@ -22,6 +22,9 @@
 //
 #include "activity.h"
 #include "enginecallback.h"
+#ifndef CLIENT_DLL
+#include "logger.h"
+#endif
 
 class CBaseEntity;
 
@@ -120,7 +123,11 @@ inline EOFFSET OFFSET(const edict_t* pent)
 {
 #if _DEBUG
 	if (!pent)
+		#ifndef CLIENT_DLL
+		LOG_ERROR("Bad ent in OFFSET()");
+		#else
 		ALERT(at_error, "Bad ent in OFFSET()\n");
+		#endif
 #endif
 	return (*g_engfuncs.pfnEntOffsetOfPEntity)(pent);
 }
@@ -128,7 +135,11 @@ inline EOFFSET OFFSET(entvars_t* pev)
 {
 #if _DEBUG
 	if (!pev)
+		#ifndef CLIENT_DLL
+		LOG_ERROR("Bad pev in OFFSET()");
+		#else
 		ALERT(at_error, "Bad pev in OFFSET()\n");
+		#endif
 #endif
 	return OFFSET(ENT(pev));
 }

@@ -26,6 +26,7 @@
 #include "soundent.h"
 #include "hornet.h"
 #include "scripted.h"
+#include "logger.h"
 
 //=========================================================
 // monster-specific schedule types
@@ -964,7 +965,7 @@ void CAGrunt::StartTask(Task_t* pTask)
 		}
 		else
 		{
-			ALERT(at_aiconsole, "AGruntGetPathToEnemyCorpse failed!!\n");
+			LOG_DEBUG("AGruntGetPathToEnemyCorpse failed!!");
 			TaskFail();
 		}
 	}
@@ -1038,7 +1039,7 @@ void CAGrunt::StartTask(Task_t* pTask)
 		}
 		else
 		{
-			ALERT(at_aiconsole, "AGRunt - no enemy monster ptr!!!\n");
+			LOG_DEBUG("AGRunt - no enemy monster ptr!!!");
 			TaskFail();
 		}
 		break;

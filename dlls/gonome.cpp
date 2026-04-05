@@ -27,6 +27,7 @@
 #include "soundent.h"
 #include "player.h"
 #include "animation.h"
+#include "logger.h"
 
 //=========================================================
 // Monster's Anim Events Go Here
@@ -798,7 +799,7 @@ void COFGonome::StartTask(Task_t* pTask)
 		}
 		else
 		{
-			ALERT(at_aiconsole, "GonomeGetPathToEnemyCorpse failed!!\n");
+			LOG_DEBUG("GonomeGetPathToEnemyCorpse failed!!");
 			TaskFail();
 		}
 	}
@@ -890,7 +891,7 @@ void COFGonome::SetActivity(Activity NewActivity)
 	else
 	{
 		// Not available try to get default anim
-		ALERT(at_console, "%s has no sequence for act:%d\n", STRING(pev->classname), NewActivity);
+		LOG_INFO("%s has no sequence for act:%d", STRING(pev->classname), NewActivity);
 		pev->sequence = 0; // Set to the reset anim (if it's there)
 	}
 
@@ -946,7 +947,7 @@ void CDeadGonome::Spawn()
 
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead gonome with bad pose\n");
+		LOG_INFO("Dead gonome with bad pose");
 	}
 
 	// Corpses have less health

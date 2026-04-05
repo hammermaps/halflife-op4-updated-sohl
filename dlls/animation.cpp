@@ -116,7 +116,7 @@ void GetEyePosition(void* pmodel, float* vecEyePosition)
 
 	if (!pstudiohdr)
 	{
-		ALERT(at_console, "GetEyePosition() Can't get pstudiohdr ptr!\n");
+		LOG_INFO("GetEyePosition() Can't get pstudiohdr ptr!");
 		return;
 	}
 
@@ -454,7 +454,7 @@ int FindTransition(void* pmodel, int iEndingAnim, int iGoalAnim, int* piDir)
 		}
 	}
 
-	ALERT(at_console, "error in transition graph");
+	LOG_INFO("error in transition graph");
 	return iGoalAnim;
 }
 

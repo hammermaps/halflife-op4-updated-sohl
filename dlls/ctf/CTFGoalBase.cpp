@@ -20,6 +20,7 @@
 #include "player.h"
 #include "ctf/CTFGoal.h"
 #include "ctf/CTFGoalBase.h"
+#include "logger.h"
 
 LINK_ENTITY_TO_CLASS(item_ctfbase, CTFGoalBase);
 
@@ -74,9 +75,7 @@ void CTFGoalBase::Spawn()
 
 	if (0 == g_engfuncs.pfnDropToFloor(edict()))
 	{
-		ALERT(
-			at_error,
-			"Item %s fell out of level at %f,%f,%f",
+		LOG_ERROR("Item %s fell out of level at %f,%f,%f",
 			STRING(pev->classname),
 			pev->origin.x,
 			pev->origin.y,

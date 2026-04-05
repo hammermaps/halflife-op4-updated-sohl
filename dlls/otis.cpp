@@ -27,6 +27,7 @@
 #include "scripted.h"
 #include "weapons.h"
 #include "soundent.h"
+#include "logger.h"
 
 //=========================================================
 // Monster's Anim Events Go Here
@@ -887,7 +888,7 @@ void CDeadOtis::Spawn()
 	pev->sequence = LookupSequence(m_szPoses[m_iPose]);
 	if (pev->sequence == -1)
 	{
-		ALERT(at_console, "Dead otis with bad pose\n");
+		LOG_INFO("Dead otis with bad pose");
 	}
 	// Corpses have less health
 	pev->health = 8; //gSkillData.otisHealth;
