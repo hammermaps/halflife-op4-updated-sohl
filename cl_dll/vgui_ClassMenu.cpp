@@ -276,7 +276,6 @@ bool CClassMenuPanel::SlotInput(int iSlot)
 	if ((iSlot <= 0) || (iSlot > PC_LASTCLASS))
 		return false;
 
-	//TODO: apparently bugged in vanilla, still uses old indexing code with no second array index
 	ClassButton* button = m_pButtons[gViewPort->m_iCTFTeamNumber - 1][iSlot - 1];
 
 	if (!button)

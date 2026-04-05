@@ -894,11 +894,7 @@ void COFPitWormUp::StrafeBeam()
 		ClearMultiDamage();
 
 		pHit->TraceAttack(pev, gSkillData.pitWormDmgBeam, m_vecBeam, &tr, DMG_ENERGYBEAM);
-		pHit->TakeDamage(pev, pev, gSkillData.pitWormDmgBeam, DMG_ENERGYBEAM);
-
-		//TODO: missing an ApplyMultiDamage call here
-		//Should probably replace the TakeDamage call
-		//ApplyMultiDamage( pev, pev );
+		ApplyMultiDamage(pev, pev);
 	}
 	else if (tr.flFraction != 1.0)
 	{

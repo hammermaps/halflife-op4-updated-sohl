@@ -25,6 +25,7 @@
 #include "squadmonster.h"
 #include "COFAllyMonster.h"
 #include "COFSquadTalkMonster.h"
+#include "logger.h"
 #include "plane.h"
 
 //=========================================================
@@ -256,14 +257,19 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 
 	if (!InSquad())
 	{
-		//TODO: pEnemy could be null here
+		if (!pEnemy)
+		{
+			LOG_ERROR("SquadMakeEnemy() - pEnemy is NULL!");
+			return;
+		}
+
 		if (m_hEnemy != NULL)
 		{
 			// remember their current enemy
 			PushEnemy(m_hEnemy, m_vecEnemyLKP);
 		}
 
-		ALERT(at_aiconsole, "Non-Squad friendly grunt adopted enemy of type %s\n", STRING(pEnemy->pev->classname));
+		LOG_DEBUG("Non-Squad friendly grunt adopted enemy of type %s", STRING(pEnemy->pev->classname));
 
 		// give them a new enemy
 		m_hEnemy = pEnemy;
@@ -273,7 +279,7 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 
 	if (!pEnemy)
 	{
-		ALERT(at_console, "ERROR: SquadMakeEnemy() - pEnemy is NULL!\n");
+		LOG_ERROR("SquadMakeEnemy() - pEnemy is NULL!");
 		return;
 	}
 
@@ -287,7 +293,7 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 
 	if (!IsLeader() && fLeaderIsFollowing != fImFollowing)
 	{
-		ALERT(at_aiconsole, "Squad Member is not leader, and following state doesn't match in MakeEnemy\n");
+		LOG_DEBUG("Squad Member is not leader, and following state doesn't match in MakeEnemy");
 		return;
 	}
 
@@ -308,7 +314,7 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 					squadMember->PushEnemy(squadMember->m_hEnemy, squadMember->m_vecEnemyLKP);
 				}
 
-				ALERT(at_aiconsole, "Non-Squad friendly grunt adopted enemy of type %s\n", STRING(pEnemy->pev->classname));
+				LOG_DEBUG("Non-Squad friendly grunt adopted enemy of type %s", STRING(pEnemy->pev->classname));
 
 				// give them a new enemy
 				squadMember->m_hEnemy = pEnemy;
@@ -330,7 +336,7 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 			squadLeader->PushEnemy(squadLeader->m_hEnemy, squadLeader->m_vecEnemyLKP);
 		}
 
-		ALERT(at_aiconsole, "Non-Squad friendly grunt adopted enemy of type %s\n", STRING(pEnemy->pev->classname));
+		LOG_DEBUG("Non-Squad friendly grunt adopted enemy of type %s", STRING(pEnemy->pev->classname));
 
 		// give them a new enemy
 		squadLeader->m_hEnemy = pEnemy;
@@ -347,7 +353,7 @@ void COFSquadTalkMonster::SquadMakeEnemy(CBaseEntity* pEnemy)
 			squadLeader->PushEnemy(squadLeader->m_hEnemy, squadLeader->m_vecEnemyLKP);
 		}
 
-		ALERT(at_aiconsole, "Squad Leader friendly grunt adopted enemy of type %s\n", STRING(pEnemy->pev->classname));
+		LOG_DEBUG("Squad Leader friendly grunt adopted enemy of type %s", STRING(pEnemy->pev->classname));
 
 		// give them a new enemy
 		squadLeader->m_hEnemy = pEnemy;

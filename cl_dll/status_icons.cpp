@@ -235,8 +235,8 @@ void CHudStatusIcons::EnableCustomIcon(int nIndex, char* pszIconName, unsigned c
 		icon.r = red;
 		icon.g = green;
 		icon.b = blue;
-		//TODO: potential overflow
-		strcpy(icon.szSpriteName, pszIconName);
+		strncpy(icon.szSpriteName, pszIconName, MAX_ICONSPRITENAME_LENGTH - 1);
+		icon.szSpriteName[MAX_ICONSPRITENAME_LENGTH - 1] = '\0';
 	}
 }
 

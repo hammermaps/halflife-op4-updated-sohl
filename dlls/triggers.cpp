@@ -2619,9 +2619,6 @@ void CTriggerKillNoGib::Spawn()
 
 	SetTouch(&CTriggerKillNoGib::KillTouch);
 	SetUse(nullptr);
-
-	//TODO: this needs to be removed in order to function
-	pev->solid = SOLID_NOT;
 }
 
 void CTriggerKillNoGib::KillTouch(CBaseEntity* pOther)

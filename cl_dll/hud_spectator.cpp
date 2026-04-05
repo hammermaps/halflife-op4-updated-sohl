@@ -404,8 +404,7 @@ void CHudSpectator::SetCameraView(Vector pos, Vector angle, float fov)
 
 void CHudSpectator::AddWaypoint(float time, Vector pos, Vector angle, float fov, int flags)
 {
-	//TODO: this flags check is incorrect, fix it. Comment contains original code before bool fix.
-	if (/*!flags == 0*/ flags == 0 && time == 0.0f)
+	if (flags == 0 && time == 0.0f)
 	{
 		// switch instantly to this camera view
 		SetCameraView(pos, angle, fov);

@@ -602,11 +602,9 @@ void CStudioModelRenderer::StudioCalcRotations(float pos[][3], vec4_t* q, mstudi
 	{
 		f = 0; // bah, fix this bug with changing sequences too fast
 	}
-	// BUG ( somewhere else ) but this code should validate this data.
-	// This could cause a crash if the frame # is negative, so we'll go ahead
-	//  and clamp it here
 	else if (f < -0.01)
 	{
+		// clamp to prevent crash from negative frame #
 		f = -0.01;
 	}
 

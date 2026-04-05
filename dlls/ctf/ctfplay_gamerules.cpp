@@ -1767,10 +1767,21 @@ void CHalfLifeCTFplay::SendTeamStatInfo(CTFTeam iTeamNum)
 	}
 	else
 	{
-		//TODO: player count is always 0
+		int teamPlayerCount[MaxTeams] = {};
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto pPlayer = UTIL_PlayerByIndex(i);
+			if (pPlayer && pPlayer->IsPlayer())
+			{
+				const int teamIdx = ToTeamIndex(static_cast<CBasePlayer*>(pPlayer)->m_iTeamNum);
+				if (teamIdx >= 0 && teamIdx < MaxTeams)
+					++teamPlayerCount[teamIdx];
+			}
+		}
+
 		for (auto i = 0; i < MaxTeams; ++i)
 		{
-			UTIL_LogPrintf("Team \"%s\" scored \"%d\" with \"%d\" players\n", team_names[i], teamscores[i], 0);
+			UTIL_LogPrintf("Team \"%s\" scored \"%d\" with \"%d\" players\n", team_names[i], teamscores[i], teamPlayerCount[i]);
 		}
 
 		UTIL_LogPrintf("// === End-Game Overall Statistics ===\n");

@@ -2733,8 +2733,7 @@ void COFTorchAlly::MonsterThink()
 		if (tr.flFraction != 1.0)
 		{
 			m_pTorchBeam->pev->spawnflags &= ~SF_BEAM_SPARKSTART;
-			//TODO: looks like a bug to me, shouldn't be bitwise inverting
-			m_pTorchBeam->pev->spawnflags |= ~SF_BEAM_SPARKEND;
+			m_pTorchBeam->pev->spawnflags |= SF_BEAM_SPARKEND;
 
 			UTIL_DecalTrace(&tr, RANDOM_LONG(0, 4));
 			m_pTorchBeam->DoSparks(tr.vecEndPos, tr.vecEndPos);
