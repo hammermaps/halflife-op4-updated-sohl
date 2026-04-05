@@ -182,6 +182,8 @@ float V_CalcBob(struct ref_params_s* pparams)
 	lasttime = pparams->time;
 
 	bobtime += pparams->frametime;
+	if (cl_bobcycle->value <= 0)
+		return bob;
 	// Wrap bobtime to one cycle so its value stays small and precise.
 	bobtime = fmod(bobtime, cl_bobcycle->value);
 	cycle = bobtime / cl_bobcycle->value;
