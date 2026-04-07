@@ -22,6 +22,7 @@
 #include "util.h"
 #include "cbase.h"
 #include "doors.h"
+#include "movewith.h" // LRC - UTIL_AssignOrigin, UTIL_SetAngles
 
 
 extern void SetMovedir(entvars_t* ev);
@@ -328,9 +329,9 @@ void CBaseDoor::Spawn()
 void CBaseDoor::SetToggleState(int state)
 {
 	if (state == TS_AT_TOP)
-		UTIL_SetOrigin(pev, m_vecPosition2);
+		UTIL_AssignOrigin(this, m_vecPosition2); // LRC - use UTIL_AssignOrigin to move MoveWith children too
 	else
-		UTIL_SetOrigin(pev, m_vecPosition1);
+		UTIL_AssignOrigin(this, m_vecPosition1);
 }
 
 
@@ -933,11 +934,11 @@ void CRotDoor::Spawn()
 void CRotDoor::SetToggleState(int state)
 {
 	if (state == TS_AT_TOP)
-		pev->angles = m_vecAngle2;
+		UTIL_SetAngles(this, m_vecAngle2); // LRC - use UTIL_SetAngles to propagate to MoveWith children
 	else
-		pev->angles = m_vecAngle1;
+		UTIL_SetAngles(this, m_vecAngle1);
 
-	UTIL_SetOrigin(pev, pev->origin);
+	UTIL_AssignOrigin(this, pev->origin); // LRC - refresh children positions after angle change
 }
 
 
