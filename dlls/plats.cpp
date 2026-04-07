@@ -854,12 +854,10 @@ void CFuncTrain::Activate()
 		pev->target = pevTarg->target;
 		m_pevCurrentTarget = pevTarg; // keep track of this since path corners change our target for us.
 
-		UTIL_SetOrigin(pev, pevTarg->origin - (pev->mins + pev->maxs) * 0.5);
-
-		// LRC - move MoveWith children that registered before we teleported to the
-		// first path corner.  Their offsets were computed relative to our editor
-		// origin, so reposition them at the same offsets relative to the new origin.
-		UTIL_AssignOrigin(this, pev->origin);
+		// LRC - use UTIL_AssignOrigin so that MoveWith children registered before this
+		// Activate() (which computed their offsets relative to our editor origin) are
+		// repositioned at the same relative offsets at the first path corner.
+		UTIL_AssignOrigin(this, pevTarg->origin - (pev->mins + pev->maxs) * 0.5);
 
 		// LRC - we override CBaseEntity::Activate without calling it, so set up
 		// our own MoveWith relationship here.
@@ -1220,12 +1218,10 @@ void CSpriteTrain::Activate()
 		pev->target = pevTarg->target;
 		m_pevCurrentTarget = pevTarg; // keep track of this since path corners change our target for us.
 
-		UTIL_SetOrigin(pev, pevTarg->origin - (pev->mins + pev->maxs) * 0.5);
-
-		// LRC - move MoveWith children that registered before we teleported to the
-		// first path corner.  Their offsets were computed relative to our editor
-		// origin, so reposition them at the same offsets relative to the new origin.
-		UTIL_AssignOrigin(this, pev->origin);
+		// LRC - use UTIL_AssignOrigin so that MoveWith children registered before this
+		// Activate() (which computed their offsets relative to our editor origin) are
+		// repositioned at the same relative offsets at the first path corner.
+		UTIL_AssignOrigin(this, pevTarg->origin - (pev->mins + pev->maxs) * 0.5);
 
 		// LRC - we override CBaseEntity::Activate without calling it, so set up
 		// our own MoveWith relationship here.
