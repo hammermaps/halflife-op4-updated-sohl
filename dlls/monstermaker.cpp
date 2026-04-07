@@ -49,6 +49,7 @@ public:
 	void DeathNotice(entvars_t* pevChild) override; // monster maker children use this to tell the monster maker that they have died.
 	void TryMakeMonster();		// check conditions and resolve locus positions before spawning
 	CBaseMonster* MakeMonster(); // actually create the monster (returns the new entity)
+	void SetLocusFromActivator(CBaseEntity* pActivator); // store activator pos/angles/vel as spawn locus
 
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
@@ -266,7 +267,7 @@ void CMonsterMaker::TryMakeMonster()
 		CBaseMonster* pMonst = MakeMonster();
 
 		// If I have a target, fire! The spawned monster is the locus.
-		if (!FStringNull(pev->target))
+		if (!FStringNull(pev->target) && pMonst != nullptr)
 		{
 			FireTargets(STRING(pev->target), pMonst, this, USE_TOGGLE, 0);
 		}
@@ -279,6 +280,21 @@ void CMonsterMaker::TryMakeMonster()
 void CMonsterMaker::MakeMonsterThink()
 {
 	MakeMonster();
+}
+
+//=========================================================
+// SetLocusFromActivator - stores the activator's position,
+// angles and velocity into pev->vuser1/2/3 so they can be
+// used as a dynamic spawn locus.
+//=========================================================
+void CMonsterMaker::SetLocusFromActivator(CBaseEntity* pActivator)
+{
+	if (pActivator)
+	{
+		pev->vuser1 = pActivator->pev->origin;
+		pev->vuser2 = pActivator->pev->angles;
+		pev->vuser3 = pActivator->pev->velocity;
+	}
 }
 
 //=========================================================
@@ -317,7 +333,11 @@ CBaseMonster* CMonsterMaker::MakeMonster()
 	// Copy custom monster behaviour from maker to child
 	CBaseEntity* pEntity = CBaseEntity::Instance(pevCreate);
 	CBaseMonster* pMonst = nullptr;
-	if (pEntity && (pMonst = pEntity->MyMonsterPointer()) != nullptr)
+	if (pEntity != nullptr)
+	{
+		pMonst = pEntity->MyMonsterPointer();
+	}
+	if (pMonst != nullptr)
 	{
 		pMonst->m_iClass = this->m_iClass;
 		pMonst->m_iPlayerReact = this->m_iPlayerReact;
@@ -356,12 +376,7 @@ CBaseMonster* CMonsterMaker::MakeMonster()
 //=========================================================
 void CMonsterMaker::CyclicUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	if (pActivator)
-	{
-		pev->vuser1 = pActivator->pev->origin; // locus position
-		pev->vuser2 = pActivator->pev->angles;
-		pev->vuser3 = pActivator->pev->velocity;
-	}
+	SetLocusFromActivator(pActivator);
 	TryMakeMonster();
 }
 
@@ -370,12 +385,7 @@ void CMonsterMaker::CyclicUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE
 //=========================================================
 void CMonsterMaker::ToggleUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
-	if (pActivator)
-	{
-		pev->vuser1 = pActivator->pev->origin; // locus position
-		pev->vuser2 = pActivator->pev->angles;
-		pev->vuser3 = pActivator->pev->velocity;
-	}
+	SetLocusFromActivator(pActivator);
 
 	if (!ShouldToggle(useType)) // LRC
 		return;
