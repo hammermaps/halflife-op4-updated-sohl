@@ -719,7 +719,7 @@ void CFuncRotating::Rotate()
 // LRC - wait until the game has actually started before spinning up
 void CFuncRotating::WaitForStart()
 {
-	if (gpGlobals->time > 1) // has the client started yet?
+	if (gpGlobals->time > 1) // wait for client to finish loading (1 sec is enough)
 	{
 		SUB_CallUseToggle();
 	}
