@@ -58,10 +58,13 @@ public:
 	bool KeyValue(KeyValueData* pkvd) override;
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
 
+	STATE GetState() override { return pev->frame ? STATE_ON : STATE_OFF; } // LRC
+
 	// Bmodels don't go across transitions
 	int ObjectCaps() override { return CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
 
 	bool m_bHasRotation = false; // SoHL 1.5 - Track if rotation was set via message key
+	int m_iStyle;                // LRC - light style index for toggling lights
 };
 
 LINK_ENTITY_TO_CLASS(func_wall, CFuncWall);
@@ -73,6 +76,11 @@ bool CFuncWall::KeyValue(KeyValueData* pkvd)
 	{
 		UTIL_StringToVector((float*)pev->angles, pkvd->szValue);
 		m_bHasRotation = true;
+		return true;
+	}
+	else if (FStrEq(pkvd->szKeyName, "style")) // LRC - light style index
+	{
+		m_iStyle = atoi(pkvd->szValue);
 		return true;
 	}
 
@@ -90,14 +98,38 @@ void CFuncWall::Spawn()
 	SetModel(ENT(pev), STRING(pev->model));
 
 	// If it can't move/go away, it's really part of the world
-	pev->flags |= FL_WORLDBRUSH;
+	if (!m_pMoveWith) // LRC - don't mark MoveWith children as world brushes
+		pev->flags |= FL_WORLDBRUSH;
+
+	// LRC - set initial light style state
+	if (m_iStyle >= 32)
+		LIGHT_STYLE(m_iStyle, "a");
+	else if (m_iStyle <= -32)
+		LIGHT_STYLE(-m_iStyle, "z");
 }
 
 
 void CFuncWall::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
 	if (ShouldToggle(useType, pev->frame != 0))
+	{
 		pev->frame = 1 - pev->frame;
+		// LRC - toggle associated light style
+		if (m_iStyle >= 32)
+		{
+			if (pev->frame)
+				LIGHT_STYLE(m_iStyle, "z");
+			else
+				LIGHT_STYLE(m_iStyle, "a");
+		}
+		else if (m_iStyle <= -32)
+		{
+			if (pev->frame)
+				LIGHT_STYLE(-m_iStyle, "a");
+			else
+				LIGHT_STYLE(-m_iStyle, "z");
+		}
+	}
 }
 
 
@@ -111,6 +143,7 @@ public:
 	void TurnOff();
 	void TurnOn();
 	bool IsOn();
+	STATE GetState() override { return (pev->solid == SOLID_NOT) ? STATE_OFF : STATE_ON; } // LRC
 };
 
 LINK_ENTITY_TO_CLASS(func_wall_toggle, CFuncWallToggle);
@@ -325,6 +358,7 @@ public:
 	int m_sounds;
 	STATE m_iState;     // LRC
 	float m_fCurSpeed;  // LRC - current speed during spin-up/down
+	EHANDLE m_hActivator; // LRC - entity that last triggered this brush (for damage attribution)
 };
 
 TYPEDESCRIPTION CFuncRotating::m_SaveData[] =
@@ -336,6 +370,7 @@ TYPEDESCRIPTION CFuncRotating::m_SaveData[] =
 		DEFINE_FIELD(CFuncRotating, m_sounds, FIELD_INTEGER),
 		DEFINE_FIELD(CFuncRotating, m_iState, FIELD_INTEGER),  // LRC
 		DEFINE_FIELD(CFuncRotating, m_fCurSpeed, FIELD_FLOAT), // LRC
+		DEFINE_FIELD(CFuncRotating, m_hActivator, FIELD_EHANDLE), // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CFuncRotating, CBaseEntity);
@@ -373,6 +408,11 @@ bool CFuncRotating::KeyValue(KeyValueData* pkvd)
 		m_sounds = atoi(pkvd->szValue);
 		return true;
 	}
+	else if (FStrEq(pkvd->szKeyName, "axes")) // LRC - allow mapper to specify rotation axis directly
+	{
+		UTIL_StringToVector((float*)(pev->movedir), pkvd->szValue);
+		return true;
+	}
 
 	return CBaseEntity::KeyValue(pkvd);
 }
@@ -393,6 +433,9 @@ REVERSE will cause the it to rotate in the opposite direction.
 
 void CFuncRotating::Spawn()
 {
+	m_iState = STATE_OFF; // LRC - initialize state
+	m_fCurSpeed = 0;      // LRC - initialize speed tracker
+
 	// set final pitch.  Must not be PITCH_NORM, since we
 	// plan on pitch shifting later.
 
@@ -424,12 +467,16 @@ void CFuncRotating::Spawn()
 		m_flFanFriction = 1;
 	}
 
-	if (FBitSet(pev->spawnflags, SF_BRUSH_ROTATE_Z_AXIS))
-		pev->movedir = Vector(0, 0, 1);
-	else if (FBitSet(pev->spawnflags, SF_BRUSH_ROTATE_X_AXIS))
-		pev->movedir = Vector(1, 0, 0);
-	else
-		pev->movedir = Vector(0, 1, 0); // y-axis
+	// LRC - only set movedir from spawnflags if not already set via "axes" keyvalue
+	if (pev->movedir == g_vecZero)
+	{
+		if (FBitSet(pev->spawnflags, SF_BRUSH_ROTATE_Z_AXIS))
+			pev->movedir = Vector(0, 0, 1);
+		else if (FBitSet(pev->spawnflags, SF_BRUSH_ROTATE_X_AXIS))
+			pev->movedir = Vector(1, 0, 0);
+		else
+			pev->movedir = Vector(0, 1, 0); // y-axis
+	}
 
 	// check for reverse rotation
 	if (FBitSet(pev->spawnflags, SF_BRUSH_ROTATE_BACKWARDS))
@@ -483,8 +530,6 @@ void CFuncRotating::Spawn()
 	{
 		SetTouch(&CFuncRotating::HurtTouch);
 	}
-
-	m_iState = STATE_OFF;  // LRC
 
 	Precache();
 }
@@ -547,7 +592,7 @@ void CFuncRotating::Precache()
 		}
 	}
 
-	if (pev->avelocity != g_vecZero)
+	if (m_fCurSpeed != 0) // LRC - use tracked speed for save/restore restart
 	{
 		// if fan was spinning, and we went through transition or save/restore,
 		// make sure we restart the sound.  1.5 sec delay is magic number. KDB
@@ -575,7 +620,11 @@ void CFuncRotating::HurtTouch(CBaseEntity* pOther)
 	// calculate damage based on rotation speed
 	pev->dmg = m_fCurSpeed / 10; // LRC - use tracked speed rather than raw avelocity length
 
-	pOther->TakeDamage(pev, pev, pev->dmg, DMG_CRUSH);
+	// LRC - attribute damage to whoever triggered this rotating brush
+	if (m_hActivator)
+		pOther->TakeDamage(pev, m_hActivator->pev, pev->dmg, DMG_CRUSH);
+	else
+		pOther->TakeDamage(pev, pev, pev->dmg, DMG_CRUSH);
 
 	pevOther->velocity = (pevOther->origin - VecBModelOrigin(pev)).Normalize() * pev->dmg;
 }
@@ -667,11 +716,17 @@ void CFuncRotating::Rotate()
 	SetNextThink(10);
 }
 
-// LRC - wait one frame before starting rotation, to allow other entities to spawn
+// LRC - wait until the game has actually started before spinning up
 void CFuncRotating::WaitForStart()
 {
-	SetThink(&CFuncRotating::SpinUp);
-	SetNextThink(0.1);
+	if (gpGlobals->time > 1) // has the client started yet?
+	{
+		SUB_CallUseToggle();
+	}
+	else
+	{
+		SetNextThink(0.1);
+	}
 }
 
 //=========================================================
@@ -679,6 +734,8 @@ void CFuncRotating::WaitForStart()
 //=========================================================
 void CFuncRotating::RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
+	m_hActivator = pActivator; // LRC - remember who triggered us for damage attribution
+
 	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
 	if (!ShouldToggle(useType, m_fCurSpeed != 0)) // LRC - use m_fCurSpeed for state
 		return;
@@ -689,6 +746,7 @@ void CFuncRotating::RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 		// fan is spinning, so stop it.
 		if (m_fCurSpeed != 0) // LRC
 		{
+			m_iState = STATE_TURN_OFF; // LRC
 			SetThink(&CFuncRotating::SpinDown);
 			//EMIT_SOUND_DYN(ENT(pev), CHAN_WEAPON, (char *)STRING(pev->noiseStop),
 			//	m_flVolume, m_flAttenuation, 0, m_pitch);
@@ -697,6 +755,7 @@ void CFuncRotating::RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 		}
 		else // fan is not moving, so start it
 		{
+			m_iState = STATE_TURN_ON; // LRC
 			SetThink(&CFuncRotating::SpinUp);
 			EMIT_SOUND_DYN(ENT(pev), CHAN_STATIC, (char*)STRING(pev->noiseRunning),
 				0.01, m_flAttenuation, 0, FANPITCHMIN);
@@ -736,9 +795,12 @@ void CFuncRotating::RotatingUse(CBaseEntity* pActivator, CBaseEntity* pCaller, U
 // RotatingBlocked - An entity has blocked the brush
 //
 void CFuncRotating::Blocked(CBaseEntity* pOther)
-
 {
-	pOther->TakeDamage(pev, pev, pev->dmg, DMG_CRUSH);
+	// LRC - attribute damage to whoever triggered this rotating brush
+	if (m_hActivator)
+		pOther->TakeDamage(pev, m_hActivator->pev, pev->dmg, DMG_CRUSH);
+	else
+		pOther->TakeDamage(pev, pev, pev->dmg, DMG_CRUSH);
 }
 
 
@@ -764,6 +826,8 @@ public:
 	bool Restore(CRestore& restore) override;
 	void Blocked(CBaseEntity* pOther) override;
 
+	STATE GetState() override { return pev->speed ? STATE_ON : STATE_OFF; } // LRC
+
 	static TYPEDESCRIPTION m_SaveData[];
 
 	float m_accel;	  // Acceleration
@@ -774,6 +838,7 @@ public:
 	float m_dampSpeed;
 	Vector m_center;
 	Vector m_start;
+	EHANDLE m_hActivator; // LRC - entity that last triggered this pendulum (for damage attribution)
 };
 
 LINK_ENTITY_TO_CLASS(func_pendulum, CPendulum);
@@ -788,6 +853,7 @@ TYPEDESCRIPTION CPendulum::m_SaveData[] =
 		DEFINE_FIELD(CPendulum, m_dampSpeed, FIELD_FLOAT),
 		DEFINE_FIELD(CPendulum, m_center, FIELD_VECTOR),
 		DEFINE_FIELD(CPendulum, m_start, FIELD_VECTOR),
+		DEFINE_FIELD(CPendulum, m_hActivator, FIELD_EHANDLE), // LRC
 };
 
 IMPLEMENT_SAVERESTORE(CPendulum, CBaseEntity);
@@ -855,6 +921,8 @@ void CPendulum::PendulumUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_T
 	// LRC - ShouldToggle: respect USE_ON / USE_OFF / USE_TOGGLE
 	if (!ShouldToggle(useType, 0 != pev->speed))
 		return;
+
+	m_hActivator = pActivator; // LRC - remember who triggered us for damage attribution
 
 	if (0 != pev->speed) // Pendulum is moving, stop it and auto-return if necessary
 	{
@@ -958,7 +1026,11 @@ void CPendulum::Touch(CBaseEntity* pOther)
 	if (damage < 0)
 		damage = -damage;
 
-	pOther->TakeDamage(pev, pev, damage, DMG_CRUSH);
+	// LRC - attribute damage to whoever triggered this pendulum
+	if (m_hActivator)
+		pOther->TakeDamage(pev, m_hActivator->pev, damage, DMG_CRUSH);
+	else
+		pOther->TakeDamage(pev, pev, damage, DMG_CRUSH);
 
 	pevOther->velocity = (pevOther->origin - VecBModelOrigin(pev)).Normalize() * damage;
 }
