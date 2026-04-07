@@ -819,7 +819,7 @@ void CFuncTrain::Next()
 	{
 		// Path corner has indicated a teleport to the next corner.
 		SetBits(pev->effects, EF_NOINTERP);
-		UTIL_SetOrigin(pev, pTarg->pev->origin - (pev->mins + pev->maxs) * 0.5);
+		UTIL_AssignOrigin(this, pTarg->pev->origin - (pev->mins + pev->maxs) * 0.5); // LRC - use UTIL_AssignOrigin to move MoveWith children too
 		Wait(); // Get on with doing the next path corner.
 	}
 	else
@@ -854,7 +854,14 @@ void CFuncTrain::Activate()
 		pev->target = pevTarg->target;
 		m_pevCurrentTarget = pevTarg; // keep track of this since path corners change our target for us.
 
-		UTIL_SetOrigin(pev, pevTarg->origin - (pev->mins + pev->maxs) * 0.5);
+		// LRC - use UTIL_AssignOrigin so that MoveWith children registered before this
+		// Activate() (which computed their offsets relative to our editor origin) are
+		// repositioned at the same relative offsets at the first path corner.
+		UTIL_AssignOrigin(this, pevTarg->origin - (pev->mins + pev->maxs) * 0.5);
+
+		// LRC - we override CBaseEntity::Activate without calling it, so set up
+		// our own MoveWith relationship here.
+		InitMoveWith();
 
 		if (FStringNull(pev->targetname))
 		{ // not triggered, so start immediately
@@ -1179,7 +1186,7 @@ void CSpriteTrain::Next()
 	{
 		// Path corner has indicated a teleport to the next corner.
 		SetBits(pev->effects, EF_NOINTERP);
-		UTIL_SetOrigin(pev, pTarg->pev->origin - (pev->mins + pev->maxs) * 0.5);
+		UTIL_AssignOrigin(this, pTarg->pev->origin - (pev->mins + pev->maxs) * 0.5); // LRC - use UTIL_AssignOrigin to move MoveWith children too
 		Wait(); // Get on with doing the next path corner.
 	}
 	else
@@ -1211,7 +1218,14 @@ void CSpriteTrain::Activate()
 		pev->target = pevTarg->target;
 		m_pevCurrentTarget = pevTarg; // keep track of this since path corners change our target for us.
 
-		UTIL_SetOrigin(pev, pevTarg->origin - (pev->mins + pev->maxs) * 0.5);
+		// LRC - use UTIL_AssignOrigin so that MoveWith children registered before this
+		// Activate() (which computed their offsets relative to our editor origin) are
+		// repositioned at the same relative offsets at the first path corner.
+		UTIL_AssignOrigin(this, pevTarg->origin - (pev->mins + pev->maxs) * 0.5);
+
+		// LRC - we override CBaseEntity::Activate without calling it, so set up
+		// our own MoveWith relationship here.
+		InitMoveWith();
 
 		if (FStringNull(pev->targetname))
 		{ // not triggered, so start immediately
@@ -2666,7 +2680,8 @@ void CGunTarget::Activate()
 	if (pTarg)
 	{
 		m_hTargetEnt = pTarg;
-		UTIL_SetOrigin(pev, pTarg->pev->origin - (pev->mins + pev->maxs) * 0.5);
+		UTIL_AssignOrigin(this, pTarg->pev->origin - (pev->mins + pev->maxs) * 0.5); // LRC - use UTIL_AssignOrigin to move MoveWith children too
+		InitMoveWith(); // LRC - set up own MoveWith relationship (not done by CBaseEntity::Activate)
 	}
 }
 
