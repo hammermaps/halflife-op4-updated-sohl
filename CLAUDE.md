@@ -19,6 +19,14 @@ This fork carries one additional, deliberate exception to the "no gameplay chang
 - Roll out per NPC class in the phase order the spec defines (`CHGrunt` first as the reference implementation, then other HECU/friendly classes, then aliens/scientists/Barney-likes) — don't refactor unrelated monster classes as a side effect.
 - Respect the explicit "do not" list in the spec (no behavior-tree/GOAP frameworks, no navmesh, no external AI/LLM runtime, no entity-system rewrite, no removing `scripted_sequence` or bypassing the nodegraph).
 
+#### Current status (check this first on a new session)
+
+- **Approved plan for the next chunk of work:** [`docs/designs/hybrid-ai-core-phase-a.md`](docs/designs/hybrid-ai-core-phase-a.md) — Phase A only (framework scaffolding, zero behavior change). Produced via `/office-hours`, passed 2 rounds of adversarial review (final score 8/10). Read this before writing any `ai_hybrid*` code — it has the concrete file plan, a research-spike step to do first, and 7 ordered Next Steps.
+- **Nothing from Phase A has been implemented yet** as of 2026-09-08 — the design doc is approved but `dlls/ai_hybrid_core.*` / `dlls/ai_hybrid.*` don't exist yet. If they already exist when you read this, the doc is stale — trust the code and update this note.
+- **Standing decisions from that session** (durable, don't re-litigate without a reason):
+  - `ext-ki` stays fully independent from `master` — no rebase/merge planned, even though `master` is actively diverging (Spirit of Half-Life backport work) in overlapping monster files. This was an explicit user override of a rebase recommendation.
+  - The new AI logic must be split into an engine-free POD core (no HLSDK includes) plus a thin engine-aware adapter, specifically so it can have standalone unit tests — see "Working conventions" below for why this is new territory for this repo.
+
 ## Build commands
 
 ### Linux
@@ -82,7 +90,7 @@ Standalone asset-pipeline tools (map compilers `qcsg`/`qbsp2`/`qrad`/`vis`, `stu
 This applies regardless of which language the user writes their request in.
 
 ## Working conventions
-- No automated tests exist; verification is "it builds" plus manual in-game testing, which Claude generally cannot perform. Be explicit that behavioral changes are unverified beyond compilation.
+- The codebase as a whole has no automated tests; verification is "it builds" plus manual in-game testing, which Claude generally cannot perform. Be explicit that behavioral changes are unverified beyond compilation. **Exception (decided 2026-09-08, `ext-ki` only):** new Hybrid AI Core logic should get smoke/unit tests where technically feasible — see the "Current status" note above and `docs/designs/hybrid-ai-core-phase-a.md` for how (an engine-free core compiled and tested standalone, no engine headers, no DLL link).
 - `-fno-exceptions` is used on Linux builds — do not introduce C++ exceptions into shared/game/client code.
 - The project intentionally preserves original-game code duplication across `dlls/` (e.g. near-identical logic across monster files or weapon variants) for parity with the shipped game and to keep mod integration simple; don't unilaterally deduplicate across unrelated entities as a drive-by change.
 
