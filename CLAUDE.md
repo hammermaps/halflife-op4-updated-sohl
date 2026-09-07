@@ -53,6 +53,9 @@ make COMPILER=g++ CFG=release -j8      # or COMPILER=clang++
 dotnet script halflife_updated/scripts/packager/CreatePackage.csx --package-name <name>
 ```
 
+### Dev helper scripts (`scripts/`)
+`scripts/build.sh` / `scripts/rebuild.sh` wrap the Linux `make` invocation above for faster iteration. `scripts/save-baseline.sh` snapshots the current build's `.so` files (with checksums) into `reference-builds/<git-sha>-<cfg>/` (gitignored, local-only); `scripts/diff-baseline.sh <dir>` hashes a later build against a saved one — a byte-identical `.so` is strong evidence a change didn't alter behavior at the binary level (useful for verifying "no behavior change while `ai_hybrid` is disabled" claims from the Phase A design doc). See `scripts/README.md`.
+
 ## Architecture
 
 ### Two DLLs, one engine contract
