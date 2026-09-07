@@ -25,3 +25,16 @@ scripts/save-baseline.sh        # snapshot it
 scripts/build.sh                # incremental rebuild
 scripts/diff-baseline.sh reference-builds/<sha>-release
 ```
+
+- `deploy-test-mod.sh [release|debug]` — copies `linux/<cfg>/hl.so` and
+  `client.so` (+ `.dbg` symbols) into the prepared Steam test-mod install so
+  it can be launched directly from Half-Life for manual in-game verification.
+  Default install: `~/.var/app/com.valvesoftware.Steam/.../halflife_op4_updated_ki`
+  (override with `MOD_DIR=/other/path`). Run after `build.sh`/`rebuild.sh`:
+
+```bash
+scripts/build.sh
+scripts/deploy-test-mod.sh
+# then launch via Steam, or:
+~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Half-Life/hl.sh -game halflife_op4_updated_ki -dev -console
+```
