@@ -84,6 +84,10 @@ The engine loads two modules and talks to them entirely through C-style interfac
 ### Utilities (`utils/`)
 Standalone asset-pipeline tools (map compilers `qcsg`/`qbsp2`/`qrad`/`vis`, `studiomdl` model compiler, `sprgen`, `mdlviewer`, etc.), each with a matching `.vcxproj` in `projects/vs2019/`. These are separate from the game/client build and only relevant when touching content tooling, not gameplay code.
 
+## Patch export (project directive)
+
+Whenever a working, verified change is completed (built successfully, and behaviorally checked as far as possible), export it as a patch file into `patches/` for later transfer to sibling projects — see `patches/README.md` for the exact naming convention and `git format-patch`/`git am` commands. Do this in addition to the normal commit, not instead of it.
+
 ## Language policy (project directive)
 
 - **Chat output to the user**: always German ("Ausgabe ist immer in Deutsch").

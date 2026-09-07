@@ -1,0 +1,650 @@
+From afc092e95a2bbe47201dcb793e4ece39787ebc8a Mon Sep 17 00:00:00 2001
+From: Your Name <godkiller_nt@hammermaps.de>
+Date: Tue, 8 Sep 2026 01:43:08 +0200
+Subject: [PATCH] Implement Phase A of the Hybrid AI Core framework scaffold
+
+Per docs/designs/hybrid-ai-core-phase-a.md (Approach B: engine-free
+core / engine-aware adapter split):
+
+- dlls/ai_hybrid_core.h/.cpp: no HLSDK includes. AITacticalAction enum,
+  AIHybridCapabilityFlags, AIProfile, ClampScore/Clamp01/DecayConfidence,
+  ActionName/ActionSupported, and the dormant AIHybridState + its
+  Phase-A no-op UpdateSnapshot(). Compiles and tests standalone.
+- dlls/ai_hybrid.h/.cpp: the only file in this subsystem that includes
+  engine headers. Reads the ai_hybrid/ai_hybrid_debug CVars and prints
+  bounded debug output.
+- dlls/game.h/.cpp: register ai_hybrid (default 0) and ai_hybrid_debug
+  (default 0) alongside the existing CVAR block, same convention as
+  every other server CVar.
+- dlls/hgrunt.cpp: CHGrunt gets a dormant m_AIHybridState member,
+  zero-initialized in Spawn() (entity-slot reuse safety), observed and
+  logged from PrescheduleThink(). GetSchedule() is untouched - action
+  stays AI_ACTION_NONE, zero behavior change while ai_hybrid is 0
+  (verified: rebuilt client.so is byte-identical to the pre-change
+  baseline, only hl.so differs).
+- tests/ai_hybrid_core_tests.cpp + scripts/run-ai-hybrid-core-tests.sh:
+  standalone host tests (no engine headers, no DLL link) covering
+  ActionName/ActionSupported/Clamp01/ClampScore/DecayConfidence/
+  UpdateSnapshot. Wired into `make check` in linux/Makefile (Linux
+  only for Phase A, per the design doc's Windows follow-up note).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016dnTNhips7ADmrfkhV6MGx
+---
+ dlls/ai_hybrid.cpp                  |  21 +++++
+ dlls/ai_hybrid.h                    |  24 ++++++
+ dlls/ai_hybrid_core.cpp             | 116 +++++++++++++++++++++++++
+ dlls/ai_hybrid_core.h               | 114 +++++++++++++++++++++++++
+ dlls/game.cpp                       |   8 ++
+ dlls/game.h                         |   4 +
+ dlls/hgrunt.cpp                     |  18 ++++
+ linux/.gitignore                    |   4 +
+ linux/Makefile                      |   6 ++
+ linux/Makefile.hldll                |   2 +
+ scripts/run-ai-hybrid-core-tests.sh |  23 +++++
+ tests/ai_hybrid_core_tests.cpp      | 127 ++++++++++++++++++++++++++++
+ 12 files changed, 467 insertions(+)
+ create mode 100644 dlls/ai_hybrid.cpp
+ create mode 100644 dlls/ai_hybrid.h
+ create mode 100644 dlls/ai_hybrid_core.cpp
+ create mode 100644 dlls/ai_hybrid_core.h
+ create mode 100755 scripts/run-ai-hybrid-core-tests.sh
+ create mode 100644 tests/ai_hybrid_core_tests.cpp
+
+diff --git a/dlls/ai_hybrid.cpp b/dlls/ai_hybrid.cpp
+new file mode 100644
+index 00000000..9977a96b
+--- /dev/null
++++ b/dlls/ai_hybrid.cpp
+@@ -0,0 +1,21 @@
++#include "extdll.h"
++#include "util.h"
++
++#include "ai_hybrid.h"
++
++bool AIHybrid_Enabled()
++{
++	return CVAR_GET_FLOAT("ai_hybrid") != 0.0f;
++}
++
++void AIHybrid_MaybeLogDebug(const AIHybridState& state, const char* monsterLabel)
++{
++	if (CVAR_GET_FLOAT("ai_hybrid_debug") < 1.0f)
++		return;
++
++	ALERT(at_console, "[AI] %s current=%s previous=%s enabled=%d\n",
++		monsterLabel,
++		ActionName(state.currentAction),
++		ActionName(state.previousAction),
++		AIHybrid_Enabled() ? 1 : 0);
++}
+diff --git a/dlls/ai_hybrid.h b/dlls/ai_hybrid.h
+new file mode 100644
+index 00000000..124f4236
+--- /dev/null
++++ b/dlls/ai_hybrid.h
+@@ -0,0 +1,24 @@
++/*
++ * Engine-aware adapter for the Hybrid AI Core (see AGENTS_HYBRID_AI.md and
++ * docs/designs/hybrid-ai-core-phase-a.md).
++ *
++ * This is the only file in the ai_hybrid* subsystem allowed to include
++ * HLSDK/engine headers. It owns the ai_hybrid* CVars and bounded debug
++ * output; the actual decision core stays in ai_hybrid_core.h/.cpp so it can
++ * be built and tested without any engine dependency.
++ */
++#pragma once
++
++#include "ai_hybrid_core.h"
++
++// True if the Hybrid AI master switch (`ai_hybrid` CVar) is enabled. Phase A
++// callers must not change behavior based on this yet - it exists so later
++// phases have a single place to check, and so the debug output below can
++// note whether the subsystem is armed.
++bool AIHybrid_Enabled();
++
++// Prints `state`'s current/previous action for `monsterLabel` to the
++// console, gated on `ai_hybrid_debug >= 1`. No-op otherwise (including when
++// AIHybrid_Enabled() is false - Phase A logs unconditionally on the debug
++// CVar so it can be verified even while the master switch stays off).
++void AIHybrid_MaybeLogDebug(const AIHybridState& state, const char* monsterLabel);
+diff --git a/dlls/ai_hybrid_core.cpp b/dlls/ai_hybrid_core.cpp
+new file mode 100644
+index 00000000..20e94e07
+--- /dev/null
++++ b/dlls/ai_hybrid_core.cpp
+@@ -0,0 +1,116 @@
++#include "ai_hybrid_core.h"
++
++#include <cmath>
++
++const char* ActionName(AITacticalAction action)
++{
++	switch (action)
++	{
++	case AI_ACTION_NONE:
++		return "NONE";
++	case AI_ACTION_IDLE:
++		return "IDLE";
++	case AI_ACTION_ALERT:
++		return "ALERT";
++	case AI_ACTION_ATTACK:
++		return "ATTACK";
++	case AI_ACTION_ADVANCE:
++		return "ADVANCE";
++	case AI_ACTION_COVER:
++		return "COVER";
++	case AI_ACTION_SEARCH:
++		return "SEARCH";
++	case AI_ACTION_INVESTIGATE:
++		return "INVESTIGATE";
++	case AI_ACTION_SUPPRESS:
++		return "SUPPRESS";
++	case AI_ACTION_FLANK_LEFT:
++		return "FLANK_LEFT";
++	case AI_ACTION_FLANK_RIGHT:
++		return "FLANK_RIGHT";
++	case AI_ACTION_RETREAT:
++		return "RETREAT";
++	case AI_ACTION_REPOSITION:
++		return "REPOSITION";
++	case AI_ACTION_FOLLOW:
++		return "FOLLOW";
++	case AI_ACTION_MOVE_ASIDE:
++		return "MOVE_ASIDE";
++	case AI_ACTION_COUNT:
++		break;
++	}
++	return "UNKNOWN";
++}
++
++bool ActionSupported(AITacticalAction action, uint32_t capabilityMask)
++{
++	switch (action)
++	{
++	case AI_ACTION_NONE:
++	case AI_ACTION_IDLE:
++	case AI_ACTION_ALERT:
++	case AI_ACTION_ATTACK:
++	case AI_ACTION_ADVANCE:
++	case AI_ACTION_REPOSITION:
++	case AI_ACTION_FOLLOW:
++		return true; // baseline actions, no capability flag gates them
++	case AI_ACTION_SEARCH:
++	case AI_ACTION_INVESTIGATE:
++		return (capabilityMask & AI_CAP_SEARCH) != 0;
++	case AI_ACTION_COVER:
++		return (capabilityMask & AI_CAP_COVER) != 0;
++	case AI_ACTION_FLANK_LEFT:
++	case AI_ACTION_FLANK_RIGHT:
++		return (capabilityMask & AI_CAP_FLANK) != 0;
++	case AI_ACTION_SUPPRESS:
++		return (capabilityMask & AI_CAP_SUPPRESSION) != 0;
++	case AI_ACTION_RETREAT:
++		return (capabilityMask & AI_CAP_RETREAT) != 0;
++	case AI_ACTION_MOVE_ASIDE:
++		return (capabilityMask & AI_CAP_MOVE_ASIDE) != 0;
++	case AI_ACTION_COUNT:
++		break;
++	}
++	return false;
++}
++
++float ClampScore(float value)
++{
++	if (!(value == value)) // NaN: the only float that isn't equal to itself
++		return 0.0f;
++	if (value < 0.0f)
++		return 0.0f;
++	if (value > 100.0f)
++		return 100.0f;
++	return value;
++}
++
++float Clamp01(float value)
++{
++	if (!(value == value)) // NaN
++		return 0.0f;
++	if (value < 0.0f)
++		return 0.0f;
++	if (value > 1.0f)
++		return 1.0f;
++	return value;
++}
++
++float DecayConfidence(float confidence, float elapsedSeconds, float halfLifeSeconds)
++{
++	if (elapsedSeconds <= 0.0f)
++		return Clamp01(confidence);
++
++	if (halfLifeSeconds <= 0.0f)
++		return 0.0f;
++
++	const float decayed = confidence * std::pow(0.5f, elapsedSeconds / halfLifeSeconds);
++	return Clamp01(decayed);
++}
++
++void UpdateSnapshot(AIHybridState& state)
++{
++	// Phase A never decides anything; the dormant state always reports NONE.
++	state.previousAction = state.currentAction;
++	state.currentAction = AI_ACTION_NONE;
++}
+diff --git a/dlls/ai_hybrid_core.h b/dlls/ai_hybrid_core.h
+new file mode 100644
+index 00000000..213e2bdc
+--- /dev/null
++++ b/dlls/ai_hybrid_core.h
+@@ -0,0 +1,114 @@
++/*
++ * Engine-free core for the Hybrid AI decision layer (see AGENTS_HYBRID_AI.md
++ * and docs/designs/hybrid-ai-core-phase-a.md).
++ *
++ * Phase A: framework scaffolding only. There is no tactical decision logic
++ * here yet - UpdateSnapshot() always reports AI_ACTION_NONE. This file
++ * defines the shared vocabulary and pure helper functions that the
++ * engine-aware adapter (ai_hybrid.h/.cpp) and, from Phase B on, the real
++ * scoring logic will build on.
++ *
++ * Nothing in this file may include HLSDK/engine headers (extdll.h, cbase.h,
++ * util.h, ...) or use engine types (Vector, EHANDLE, entvars_t, ...). It
++ * must stay compilable and testable as a standalone host binary - see
++ * tests/ai_hybrid_core_tests.cpp, which compiles only this .cpp and links
++ * nothing else.
++ */
++#pragma once
++
++#include <cstdint>
++
++enum AITacticalAction
++{
++	AI_ACTION_NONE = 0,
++
++	AI_ACTION_IDLE,
++	AI_ACTION_ALERT,
++	AI_ACTION_ATTACK,
++	AI_ACTION_ADVANCE,
++	AI_ACTION_COVER,
++	AI_ACTION_SEARCH,
++	AI_ACTION_INVESTIGATE,
++	AI_ACTION_SUPPRESS,
++	AI_ACTION_FLANK_LEFT,
++	AI_ACTION_FLANK_RIGHT,
++	AI_ACTION_RETREAT,
++	AI_ACTION_REPOSITION,
++	AI_ACTION_FOLLOW,
++	AI_ACTION_MOVE_ASIDE,
++
++	AI_ACTION_COUNT
++};
++
++// Stable, human-readable name for debug output and future replay logs.
++// Never returns nullptr, even for an out-of-range value.
++const char* ActionName(AITacticalAction action);
++
++enum AIHybridCapabilityFlags : uint32_t
++{
++	AI_CAP_MEMORY = 1u << 0,
++	AI_CAP_SEARCH = 1u << 1,
++	AI_CAP_COVER = 1u << 2,
++	AI_CAP_SQUAD = 1u << 3,
++	AI_CAP_FLANK = 1u << 4,
++	AI_CAP_SUPPRESSION = 1u << 5,
++	AI_CAP_RETREAT = 1u << 6,
++	AI_CAP_FORMATION = 1u << 7,
++	AI_CAP_MOVE_ASIDE = 1u << 8,
++	AI_CAP_LOCAL_AVOID = 1u << 9,
++	AI_CAP_MORALE = 1u << 10,
++	AI_CAP_PERSONALITY = 1u << 11,
++};
++
++// True if an NPC with the given capability mask is allowed to select
++// `action`. Actions with no corresponding capability flag (ATTACK, ADVANCE,
++// REPOSITION, FOLLOW, plus the inert NONE/IDLE/ALERT) are baseline and
++// always supported; everything else requires its matching AI_CAP_* bit.
++bool ActionSupported(AITacticalAction action, uint32_t capabilityMask);
++
++// Per-NPC-archetype tuning (see AGENTS_HYBRID_AI.md section 24). Not
++// consumed by any decision logic in Phase A; exists so later phases and
++// save/restore have a stable type to construct against from the start.
++struct AIProfile
++{
++	float aggression = 0.5f;
++	float caution = 0.5f;
++	float bravery = 0.5f;
++	float teamwork = 0.5f;
++	float mobility = 0.5f;
++};
++
++// Clamps into [0, 100], the utility-score range used from Phase B onward.
++// NaN maps to 0 - a NaN score must never win a comparison.
++float ClampScore(float value);
++
++// Clamps into [0, 1]. NaN maps to 0.
++float Clamp01(float value);
++
++// Exponential confidence decay: `confidence` halves every `halfLifeSeconds`
++// of `elapsedSeconds` that pass. Used by the enemy-memory model from Phase B
++// onward; exposed now so it has test coverage from the start.
++// elapsedSeconds <= 0 returns `confidence` unchanged (no time passed, so no
++// decay - never let a caller accidentally increase confidence this way).
++// halfLifeSeconds <= 0 with elapsedSeconds > 0 returns 0 (an invalid/zero
++// half-life means "decays instantly").
++float DecayConfidence(float confidence, float elapsedSeconds, float halfLifeSeconds);
++
++// Minimal, inert per-NPC state. Phase A only ever holds AI_ACTION_NONE in
++// both fields - this struct exists so a monster class has a stable member
++// to zero-initialize and observe from PrescheduleThink(), instead of
++// hand-waving "observe" as a no-op comment. Deliberately not part of
++// m_SaveData yet (see AGENTS_HYBRID_AI.md section 38): nothing here is
++// meaningful yet, so it needs no save/restore support until Phase B gives
++// it real state.
++struct AIHybridState
++{
++	AITacticalAction currentAction = AI_ACTION_NONE;
++	AITacticalAction previousAction = AI_ACTION_NONE;
++};
++
++// Advances `state` by one decision tick. Phase A performs no decision-making
++// - this only rotates current into previous and always sets current back to
++// AI_ACTION_NONE, so the call site in PrescheduleThink() has real plumbing
++// to invoke.
++void UpdateSnapshot(AIHybridState& state);
+diff --git a/dlls/game.cpp b/dlls/game.cpp
+index 8b6deaf2..ac3dedcd 100644
+--- a/dlls/game.cpp
++++ b/dlls/game.cpp
+@@ -594,6 +594,11 @@ cvar_t dmjumpsound = {"sv_dmjumpsound", "1", FCVAR_SERVER};
+ 
+ // END Opposing Force variables
+ 
++// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-phase-a.md)
++// Master switch: default off, zero behavior change while 0.
++cvar_t ai_hybrid = {"ai_hybrid", "0", FCVAR_SERVER};
++cvar_t ai_hybrid_debug = {"ai_hybrid_debug", "0", FCVAR_SERVER};
++
+ static bool SV_InitServer()
+ {
+ 	if (!FileSystem_LoadFileSystem())
+@@ -657,6 +662,9 @@ void GameDLLInit()
+ 
+ 	CVAR_REGISTER(&sv_allowbunnyhopping);
+ 
++	CVAR_REGISTER(&ai_hybrid);
++	CVAR_REGISTER(&ai_hybrid_debug);
++
+ 	// REGISTER CVARS FOR SKILL LEVEL STUFF
+ 	// Agrunt
+ 	CVAR_REGISTER(&sk_agrunt_health1); // {"sk_agrunt_health1","0"};
+diff --git a/dlls/game.h b/dlls/game.h
+index f18c01c2..a963cb4d 100644
+--- a/dlls/game.h
++++ b/dlls/game.h
+@@ -51,6 +51,10 @@ extern cvar_t coopplay;
+ extern cvar_t coopweprespawn;
+ extern cvar_t spamdelay;
+ 
++// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-phase-a.md)
++extern cvar_t ai_hybrid;
++extern cvar_t ai_hybrid_debug;
++
+ // Engine Cvars
+ inline cvar_t* g_psv_gravity;
+ inline cvar_t* g_psv_aim;
+diff --git a/dlls/hgrunt.cpp b/dlls/hgrunt.cpp
+index 2aa4d7e8..d61a95ce 100644
+--- a/dlls/hgrunt.cpp
++++ b/dlls/hgrunt.cpp
+@@ -41,6 +41,7 @@
+ #include "soundent.h"
+ #include "effects.h"
+ #include "customentity.h"
++#include "ai_hybrid.h"
+ 
+ int g_fGruntQuestion; // true if an idle grunt asked a question. Cleared when someone answers.
+ 
+@@ -183,6 +184,13 @@ public:
+ 	int m_iSentence;
+ 
+ 	static const char* pGruntSentences[];
++
++	// Hybrid AI Core, Phase A (see AGENTS_HYBRID_AI.md,
++	// docs/designs/hybrid-ai-core-phase-a.md): dormant, observation-only
++	// state. Zero-initialized in Spawn(); updated and logged from
++	// PrescheduleThink(). Deliberately not in m_SaveData yet - see the
++	// comment on AIHybridState in ai_hybrid_core.h.
++	AIHybridState m_AIHybridState;
+ };
+ 
+ LINK_ENTITY_TO_CLASS(monster_human_grunt, CHGrunt);
+@@ -362,6 +370,12 @@ void CHGrunt::JustSpoke()
+ //=========================================================
+ void CHGrunt::PrescheduleThink()
+ {
++	// Hybrid AI Core, Phase A: observation-only. UpdateSnapshot() always
++	// resolves to AI_ACTION_NONE and nothing here feeds back into
++	// GetSchedule() - see docs/designs/hybrid-ai-core-phase-a.md.
++	UpdateSnapshot(m_AIHybridState);
++	AIHybrid_MaybeLogDebug(m_AIHybridState, "CHGrunt");
++
+ 	if (InSquad() && m_hEnemy != NULL)
+ 	{
+ 		if (HasConditions(bits_COND_SEE_ENEMY))
+@@ -999,6 +1013,10 @@ void CHGrunt::Spawn()
+ 	m_fEnemyEluded = false;
+ 	m_fFirstEncounter = true; // this is true when the grunt spawns, because he hasn't encountered an enemy yet.
+ 
++	// Hybrid AI Core, Phase A: reset to a clean, inert state so entity-slot
++	// reuse never sees a previous occupant's leftover POD state.
++	m_AIHybridState = AIHybridState();
++
+ 	m_HackedGunPos = Vector(0, 0, 55);
+ 
+ 	if (pev->weapons == 0)
+diff --git a/linux/.gitignore b/linux/.gitignore
+index 08a34a40..9594923e 100644
+--- a/linux/.gitignore
++++ b/linux/.gitignore
+@@ -4,6 +4,10 @@
+ *.o
+ *_map.txt
+ 
++# Standalone test binaries built by scripts/run-ai-hybrid-core-tests.sh (make check)
++release/obj/tests/
++debug/obj/tests/
++
+ # Allow Half-Life-specific files that would otherwise be ignored
+ !libSDL2.so
+ !libSDL2-2.0.so.0
+diff --git a/linux/Makefile b/linux/Makefile
+index fefa963d..15c239f0 100644
+--- a/linux/Makefile
++++ b/linux/Makefile
+@@ -92,3 +92,9 @@ hl: build_dir
+ 
+ clean:
+ 	-rm -rf $(BUILD_OBJ_DIR)
++
++# Standalone Hybrid AI Core tests (see ../tests/ai_hybrid_core_tests.cpp):
++# no engine headers, no DLL link - just ../dlls/ai_hybrid_core.cpp plus the
++# test file, compiled as a native host binary.
++check:
++	../scripts/run-ai-hybrid-core-tests.sh
+diff --git a/linux/Makefile.hldll b/linux/Makefile.hldll
+index 102ff0e5..de3f8201 100644
+--- a/linux/Makefile.hldll
++++ b/linux/Makefile.hldll
+@@ -64,6 +64,8 @@ HLDLL_OBJS = \
+ 	$(WEAPONS_OBJ_DIR)/CSporeLauncher.o \
+ 	$(HLDLL_OBJ_DIR)/aflock.o \
+ 	$(HLDLL_OBJ_DIR)/agrunt.o \
++	$(HLDLL_OBJ_DIR)/ai_hybrid.o \
++	$(HLDLL_OBJ_DIR)/ai_hybrid_core.o \
+ 	$(HLDLL_OBJ_DIR)/airtank.o \
+ 	$(HLDLL_OBJ_DIR)/animating.o \
+ 	$(HLDLL_OBJ_DIR)/animation.o \
+diff --git a/scripts/run-ai-hybrid-core-tests.sh b/scripts/run-ai-hybrid-core-tests.sh
+new file mode 100755
+index 00000000..de52bf95
+--- /dev/null
++++ b/scripts/run-ai-hybrid-core-tests.sh
+@@ -0,0 +1,23 @@
++#!/usr/bin/env bash
++# Build and run the standalone Hybrid AI Core tests. No engine headers, no
++# DLL link, no test framework - just dlls/ai_hybrid_core.cpp plus the test
++# file, compiled as a native host binary. Also wired into `make check` in
++# linux/Makefile (scripts/build.sh does not run this — it only builds the
++# game/client DLLs).
++#
++# Usage:
++#   scripts/run-ai-hybrid-core-tests.sh
++set -euo pipefail
++
++REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++OUT_DIR="$REPO_ROOT/linux/release/obj/tests"
++BIN="$OUT_DIR/ai_hybrid_core_tests"
++
++mkdir -p "$OUT_DIR"
++
++g++ -std=c++17 -fno-exceptions -fno-rtti -Wall -Wextra \
++	"$REPO_ROOT/dlls/ai_hybrid_core.cpp" \
++	"$REPO_ROOT/tests/ai_hybrid_core_tests.cpp" \
++	-o "$BIN"
++
++"$BIN"
+diff --git a/tests/ai_hybrid_core_tests.cpp b/tests/ai_hybrid_core_tests.cpp
+new file mode 100644
+index 00000000..f01c8148
+--- /dev/null
++++ b/tests/ai_hybrid_core_tests.cpp
+@@ -0,0 +1,127 @@
++// Standalone host tests for dlls/ai_hybrid_core.{h,cpp} - the engine-free
++// core of the Hybrid AI Core (see AGENTS_HYBRID_AI.md,
++// docs/designs/hybrid-ai-core-phase-a.md).
++//
++// Deliberately minimal: no test framework, no engine headers, no DLL link.
++// Compiled and run via scripts/run-ai-hybrid-core-tests.sh (also wired into
++// `make check` in linux/Makefile). Covers only the pure functions that exist
++// in Phase A; ScoreAttack/ChooseBestAction/hysteresis etc. get their own
++// cases once Phase B adds them to the same core.
++
++#include "../dlls/ai_hybrid_core.h"
++
++#include <cmath>
++#include <cstdio>
++#include <string_view>
++
++static int g_failures = 0;
++
++#define CHECK(expr)                                                     \
++	do                                                                    \
++	{                                                                     \
++		if (!(expr))                                                       \
++		{                                                                   \
++			std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #expr); \
++			++g_failures;                                                    \
++		}                                                                   \
++	} while (0)
++
++static bool NearlyEqual(float a, float b, float epsilon = 0.0001f)
++{
++	return std::fabs(a - b) <= epsilon;
++}
++
++static void TestActionName()
++{
++	CHECK(std::string_view(ActionName(AI_ACTION_NONE)) == "NONE");
++	CHECK(std::string_view(ActionName(AI_ACTION_FLANK_LEFT)) == "FLANK_LEFT");
++	CHECK(std::string_view(ActionName(AI_ACTION_MOVE_ASIDE)) == "MOVE_ASIDE");
++	// Out-of-range value must not crash and must not return nullptr.
++	CHECK(ActionName(static_cast<AITacticalAction>(9999)) != nullptr);
++}
++
++static void TestActionSupported()
++{
++	// Baseline actions: supported regardless of capability mask, including 0.
++	CHECK(ActionSupported(AI_ACTION_NONE, 0));
++	CHECK(ActionSupported(AI_ACTION_ATTACK, 0));
++	CHECK(ActionSupported(AI_ACTION_FOLLOW, 0));
++
++	// Capability-gated actions: false without the flag, true with it.
++	CHECK(!ActionSupported(AI_ACTION_COVER, 0));
++	CHECK(ActionSupported(AI_ACTION_COVER, AI_CAP_COVER));
++	CHECK(!ActionSupported(AI_ACTION_FLANK_LEFT, AI_CAP_COVER));
++	CHECK(ActionSupported(AI_ACTION_FLANK_RIGHT, AI_CAP_FLANK));
++	CHECK(ActionSupported(AI_ACTION_SUPPRESS, AI_CAP_SUPPRESSION));
++	CHECK(ActionSupported(AI_ACTION_RETREAT, AI_CAP_RETREAT));
++	CHECK(ActionSupported(AI_ACTION_MOVE_ASIDE, AI_CAP_MOVE_ASIDE));
++	CHECK(ActionSupported(AI_ACTION_SEARCH, AI_CAP_SEARCH));
++	CHECK(ActionSupported(AI_ACTION_INVESTIGATE, AI_CAP_SEARCH));
++
++	// Unrelated flags don't leak into unrelated actions.
++	CHECK(!ActionSupported(AI_ACTION_RETREAT, AI_CAP_FLANK | AI_CAP_COVER));
++}
++
++static void TestClamping()
++{
++	CHECK(NearlyEqual(ClampScore(-5.0f), 0.0f));
++	CHECK(NearlyEqual(ClampScore(150.0f), 100.0f));
++	CHECK(NearlyEqual(ClampScore(42.0f), 42.0f));
++	CHECK(NearlyEqual(ClampScore(std::nanf("")), 0.0f));
++
++	CHECK(NearlyEqual(Clamp01(-0.5f), 0.0f));
++	CHECK(NearlyEqual(Clamp01(1.5f), 1.0f));
++	CHECK(NearlyEqual(Clamp01(0.3f), 0.3f));
++	CHECK(NearlyEqual(Clamp01(std::nanf("")), 0.0f));
++}
++
++static void TestDecayConfidence()
++{
++	// No time passed: confidence unchanged (never increases via this path).
++	CHECK(NearlyEqual(DecayConfidence(0.8f, 0.0f, 10.0f), 0.8f));
++	CHECK(NearlyEqual(DecayConfidence(0.8f, -5.0f, 10.0f), 0.8f));
++
++	// Exactly one half-life: confidence halves.
++	CHECK(NearlyEqual(DecayConfidence(1.0f, 10.0f, 10.0f), 0.5f, 0.001f));
++
++	// Two half-lives: quarters.
++	CHECK(NearlyEqual(DecayConfidence(1.0f, 20.0f, 10.0f), 0.25f, 0.001f));
++
++	// Invalid half-life with elapsed time: instant full decay.
++	CHECK(NearlyEqual(DecayConfidence(1.0f, 5.0f, 0.0f), 0.0f));
++	CHECK(NearlyEqual(DecayConfidence(1.0f, 5.0f, -1.0f), 0.0f));
++
++	// Result always stays clamped to [0, 1] even for out-of-range input.
++	CHECK(NearlyEqual(DecayConfidence(2.0f, 0.0f, 10.0f), 1.0f));
++}
++
++static void TestUpdateSnapshot()
++{
++	AIHybridState state;
++	CHECK(state.currentAction == AI_ACTION_NONE);
++	CHECK(state.previousAction == AI_ACTION_NONE);
++
++	// Phase A: every tick resolves to NONE and rotates current into previous.
++	state.currentAction = AI_ACTION_NONE;
++	UpdateSnapshot(state);
++	CHECK(state.currentAction == AI_ACTION_NONE);
++	CHECK(state.previousAction == AI_ACTION_NONE);
++}
++
++int main()
++{
++	TestActionName();
++	TestActionSupported();
++	TestClamping();
++	TestDecayConfidence();
++	TestUpdateSnapshot();
++
++	if (g_failures == 0)
++	{
++		std::printf("ai_hybrid_core_tests: all checks passed\n");
++		return 0;
++	}
++
++	std::fprintf(stderr, "ai_hybrid_core_tests: %d check(s) failed\n", g_failures);
++	return 1;
++}
+-- 
+2.34.1
+
