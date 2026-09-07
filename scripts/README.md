@@ -35,9 +35,28 @@ scripts/diff-baseline.sh reference-builds/<sha>-release
 ```bash
 scripts/build.sh
 scripts/deploy-test-mod.sh
-# then launch via Steam, or:
-~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Half-Life/hl.sh -game halflife_op4_updated_ki -dev -console
+# then launch (see "Launching via Steam" below for why this needs a
+# non-Steam shortcut on a Flatpak Steam install)
 ```
+
+### Launching via Steam (Flatpak Steam caveat)
+
+On a Flatpak Steam install, running `hl.sh`/`hl_linux` directly from a terminal
+(even interactively) fails `SteamAPI_Init()` — confirmed 2026-09-08: Steam
+writes its own sandbox-internal PID to `~/.steam/steam.pid`, which is
+meaningless on the host, so the natively-run engine can't tell Steam is
+running and aborts with "Failed to initialize authentication interface."
+This reproduces even with the unmodified retail `gearbox` mod, so it's a
+Steam/Flatpak environment issue, not something in this repo's code.
+
+**Fix that works:** add the mod as a **non-Steam game** so Steam itself spawns
+the process inside its own sandbox:
+
+1. Steam Library → "+" → "Add a Non-Steam Game" → Browse to
+   `~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Half-Life/hl.sh`
+2. Right-click the new entry → Properties → Launch Options:
+   `-game halflife_op4_updated_ki -dev 2 -console -nojoy`
+3. Launch from the Steam library (▶ Play) after each `deploy-test-mod.sh`.
 
 - `debug-test-mod.sh [release|debug] [--batch]` — launches the deployed mod
   under `gdb` instead of plain `hl.sh`. **Must be run from a real interactive
