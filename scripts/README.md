@@ -38,3 +38,25 @@ scripts/deploy-test-mod.sh
 # then launch via Steam, or:
 ~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Half-Life/hl.sh -game halflife_op4_updated_ki -dev -console
 ```
+
+- `debug-test-mod.sh [release|debug] [--batch]` — launches the deployed mod
+  under `gdb` instead of plain `hl.sh`. **Must be run from a real interactive
+  terminal**, not backgrounded/detached — launching the engine via `&`/`setsid`
+  from a non-interactive shell breaks `SteamAPI_Init()` (auth fails) on at
+  least this setup, because it loses env the Steam client normally injects.
+  Sets `LD_LIBRARY_PATH` itself since the current engine's `hl.sh` no longer
+  has a built-in `DEBUGGER=` wrapper.
+  - Default (interactive): drops you into a `gdb` prompt with the engine
+    loaded and args set — type `run`, and `bt` after a crash.
+  - `--batch`: runs non-interactively, and on a crash automatically prints a
+    backtrace + registers, logged to `debug-test-mod.log` (gitignored) at the
+    repo root — useful for a quick "did this change break startup" check.
+
+  Env overrides: `MOD_DIR` (mod path), `STEAM_HL` (Half-Life game root,
+  default: parent of `MOD_DIR`), `GAME_ARGS` (extra engine args).
+
+```bash
+scripts/deploy-test-mod.sh
+scripts/debug-test-mod.sh              # interactive
+scripts/debug-test-mod.sh release --batch  # unattended crash triage
+```

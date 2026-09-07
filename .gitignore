@@ -6,6 +6,9 @@
 # Local build baselines saved by scripts/save-baseline.sh (binaries, not source)
 /reference-builds/
 
+# Crash-triage log written by scripts/debug-test-mod.sh --batch
+/debug-test-mod.log
+
 # LLM / AI coding assistant local state (Claude Code, gstack, etc.)
 # Local-only settings and caches; never commit personal/agent configuration.
 .claude/settings.local.json
