@@ -10,6 +10,15 @@ This is **Half-Life: Opposing Force Updated**, one of the TWHL "Updated" reposit
 
 Per `README.md`, in scope: bug fixes, and code-quality improvements (refactoring/generalizing/simplifying) that don't change observable behavior or require a full redesign — this must stay approachable for modders. Out of scope: graphical upgrades, physics engine changes, other engine changes, gameplay changes. Keep this in mind before suggesting "improvements" — a change that alters gameplay or requires re-architecting a system is likely unwanted here even if it's technically nicer.
 
+### Fork goal: Hybrid AI Core (branch `ext-ki`)
+
+This fork carries one additional, deliberate exception to the "no gameplay changes" rule above: a **hybrid Utility-AI decision layer** for NPC tactical behavior in `dlls/`, specified in detail in [`AGENTS_HYBRID_AI.md`](AGENTS_HYBRID_AI.md) — read that file before touching monster/AI code on this branch. Key constraints from that spec that apply to any AI work here:
+- Keep the existing GoldSrc/HLSDK execution infrastructure (schedules, tasks, nodegraph, navigation, animation, `scripted_sequence`, save/restore, relationships, `EHANDLE`, entity lifecycle) intact. The new layer decides **what** an NPC wants to do; existing HLSDK code still decides **how**.
+- Never delete original per-class `GetSchedule()` logic — it must remain as a fallback when the hybrid AI is disabled, uncertain, or fails.
+- Gate all new behavior behind CVARs (master switch `ai_hybrid`, plus feature-specific gates); behavior must be unchanged when disabled.
+- Roll out per NPC class in the phase order the spec defines (`CHGrunt` first as the reference implementation, then other HECU/friendly classes, then aliens/scientists/Barney-likes) — don't refactor unrelated monster classes as a side effect.
+- Respect the explicit "do not" list in the spec (no behavior-tree/GOAP frameworks, no navmesh, no external AI/LLM runtime, no entity-system rewrite, no removing `scripted_sequence` or bypassing the nodegraph).
+
 ## Build commands
 
 ### Linux
@@ -63,6 +72,14 @@ The engine loads two modules and talks to them entirely through C-style interfac
 
 ### Utilities (`utils/`)
 Standalone asset-pipeline tools (map compilers `qcsg`/`qbsp2`/`qrad`/`vis`, `studiomdl` model compiler, `sprgen`, `mdlviewer`, etc.), each with a matching `.vcxproj` in `projects/vs2019/`. These are separate from the game/client build and only relevant when touching content tooling, not gameplay code.
+
+## Language policy (project directive)
+
+- **Chat output to the user**: always German ("Ausgabe ist immer in Deutsch").
+- **Code comments**: always English.
+- **README content, code descriptions, and commit messages**: always English.
+
+This applies regardless of which language the user writes their request in.
 
 ## Working conventions
 - No automated tests exist; verification is "it builds" plus manual in-game testing, which Claude generally cannot perform. Be explicit that behavioral changes are unverified beyond compilation.

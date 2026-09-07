@@ -2,3 +2,13 @@
 !lib/public/SDL2.lib
 !utils/procinfo/lib/win32_vc6/procinfo.lib
 !utils/vgui/lib/win32_vc16/vgui.lib
+
+# LLM / AI coding assistant local state (Claude Code, gstack, etc.)
+# Local-only settings and caches; never commit personal/agent configuration.
+.claude/settings.local.json
+.claude/gstack-rendered/
+.claude/skills/gstack/
+.gstack/
+.gbrain-source
+.cursor/
+.aider*

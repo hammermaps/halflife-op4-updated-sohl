@@ -21,6 +21,14 @@ The following types of changes are **out of scope**:
 * Other engine changes
 * Gameplay changes
 
+# Fork goal: Hybrid AI Core
+
+This fork (branch `ext-ki`) has an additional, fork-specific goal on top of the upstream scope above: modernizing NPC tactical decision-making (enemy and friendly AI) in `dlls/` through a **hybrid AI core**.
+
+The hybrid approach keeps the existing GoldSrc/HLSDK execution infrastructure (schedules, tasks, nodegraph, navigation, animations, scripted sequences, save/restore, relationships, `EHANDLE`, entity lifecycle) fully intact, and adds a new **Utility AI decision layer** on top of it that decides *what* an NPC wants to do (attack, take cover, flank, suppress, search, retreat, follow, move aside, ...), while the existing HLSDK code continues to decide *how* that is carried out. The new layer must always be able to fall back to the original per-class `GetSchedule()` logic, must be feature-gated behind CVARs (master switch `ai_hybrid`), and must not change behavior when disabled.
+
+See [AGENTS_HYBRID_AI.md](AGENTS_HYBRID_AI.md) for the full architecture, data model, build phases, and constraints for this initiative.
+
 If you need help setting up the SDK or developing a mod please ask on the [TWHL website](https://twhl.info/) or on its [Discord server](https://discord.gg/jEw8EqD).
 
 The TWHL wiki has tutorials to guide you through making a mod: https://twhl.info/wiki/page/Half-Life_Programming_-_Getting_Started
