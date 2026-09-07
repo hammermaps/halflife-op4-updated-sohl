@@ -4,6 +4,10 @@
 *.o
 *_map.txt
 
+# Standalone test binaries built by scripts/run-ai-hybrid-core-tests.sh (make check)
+release/obj/tests/
+debug/obj/tests/
+
 # Allow Half-Life-specific files that would otherwise be ignored
 !libSDL2.so
 !libSDL2-2.0.so.0

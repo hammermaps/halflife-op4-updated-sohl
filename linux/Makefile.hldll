@@ -64,6 +64,8 @@ HLDLL_OBJS = \
 	$(WEAPONS_OBJ_DIR)/CSporeLauncher.o \
 	$(HLDLL_OBJ_DIR)/aflock.o \
 	$(HLDLL_OBJ_DIR)/agrunt.o \
+	$(HLDLL_OBJ_DIR)/ai_hybrid.o \
+	$(HLDLL_OBJ_DIR)/ai_hybrid_core.o \
 	$(HLDLL_OBJ_DIR)/airtank.o \
 	$(HLDLL_OBJ_DIR)/animating.o \
 	$(HLDLL_OBJ_DIR)/animation.o \

@@ -41,6 +41,7 @@
 #include "soundent.h"
 #include "effects.h"
 #include "customentity.h"
+#include "ai_hybrid.h"
 
 int g_fGruntQuestion; // true if an idle grunt asked a question. Cleared when someone answers.
 
@@ -183,6 +184,13 @@ public:
 	int m_iSentence;
 
 	static const char* pGruntSentences[];
+
+	// Hybrid AI Core, Phase A (see AGENTS_HYBRID_AI.md,
+	// docs/designs/hybrid-ai-core-phase-a.md): dormant, observation-only
+	// state. Zero-initialized in Spawn(); updated and logged from
+	// PrescheduleThink(). Deliberately not in m_SaveData yet - see the
+	// comment on AIHybridState in ai_hybrid_core.h.
+	AIHybridState m_AIHybridState;
 };
 
 LINK_ENTITY_TO_CLASS(monster_human_grunt, CHGrunt);
@@ -362,6 +370,12 @@ void CHGrunt::JustSpoke()
 //=========================================================
 void CHGrunt::PrescheduleThink()
 {
+	// Hybrid AI Core, Phase A: observation-only. UpdateSnapshot() always
+	// resolves to AI_ACTION_NONE and nothing here feeds back into
+	// GetSchedule() - see docs/designs/hybrid-ai-core-phase-a.md.
+	UpdateSnapshot(m_AIHybridState);
+	AIHybrid_MaybeLogDebug(m_AIHybridState, "CHGrunt");
+
 	if (InSquad() && m_hEnemy != NULL)
 	{
 		if (HasConditions(bits_COND_SEE_ENEMY))
@@ -998,6 +1012,10 @@ void CHGrunt::Spawn()
 
 	m_fEnemyEluded = false;
 	m_fFirstEncounter = true; // this is true when the grunt spawns, because he hasn't encountered an enemy yet.
+
+	// Hybrid AI Core, Phase A: reset to a clean, inert state so entity-slot
+	// reuse never sees a previous occupant's leftover POD state.
+	m_AIHybridState = AIHybridState();
 
 	m_HackedGunPos = Vector(0, 0, 55);
 

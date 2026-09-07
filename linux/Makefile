@@ -92,3 +92,9 @@ hl: build_dir
 
 clean:
 	-rm -rf $(BUILD_OBJ_DIR)
+
+# Standalone Hybrid AI Core tests (see ../tests/ai_hybrid_core_tests.cpp):
+# no engine headers, no DLL link - just ../dlls/ai_hybrid_core.cpp plus the
+# test file, compiled as a native host binary.
+check:
+	../scripts/run-ai-hybrid-core-tests.sh
