@@ -85,3 +85,16 @@ This applies regardless of which language the user writes their request in.
 - No automated tests exist; verification is "it builds" plus manual in-game testing, which Claude generally cannot perform. Be explicit that behavioral changes are unverified beyond compilation.
 - `-fno-exceptions` is used on Linux builds — do not introduce C++ exceptions into shared/game/client code.
 - The project intentionally preserves original-game code duplication across `dlls/` (e.g. near-identical logic across monster files or weapon variants) for parity with the shipped game and to keep mod integration simple; don't unilaterally deduplicate across unrelated entities as a drive-by change.
+
+## gstack (recommended)
+
+This project uses [gstack](https://github.com/garrytan/gstack) for AI-assisted workflows.
+Install it for the best experience:
+
+```bash
+git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
+cd ~/.claude/skills/gstack && ./setup --team
+```
+
+Skills like /qa, /ship, /review, /investigate, and /browse become available after install.
+Use /browse for all web browsing. Use ~/.claude/skills/gstack/... for gstack file paths.
