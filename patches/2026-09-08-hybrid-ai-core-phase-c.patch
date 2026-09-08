@@ -1,0 +1,583 @@
+From 7a06d33517e8b4b1b16677926e05aca239afaa25 Mon Sep 17 00:00:00 2001
+From: Your Name <godkiller_nt@hammermaps.de>
+Date: Tue, 8 Sep 2026 06:59:20 +0200
+Subject: [PATCH] Implement Phase C: squad-shared enemy memory + fix a decay
+ bug
+
+Per docs/designs/hybrid-ai-core-phase-c.md. Investigated CSquadMonster
+first, per spec section 19: it already shares m_vecEnemyLKP and
+"anyone in the squad has seen the enemy" timing through the leader
+(SquadPasteEnemyInfo/SquadCopyEnemyInfo/m_flLastEnemySightTime), and
+squad slots already provide role-like behavior - so this phase does
+NOT reimplement a squad blackboard or role system. Its only new work:
+teach the confidence model to distinguish direct sight from
+squad-shared knowledge (spec section 8-9).
+
+- dlls/ai_hybrid_core.h/.cpp: AIMemorySource enum (NONE/DIRECT_SIGHT/
+  SQUAD_SHARED; HEARD/INFERRED deferred - no soundent integration
+  yet), AI_CONFIDENCE_SQUAD_REPORT_FLOOR (0.7, per spec section 9).
+  UpdateEnemyMemory()/DecideAction() take AIMemorySource instead of a
+  bare enemyVisible bool. Squad-shared floors confidence at 0.7
+  without lowering an already-higher (more recent direct-sight-
+  derived) value. AIUtilityContext untouched - ScoreAttack still
+  requires actual visibility, so squad-only knowledge can never
+  trigger an attack, only SEARCH.
+- Bug fix: UpdateEnemyMemory()'s decay anchor (lastSeenTime) was only
+  advanced on a (re)sighting, not on every decay step, so repeated
+  no-new-information ticks re-decayed an already-decayed value from a
+  fixed, stale anchor - compounding decay incorrectly. This was live
+  since Phase B (just not obviously wrong at a glance). Fixed by
+  advancing the anchor on every call that computes decay; added a
+  regression test asserting two sequential decay steps compose
+  correctly.
+- dlls/game.h/.cpp: new CVar ai_hybrid_squad_report_recency (default 5s).
+- dlls/hgrunt.cpp: computes AIMemorySource from bits_COND_SEE_ENEMY /
+  InSquad() / MySquadLeader()->m_flLastEnemySightTime (already kept
+  current by this class's own pre-existing code and
+  CSquadMonster::SquadMakeEnemy() - no new position/timing plumbing).
+  Capability mask gains AI_CAP_SQUAD.
+
+Verified: all core tests pass (including the new regression test),
+client.so/vgui.so byte-identical to the pre-Phase-A baseline (only
+hl.so differs). Manual in-game playtest of squad-sharing behavior is
+still open.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016dnTNhips7ADmrfkhV6MGx
+---
+ dlls/ai_hybrid.cpp                     |  6 ++
+ dlls/ai_hybrid.h                       | 10 +++-
+ dlls/ai_hybrid_core.cpp                | 44 +++++++++++---
+ dlls/ai_hybrid_core.h                  | 71 +++++++++++++++-------
+ dlls/game.cpp                          |  2 +
+ dlls/game.h                            |  1 +
+ dlls/hgrunt.cpp                        | 33 +++++++---
+ docs/designs/hybrid-ai-core-phase-c.md | 47 +++++++++++++++
+ tests/ai_hybrid_core_tests.cpp         | 83 ++++++++++++++++++++++----
+ 9 files changed, 250 insertions(+), 47 deletions(-)
+ create mode 100644 docs/designs/hybrid-ai-core-phase-c.md
+
+diff --git a/dlls/ai_hybrid.cpp b/dlls/ai_hybrid.cpp
+index d43f7cd7..75f934af 100644
+--- a/dlls/ai_hybrid.cpp
++++ b/dlls/ai_hybrid.cpp
+@@ -67,6 +67,12 @@ float AIHybrid_SwitchThreshold()
+ 	return kSwitchThreshold;
+ }
+ 
++float AIHybrid_SquadReportRecency()
++{
++	const float value = CVAR_GET_FLOAT("ai_hybrid_squad_report_recency");
++	return (value > 0.0f) ? value : 5.0f;
++}
++
+ void AIHybrid_MaybeLogDebug(const AIHybridState& state, const char* monsterLabel)
+ {
+ 	if (CVAR_GET_FLOAT("ai_hybrid_debug") < 1.0f)
+diff --git a/dlls/ai_hybrid.h b/dlls/ai_hybrid.h
+index 9f699bff..805c8fd2 100644
+--- a/dlls/ai_hybrid.h
++++ b/dlls/ai_hybrid.h
+@@ -1,6 +1,6 @@
+ /*
+  * Engine-aware adapter for the Hybrid AI Core (see AGENTS_HYBRID_AI.md,
+- * docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
++ * docs/designs/hybrid-ai-core-phase-a.md, -phase-b.md and -phase-c.md).
+  *
+  * This is the only file in the ai_hybrid* subsystem allowed to include
+  * HLSDK/engine headers. It owns the ai_hybrid* CVars and bounded debug
+@@ -29,6 +29,14 @@ float AIHybrid_ConfidenceHalfLife();
+ // (Phase B keeps it a fixed constant; expose it later if tuning needs arise).
+ float AIHybrid_SwitchThreshold();
+ 
++// How recent (in seconds) a squad's last enemy sighting must be, per
++// CSquadMonster::m_flLastEnemySightTime, for a squad member without direct
++// sight to still count as squad-informed (AIMemorySource::AI_MEMORY_SOURCE_SQUAD_SHARED)
++// rather than knowing nothing - `ai_hybrid_squad_report_recency` CVar
++// (default 5s, matching the recency window the engine's own pre-existing
++// m_fEnemyEluded logic already uses).
++float AIHybrid_SquadReportRecency();
++
+ // Prints `state`'s current/previous action and enemy-memory confidence for
+ // `monsterLabel` to the console, gated on `ai_hybrid_debug >= 1`. No-op
+ // otherwise (including when AIHybrid_Enabled() is false, so the debug output
+diff --git a/dlls/ai_hybrid_core.cpp b/dlls/ai_hybrid_core.cpp
+index d60d925b..bc075a61 100644
+--- a/dlls/ai_hybrid_core.cpp
++++ b/dlls/ai_hybrid_core.cpp
+@@ -121,9 +121,9 @@ AIConfidenceLevel ClassifyConfidence(float confidence)
+ 	return AI_CONFIDENCE_LOST;
+ }
+ 
+-void UpdateEnemyMemory(AIEnemyMemory& memory, bool enemyVisible, float now, float confidenceHalfLifeSeconds)
++void UpdateEnemyMemory(AIEnemyMemory& memory, AIMemorySource source, float now, float confidenceHalfLifeSeconds)
+ {
+-	if (enemyVisible)
++	if (source == AI_MEMORY_SOURCE_DIRECT_SIGHT)
+ 	{
+ 		memory.enemyKnown = true;
+ 		memory.confidence = 1.0f;
+@@ -131,11 +131,38 @@ void UpdateEnemyMemory(AIEnemyMemory& memory, bool enemyVisible, float now, floa
+ 		return;
+ 	}
+ 
+-	if (!memory.enemyKnown)
+-		return; // never seen anything yet - nothing to decay
++	if (!memory.enemyKnown && source != AI_MEMORY_SOURCE_SQUAD_SHARED)
++		return; // nothing known and nothing being shared - nothing to decay
+ 
+-	const float elapsed = (memory.lastSeenTime < 0.0f) ? 0.0f : (now - memory.lastSeenTime);
+-	memory.confidence = DecayConfidence(memory.confidence, elapsed, confidenceHalfLifeSeconds);
++	if (memory.enemyKnown)
++	{
++		// Bug fix note: `lastSeenTime` must advance to `now` on every decay
++		// step, not just on a (re)sighting - otherwise repeated calls with
++		// AI_MEMORY_SOURCE_NONE recompute elapsed from the same fixed anchor
++		// each time and re-apply DecayConfidence to an already-decayed value,
++		// double-decaying the overlapping time window. Advancing the anchor
++		// each call makes sequential decay steps compose correctly
++		// (0.5^(dt1/hl) * 0.5^(dt2/hl) == 0.5^((dt1+dt2)/hl)). This means
++		// `lastSeenTime` is really "last time this memory was refreshed",
++		// not literally "last time the enemy was seen" - fine since nothing
++		// reads it for that meaning.
++		const float elapsed = (memory.lastSeenTime < 0.0f) ? 0.0f : (now - memory.lastSeenTime);
++		memory.confidence = DecayConfidence(memory.confidence, elapsed, confidenceHalfLifeSeconds);
++	}
++	else
++	{
++		// AI_MEMORY_SOURCE_SQUAD_SHARED establishing knowledge for the first
++		// time - nothing to decay yet.
++		memory.enemyKnown = true;
++	}
++	memory.lastSeenTime = now;
++
++	if (source == AI_MEMORY_SOURCE_SQUAD_SHARED)
++	{
++		memory.confidence = Clamp01(memory.confidence > AI_CONFIDENCE_SQUAD_REPORT_FLOOR
++										? memory.confidence
++										: AI_CONFIDENCE_SQUAD_REPORT_FLOOR);
++	}
+ }
+ 
+ float ScoreAttack(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile)
+@@ -173,9 +200,10 @@ float ScoreSearch(const AIUtilityContext& context, const AIEnemyMemory& memory,
+ }
+ 
+ AIDecision DecideAction(AIHybridState& state, const AIUtilityContext& context, const AIProfile& profile,
+-	uint32_t capabilityMask, float now, float confidenceHalfLifeSeconds, float switchThreshold)
++	uint32_t capabilityMask, AIMemorySource memorySource, float now, float confidenceHalfLifeSeconds,
++	float switchThreshold)
+ {
+-	UpdateEnemyMemory(state.enemyMemory, context.enemyVisible, now, confidenceHalfLifeSeconds);
++	UpdateEnemyMemory(state.enemyMemory, memorySource, now, confidenceHalfLifeSeconds);
+ 
+ 	struct Candidate
+ 	{
+diff --git a/dlls/ai_hybrid_core.h b/dlls/ai_hybrid_core.h
+index ee7bb95b..dc639333 100644
+--- a/dlls/ai_hybrid_core.h
++++ b/dlls/ai_hybrid_core.h
+@@ -1,12 +1,15 @@
+ /*
+  * Engine-free core for the Hybrid AI decision layer (see AGENTS_HYBRID_AI.md,
+- * docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
++ * docs/designs/hybrid-ai-core-phase-a.md, -phase-b.md and -phase-c.md).
+  *
+- * Phase B adds the first real tactical decision-making: enemy memory with
+- * confidence decay (sections 8-9), and utility scoring for ATTACK/COVER/
+- * SEARCH only (sections 10-11) - the remaining actions (flank, suppress,
+- * squad coordination, ...) stay unsupported until later phases, per the
+- * spec's per-NPC-class, per-capability rollout order.
++ * Phase C teaches the confidence model to distinguish direct sight from
++ * squad-shared knowledge (sections 8-9, 19) - HEARD/INFERRED sources still
++ * stay unimplemented (no soundent integration yet). Squad *position*
++ * sharing and role/slot assignment are NOT reimplemented here:
++ * CSquadMonster already shares m_vecEnemyLKP and "anyone in the squad has
++ * seen the enemy" timing through the leader, and squad slots already exist
++ * for role-like behavior - see docs/designs/hybrid-ai-core-phase-c.md for
++ * what was actually found there before writing this phase.
+  *
+  * Nothing in this file may include HLSDK/engine headers (extdll.h, cbase.h,
+  * util.h, ...) or use engine types (Vector, EHANDLE, entvars_t, ...). It
+@@ -96,11 +99,10 @@ float DecayConfidence(float confidence, float elapsedSeconds, float halfLifeSeco
+ 
+ // --- Enemy memory (AGENTS_HYBRID_AI.md sections 8-9) ---
+ //
+-// Phase B tracks only direct-sight confidence - no heard/squad-shared/
+-// inferred sources yet (those need soundent/squad-blackboard integration,
+-// deferred to later phases). Position itself is NOT stored here: the
+-// engine already tracks it via CBaseMonster::m_vecEnemyLKP, so the hybrid
+-// core only needs to know *how sure* the NPC still is, not *where*.
++// Position itself is NOT stored here: the engine already tracks it via
++// CBaseMonster::m_vecEnemyLKP (and, for squads, CSquadMonster already
++// shares it through the leader), so the hybrid core only needs to know
++// *how sure* the NPC still is, not *where*.
+ 
+ enum AIConfidenceLevel
+ {
+@@ -117,20 +119,46 @@ inline constexpr float AI_CONFIDENCE_CONFIRMED_THRESHOLD = 0.75f;
+ inline constexpr float AI_CONFIDENCE_PROBABLE_THRESHOLD = 0.45f;
+ inline constexpr float AI_CONFIDENCE_UNCERTAIN_THRESHOLD = 0.20f;
+ 
++// "Recent squad report: confidence = max(confidence, 0.7)" (section 9) -
++// squad-shared knowledge is never as strong as seeing the enemy yourself,
++// but it doesn't dip below this floor either while it's still being shared.
++inline constexpr float AI_CONFIDENCE_SQUAD_REPORT_FLOOR = 0.7f;
++
+ AIConfidenceLevel ClassifyConfidence(float confidence);
+ 
++// Where this tick's enemy-memory update came from (section 8: "the AI must
++// distinguish DIRECT_SIGHT / HEARD / SQUAD_SHARED / INFERRED... squad
++// information is never identical to direct sight"). HEARD/INFERRED aren't
++// implemented yet - no soundent integration in this phase.
++enum AIMemorySource
++{
++	AI_MEMORY_SOURCE_NONE = 0,      // nothing new this tick - only decay applies
++	AI_MEMORY_SOURCE_DIRECT_SIGHT,  // strongest: confidence set to exactly 1.0
++	AI_MEMORY_SOURCE_SQUAD_SHARED,  // confidence floored at AI_CONFIDENCE_SQUAD_REPORT_FLOOR
++};
++
+ struct AIEnemyMemory
+ {
+ 	bool enemyKnown = false;   // true once any sighting has ever occurred
+ 	float confidence = 0.0f;   // [0, 1], see AIConfidenceLevel
+-	float lastSeenTime = -1.0f; // caller's time unit (e.g. gpGlobals->time); -1 = never
++	// Decay anchor: the `now` value as of the last UpdateEnemyMemory() call
++	// that touched this memory (any source, including AI_MEMORY_SOURCE_NONE
++	// while merely decaying) - NOT literally "last time seen". Advances every
++	// call so repeated decay steps compose correctly instead of double-
++	// decaying the same elapsed window. Caller's time unit (e.g.
++	// gpGlobals->time); -1 = never updated.
++	float lastSeenTime = -1.0f;
+ };
+ 
+-// Advances `memory` by one decision tick. Direct sight jumps confidence to
+-// 1.0 immediately (strongest source, per section 9); otherwise confidence
+-// decays via DecayConfidence() using the time elapsed since `lastSeenTime`.
+-// `now` must be non-decreasing between calls (matches gpGlobals->time).
+-void UpdateEnemyMemory(AIEnemyMemory& memory, bool enemyVisible, float now, float confidenceHalfLifeSeconds);
++// Advances `memory` by one decision tick given `source`. Direct sight jumps
++// confidence to 1.0 immediately (strongest source, per section 9).
++// Squad-shared decays confidence as usual first, then floors it at
++// AI_CONFIDENCE_SQUAD_REPORT_FLOOR - it can raise a lower confidence but
++// never lowers one that's already higher (e.g. from a very recent direct
++// sighting). AI_MEMORY_SOURCE_NONE only decays existing knowledge; if
++// nothing has ever been known, it's a no-op. `now` must be non-decreasing
++// between calls (matches gpGlobals->time).
++void UpdateEnemyMemory(AIEnemyMemory& memory, AIMemorySource source, float now, float confidenceHalfLifeSeconds);
+ 
+ // --- Utility scoring (Phase B: ATTACK/COVER/SEARCH only) ---
+ //
+@@ -173,11 +201,14 @@ struct AIHybridState
+ 	AIEnemyMemory enemyMemory;
+ };
+ 
+-// Updates `state.enemyMemory` from `context`, scores every action
+-// `capabilityMask` supports, and picks a winner with hysteresis: the
++// Updates `state.enemyMemory` from `memorySource` (see AIMemorySource -
++// independent of `context.enemyVisible`, which only gates ScoreAttack: a
++// squad-shared-only sighting must never be enough to attack), scores every
++// action `capabilityMask` supports, and picks a winner with hysteresis: the
+ // previous action is kept unless a different action beats its score by more
+ // than `switchThreshold` (AGENTS_HYBRID_AI.md section 13 - prevents rapid
+ // flapping between near-tied scores). Updates state.currentAction /
+ // state.previousAction and returns the decision.
+ AIDecision DecideAction(AIHybridState& state, const AIUtilityContext& context, const AIProfile& profile,
+-	uint32_t capabilityMask, float now, float confidenceHalfLifeSeconds, float switchThreshold);
++	uint32_t capabilityMask, AIMemorySource memorySource, float now, float confidenceHalfLifeSeconds,
++	float switchThreshold);
+diff --git a/dlls/game.cpp b/dlls/game.cpp
+index 413834b8..db634adb 100644
+--- a/dlls/game.cpp
++++ b/dlls/game.cpp
+@@ -602,6 +602,7 @@ cvar_t ai_hybrid_decision_interval = {"ai_hybrid_decision_interval", "0.25", FCV
+ cvar_t ai_hybrid_confidence_halflife = {"ai_hybrid_confidence_halflife", "8", FCVAR_SERVER};
+ cvar_t ai_hybrid_log = {"ai_hybrid_log", "0", FCVAR_SERVER};
+ cvar_t ai_hybrid_log_file = {"ai_hybrid_log_file", "ai_hybrid_log.jsonl", FCVAR_SERVER};
++cvar_t ai_hybrid_squad_report_recency = {"ai_hybrid_squad_report_recency", "5", FCVAR_SERVER};
+ 
+ static bool SV_InitServer()
+ {
+@@ -672,6 +673,7 @@ void GameDLLInit()
+ 	CVAR_REGISTER(&ai_hybrid_confidence_halflife);
+ 	CVAR_REGISTER(&ai_hybrid_log);
+ 	CVAR_REGISTER(&ai_hybrid_log_file);
++	CVAR_REGISTER(&ai_hybrid_squad_report_recency);
+ 
+ 	// REGISTER CVARS FOR SKILL LEVEL STUFF
+ 	// Agrunt
+diff --git a/dlls/game.h b/dlls/game.h
+index de07167a..b197246f 100644
+--- a/dlls/game.h
++++ b/dlls/game.h
+@@ -58,6 +58,7 @@ extern cvar_t ai_hybrid_decision_interval;
+ extern cvar_t ai_hybrid_confidence_halflife;
+ extern cvar_t ai_hybrid_log;
+ extern cvar_t ai_hybrid_log_file;
++extern cvar_t ai_hybrid_squad_report_recency;
+ 
+ // Engine Cvars
+ inline cvar_t* g_psv_gravity;
+diff --git a/dlls/hgrunt.cpp b/dlls/hgrunt.cpp
+index 569ce0c7..4cf971ba 100644
+--- a/dlls/hgrunt.cpp
++++ b/dlls/hgrunt.cpp
+@@ -377,12 +377,12 @@ void CHGrunt::JustSpoke()
+ void CHGrunt::PrescheduleThink()
+ {
+ 	// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-
+-	// phase-b.md). Decision throttled to AIHybrid_DecisionInterval() (default
+-	// ~4Hz, per spec section 14) rather than every server frame. The result
+-	// only changes behavior in GetSchedule() when ai_hybrid is enabled - see
+-	// ResolveHybridSchedule() - so this runs (cheaply) even while disabled,
+-	// which keeps ai_hybrid_debug output meaningful without flipping the
+-	// master switch.
++	// phase-b.md, -phase-c.md). Decision throttled to AIHybrid_DecisionInterval()
++	// (default ~4Hz, per spec section 14) rather than every server frame. The
++	// result only changes behavior in GetSchedule() when ai_hybrid is enabled
++	// - see ResolveHybridSchedule() - so this runs (cheaply) even while
++	// disabled, which keeps ai_hybrid_debug output meaningful without
++	// flipping the master switch.
+ 	if (gpGlobals->time >= m_flNextAIDecision)
+ 	{
+ 		AIUtilityContext hybridContext;
+@@ -390,9 +390,26 @@ void CHGrunt::PrescheduleThink()
+ 		hybridContext.canRangeAttack = HasConditions(bits_COND_CAN_RANGE_ATTACK1) || HasConditions(bits_COND_CAN_RANGE_ATTACK2);
+ 		hybridContext.healthRatio = (pev->max_health > 0) ? Clamp01(pev->health / pev->max_health) : 1.0f;
+ 
+-		const uint32_t hybridCaps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
++		// Phase C: distinguish direct sight from squad-shared knowledge
++		// (AGENTS_HYBRID_AI.md section 8 - "squad information is never
++		// identical to direct sight"). m_flLastEnemySightTime is already
++		// kept up to date on the squad leader by this class's own
++		// pre-existing (non-hybrid) code further down and by
++		// CSquadMonster::SquadMakeEnemy() - no new position/timing plumbing
++		// needed, only reading what's already shared.
++		AIMemorySource hybridMemorySource = AI_MEMORY_SOURCE_NONE;
++		if (hybridContext.enemyVisible)
++		{
++			hybridMemorySource = AI_MEMORY_SOURCE_DIRECT_SIGHT;
++		}
++		else if (InSquad() && (gpGlobals->time - MySquadLeader()->m_flLastEnemySightTime) <= AIHybrid_SquadReportRecency())
++		{
++			hybridMemorySource = AI_MEMORY_SOURCE_SQUAD_SHARED;
++		}
++
++		const uint32_t hybridCaps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH | AI_CAP_SQUAD;
+ 		const AIDecision hybridDecision = DecideAction(m_AIHybridState, hybridContext, AIProfile(), hybridCaps,
+-			gpGlobals->time, AIHybrid_ConfidenceHalfLife(), AIHybrid_SwitchThreshold());
++			hybridMemorySource, gpGlobals->time, AIHybrid_ConfidenceHalfLife(), AIHybrid_SwitchThreshold());
+ 		AIHybrid_MaybeLogActivity(entindex(), "CHGrunt", m_AIHybridState, hybridDecision, hybridContext);
+ 
+ 		m_flNextAIDecision = gpGlobals->time + AIHybrid_DecisionInterval();
+diff --git a/docs/designs/hybrid-ai-core-phase-c.md b/docs/designs/hybrid-ai-core-phase-c.md
+new file mode 100644
+index 00000000..bfce5de5
+--- /dev/null
++++ b/docs/designs/hybrid-ai-core-phase-c.md
+@@ -0,0 +1,47 @@
++# Design: Hybrid AI Core — Phase C (Squad-Shared Enemy Memory)
++
++Generated on 2026-09-08 (direct implementation, user said "weiter" after Phase B + logger were playtest-confirmed)
++Branch: ext-ki
++Repo: hammermaps/halflife-op4-updated-sohl
++Status: APPROVED
++Supersedes: none (extends Phase B)
++
++## Scope
++
++Per `AGENTS_HYBRID_AI.md` §19 ("check how `CSquadMonster` currently manages leader/member... prefer storing the blackboard on the squad leader or in the existing squad structure... no global manager") and §49 (Phase C acceptance: one grunt sees the player, others receive *approximate* knowledge, not direct sight; roles don't duplicate unnecessarily; leader death handled).
++
++**Investigated first, per the spec's own instruction:** `dlls/squadmonster.h/.cpp` already implements almost everything §19's `AISquadBlackboard` sketch asks for:
++- `CSquadMonster::m_vecEnemyLKP` is already shared through the leader via `SquadPasteEnemyInfo()`/`SquadCopyEnemyInfo()`, called from `CheckEnemy()` every condition-gathering pass.
++- `CSquadMonster::m_flLastEnemySightTime` is already documented in the header as "last time **anyone in the squad** saw the enemy" and is already updated by `CHGrunt::PrescheduleThink()`'s pre-existing (non-hybrid) code whenever `bits_COND_SEE_ENEMY` is set.
++- `MySquadLeader()` already degrades gracefully to `this` when there's no leader (`InSquad()` false), and `Killed()` → `SquadRemove()` already disbands the squad cleanly when the leader dies (nulls every member's `m_hSquadLeader`), so **"leader death handled" needs no new code** — it falls out of existing, decades-old engine mechanics that `InSquad()`/`MySquadLeader()` already respect.
++- Squad "roles" already exist as the existing slot system (`bits_SLOT_HGRUNT_ENGAGE1/2`, `OccupySlot`/`VacateSlot`) — per spec §20 ("prefer reusing existing squad slots"), this is not rebuilt. Formal utility-AI role assignment (PRIMARY/FLANK/SUPPRESS/RESERVE) is deferred to whichever phase adds the FLANK/SUPPRESS actions those roles are actually *for* — assigning a role with no corresponding action to execute would be dead weight now.
++
++**So this phase's actual new work is narrow:** teach the Hybrid AI Core's confidence model to distinguish "I see the enemy myself" from "my squad still knows where they are, but I don't personally," per spec §8-9 ("squad information is never identical to direct sight"; "recent squad report: confidence = max(confidence, 0.7)").
++
++## Key decisions
++
++1. **`AIMemorySource` replaces the bare `bool enemyVisible` input to `UpdateEnemyMemory()`/`DecideAction()`.** Values: `AI_MEMORY_SOURCE_NONE`, `AI_MEMORY_SOURCE_DIRECT_SIGHT`, `AI_MEMORY_SOURCE_SQUAD_SHARED` (HEARD/INFERRED stay unimplemented — no soundent integration yet, deferred). Direct sight still sets confidence to exactly 1.0; squad-shared floors confidence at a new named constant `AI_CONFIDENCE_SQUAD_REPORT_FLOOR` (0.7, per spec §9) without exceeding whatever direct-sight-derived confidence is already higher. `AIUtilityContext` (visibility/attack/health) is untouched — memory source is a separate `DecideAction()` parameter, not mixed into utility-scoring inputs, since "can I see them" (for `ScoreAttack`'s gate) and "how did I learn about them" (for confidence) are different questions.
++2. **Source computed entirely in `dlls/hgrunt.cpp`**, not the core: `AI_MEMORY_SOURCE_DIRECT_SIGHT` when `bits_COND_SEE_ENEMY`; else `AI_MEMORY_SOURCE_SQUAD_SHARED` when `InSquad()` and the squad leader's `m_flLastEnemySightTime` is within `ai_hybrid_squad_report_recency` seconds (new CVar, default 5s — matching the recency window the engine's own pre-existing `m_fEnemyEluded` logic already uses); else `AI_MEMORY_SOURCE_NONE`. This keeps `ai_hybrid_core.h/.cpp` free of any squad/engine concept, same layering as every prior phase.
++3. **No new capability-gating logic for this.** `AI_CAP_SQUAD` is added to `CHGrunt`'s capability mask for documentation/future use, but the actual gate is `InSquad()` (engine/entity state the core can't see anyway) — consistent with how `COVER`/`SEARCH` are already gated by an `m_hEnemy != NULL` engine check in `ResolveHybridSchedule()`, not by a core-side capability check alone.
++4. **No schedule/action changes.** A squad-shared-only sighting still only ever resolves to `AI_ACTION_SEARCH` (never `AI_ACTION_ATTACK` — `ScoreAttack` requires `context.enemyVisible`, i.e. direct sight, unchanged from Phase B) — matching the acceptance criterion "others receive approximate knowledge, not direct sight." `ResolveHybridSchedule(AI_ACTION_SEARCH)` already maps to `SCHED_CHASE_ENEMY`, which paths toward `m_vecEnemyLKP` — already kept fresh by the engine's own `SquadCopyEnemyInfo()`, so a squad-informed grunt genuinely moves toward the right place with zero new position-sharing code.
++
++## What's implemented
++
++- `dlls/ai_hybrid_core.h/.cpp`: `AIMemorySource` enum, `AI_CONFIDENCE_SQUAD_REPORT_FLOOR` constant, `UpdateEnemyMemory()` signature changed to take `AIMemorySource` (direct sight → 1.0; squad-shared → decay-then-floor at 0.7; none → decay only, no-op if never known). `DecideAction()` gains an `AIMemorySource memorySource` parameter, threaded straight through to `UpdateEnemyMemory()`. Tests updated for the new signature plus new squad-floor cases.
++- `dlls/game.h/.cpp`: new CVar `ai_hybrid_squad_report_recency` (default `"5"`).
++- `dlls/hgrunt.cpp`: computes `AIMemorySource` from `bits_COND_SEE_ENEMY` / `InSquad()` / `MySquadLeader()->m_flLastEnemySightTime` before calling `DecideAction()`; capability mask gains `AI_CAP_SQUAD`.
++
++## Bug found and fixed while writing Phase C's tests
++
++`UpdateEnemyMemory()` had a **pre-existing double-decay bug carried over from Phase B**, only exposed now because a new test called it twice in quick succession from different sources. The decay step computed `elapsed = now - memory.lastSeenTime`, but `lastSeenTime` was only ever advanced on a (re)sighting - not on every decay-only call. So a sequence of `AI_MEMORY_SOURCE_NONE` ticks kept measuring elapsed time from the *original* sighting while repeatedly re-decaying an *already-decayed* confidence value, compounding decay incorrectly (e.g. two 0.25s ticks after a sighting decayed confidence as if 0.5s **and then another 0.5s** had passed, not 0.5s total). This was live in Phase B's playtest too, just not obviously wrong at a glance. Fixed by advancing `lastSeenTime` on every call that computes a decay step, not just on (re)sightings — see the comment in `ai_hybrid_core.cpp`. Added a regression test (`TestUpdateEnemyMemory`'s second `UpdateEnemyMemory` call) asserting two sequential decay steps compose correctly instead of compounding.
++
++## Verified
++
++- `scripts/run-ai-hybrid-core-tests.sh` — updated + new cases (direct sight still forces 1.0 regardless of squad state; squad-shared floors at 0.7 without lowering an already-higher confidence; `AI_MEMORY_SOURCE_NONE` decays as before **and composes correctly across repeated calls, per the bug fix above**; a squad-shared-only context never scores `ATTACK` above 0).
++- `scripts/build.sh` + `scripts/diff-baseline.sh reference-builds/6a789e7f-release` — `client.so`/`vgui.so` byte-identical; `hl.so` differs, as expected.
++- Manual in-game playtest: **not yet done** — see Open Questions.
++
++## Open Questions
++
++- Manual playtest of the actual squad-sharing behavior (one grunt in a squad spots the player while others are out of sight, confirm the others path toward the LKP via `ai_hybrid_debug`/the activity log showing `SEARCH` with `confidence` around 0.7 instead of decaying toward 0) hasn't happened yet. `c2a5f` (already the recommended multi-grunt map) should already contain squadded grunts, but this needs confirming — the existing squad-forming logic (`SquadJoin`/`SquadRecruit`, called from `StartMonster()`) runs automatically at map load regardless of `ai_hybrid`, so no map changes should be needed.
++- Squad roles (PRIMARY/FLANK/SUPPRESS/RESERVE, spec §20) remain deferred until FLANK/SUPPRESS actions exist to assign them to.
+diff --git a/tests/ai_hybrid_core_tests.cpp b/tests/ai_hybrid_core_tests.cpp
+index 47fc3b86..e44c6e1f 100644
+--- a/tests/ai_hybrid_core_tests.cpp
++++ b/tests/ai_hybrid_core_tests.cpp
+@@ -1,6 +1,6 @@
+ // Standalone host tests for dlls/ai_hybrid_core.{h,cpp} - the engine-free
+ // core of the Hybrid AI Core (see AGENTS_HYBRID_AI.md,
+-// docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
++// docs/designs/hybrid-ai-core-phase-a.md, -phase-b.md and -phase-c.md).
+ //
+ // Deliberately minimal: no test framework, no engine headers, no DLL link.
+ // Compiled and run via scripts/run-ai-hybrid-core-tests.sh (also wired into
+@@ -112,23 +112,58 @@ static void TestUpdateEnemyMemory()
+ 	CHECK(!memory.enemyKnown);
+ 
+ 	// Direct sight: confidence jumps to 1.0 immediately, regardless of prior state.
+-	UpdateEnemyMemory(memory, /*enemyVisible=*/true, /*now=*/10.0f, /*halfLife=*/5.0f);
++	UpdateEnemyMemory(memory, AI_MEMORY_SOURCE_DIRECT_SIGHT, /*now=*/10.0f, /*halfLife=*/5.0f);
+ 	CHECK(memory.enemyKnown);
+ 	CHECK(NearlyEqual(memory.confidence, 1.0f));
+ 	CHECK(NearlyEqual(memory.lastSeenTime, 10.0f));
+ 
+ 	// Losing sight does not instantly zero confidence - it decays over time.
+-	UpdateEnemyMemory(memory, /*enemyVisible=*/false, /*now=*/15.0f, /*halfLife=*/5.0f);
++	UpdateEnemyMemory(memory, AI_MEMORY_SOURCE_NONE, /*now=*/15.0f, /*halfLife=*/5.0f);
+ 	CHECK(NearlyEqual(memory.confidence, 0.5f, 0.001f)); // one half-life elapsed
+-	CHECK(NearlyEqual(memory.lastSeenTime, 10.0f)); // unchanged while not visible
++	CHECK(NearlyEqual(memory.lastSeenTime, 15.0f)); // decay anchor advances every update, not just on (re)sighting
++
++	// A second decay step must compose correctly with the first (not
++	// double-decay the already-elapsed window) - two more half-lives from
++	// here should land at a quarter of the confidence at t=15, i.e. 0.125.
++	UpdateEnemyMemory(memory, AI_MEMORY_SOURCE_NONE, /*now=*/25.0f, /*halfLife=*/5.0f);
++	CHECK(NearlyEqual(memory.confidence, 0.125f, 0.001f));
+ 
+ 	// Never having seen an enemy: nothing to decay, stays at defaults.
+ 	AIEnemyMemory neverSeen;
+-	UpdateEnemyMemory(neverSeen, /*enemyVisible=*/false, /*now=*/100.0f, /*halfLife=*/5.0f);
++	UpdateEnemyMemory(neverSeen, AI_MEMORY_SOURCE_NONE, /*now=*/100.0f, /*halfLife=*/5.0f);
+ 	CHECK(!neverSeen.enemyKnown);
+ 	CHECK(NearlyEqual(neverSeen.confidence, 0.0f));
+ }
+ 
++static void TestUpdateEnemyMemorySquadShared()
++{
++	// Squad-shared knowledge alone establishes enemyKnown at the 0.7 floor,
++	// even for an NPC that has never personally seen anything.
++	AIEnemyMemory fromSquad;
++	UpdateEnemyMemory(fromSquad, AI_MEMORY_SOURCE_SQUAD_SHARED, /*now=*/10.0f, /*halfLife=*/5.0f);
++	CHECK(fromSquad.enemyKnown);
++	CHECK(NearlyEqual(fromSquad.confidence, AI_CONFIDENCE_SQUAD_REPORT_FLOOR));
++	CHECK(NearlyEqual(fromSquad.lastSeenTime, 10.0f));
++
++	// Squad-shared raises a lower (decayed) confidence up to the floor...
++	AIEnemyMemory decayed;
++	UpdateEnemyMemory(decayed, AI_MEMORY_SOURCE_DIRECT_SIGHT, 0.0f, 5.0f);
++	UpdateEnemyMemory(decayed, AI_MEMORY_SOURCE_NONE, 50.0f, 5.0f); // long decay, confidence near 0
++	CHECK(decayed.confidence < AI_CONFIDENCE_SQUAD_REPORT_FLOOR);
++	UpdateEnemyMemory(decayed, AI_MEMORY_SOURCE_SQUAD_SHARED, 50.0f, 5.0f);
++	CHECK(NearlyEqual(decayed.confidence, AI_CONFIDENCE_SQUAD_REPORT_FLOOR));
++
++	// ...but never LOWERS an already-higher confidence (e.g. a very recent
++	// personal sighting is still worth more than a bare squad report).
++	AIEnemyMemory fresh;
++	UpdateEnemyMemory(fresh, AI_MEMORY_SOURCE_DIRECT_SIGHT, 0.0f, 5.0f);
++	UpdateEnemyMemory(fresh, AI_MEMORY_SOURCE_NONE, 0.1f, 5.0f); // barely any decay
++	const float beforeSquadReport = fresh.confidence;
++	CHECK(beforeSquadReport > AI_CONFIDENCE_SQUAD_REPORT_FLOOR);
++	UpdateEnemyMemory(fresh, AI_MEMORY_SOURCE_SQUAD_SHARED, 0.1f, 5.0f);
++	CHECK(NearlyEqual(fresh.confidence, beforeSquadReport));
++}
++
+ static void TestScoreFunctions()
+ {
+ 	AIProfile profile;
+@@ -177,7 +212,8 @@ static void TestDecideActionBasicSelection()
+ 	ctx.enemyVisible = true;
+ 	ctx.canRangeAttack = true;
+ 	ctx.healthRatio = 1.0f;
+-	AIDecision decision = DecideAction(state, ctx, profile, caps, /*now=*/0.0f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
++	AIDecision decision = DecideAction(state, ctx, profile, caps, AI_MEMORY_SOURCE_DIRECT_SIGHT,
++		/*now=*/0.0f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
+ 	CHECK(decision.action == AI_ACTION_ATTACK);
+ 	CHECK(state.currentAction == AI_ACTION_ATTACK);
+ 	CHECK(state.previousAction == AI_ACTION_NONE);
+@@ -185,7 +221,8 @@ static void TestDecideActionBasicSelection()
+ 	// Enemy no longer visible, but recently seen -> SEARCH should win (confidence still high).
+ 	AIUtilityContext lostCtx;
+ 	lostCtx.enemyVisible = false;
+-	decision = DecideAction(state, lostCtx, profile, caps, /*now=*/0.5f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
++	decision = DecideAction(state, lostCtx, profile, caps, AI_MEMORY_SOURCE_NONE,
++		/*now=*/0.5f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
+ 	CHECK(decision.action == AI_ACTION_SEARCH);
+ 
+ 	// Capability gate: without AI_CAP_SEARCH/AI_CAP_COVER, losing sight can only
+@@ -194,9 +231,9 @@ static void TestDecideActionBasicSelection()
+ 	AIUtilityContext gatedCtx;
+ 	gatedCtx.enemyVisible = true;
+ 	gatedCtx.canRangeAttack = true;
+-	DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, 0.0f, 5.0f, 5.0f);
++	DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, AI_MEMORY_SOURCE_DIRECT_SIGHT, 0.0f, 5.0f, 5.0f);
+ 	gatedCtx.enemyVisible = false;
+-	decision = DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, 1.0f, 5.0f, 5.0f);
++	decision = DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, AI_MEMORY_SOURCE_NONE, 1.0f, 5.0f, 5.0f);
+ 	CHECK(decision.action == AI_ACTION_NONE);
+ }
+ 
+@@ -217,10 +254,34 @@ static void TestDecideActionHysteresis()
+ 	ctx.enemyVisible = true;
+ 	ctx.canRangeAttack = true;
+ 	ctx.healthRatio = 1.0f;
+-	AIDecision decision = DecideAction(state, ctx, profile, caps, 0.0f, 5.0f, /*switchThreshold=*/1000.0f);
++	AIDecision decision = DecideAction(state, ctx, profile, caps, AI_MEMORY_SOURCE_DIRECT_SIGHT,
++		0.0f, 5.0f, /*switchThreshold=*/1000.0f);
+ 	CHECK(decision.action == AI_ACTION_COVER); // huge threshold: nothing can dislodge it
+ }
+ 
++static void TestDecideActionSquadSharedNeverAttacks()
++{
++	// Phase C acceptance: squad-informed knowledge must never be enough to
++	// ATTACK on its own - only genuine direct sight (context.enemyVisible)
++	// does, regardless of how high squad-shared confidence climbs.
++	AIProfile profile;
++	const uint32_t caps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
++
++	AIHybridState state;
++	AIUtilityContext ctx;
++	ctx.enemyVisible = false; // this NPC does not personally see the enemy
++	ctx.canRangeAttack = true;
++	ctx.healthRatio = 1.0f;
++	AIDecision decision = DecideAction(state, ctx, profile, caps, AI_MEMORY_SOURCE_SQUAD_SHARED,
++		0.0f, 5.0f, 5.0f);
++	CHECK(decision.action != AI_ACTION_ATTACK);
++	CHECK(state.enemyMemory.enemyKnown);
++	CHECK(NearlyEqual(state.enemyMemory.confidence, AI_CONFIDENCE_SQUAD_REPORT_FLOOR));
++	// With no direct sight, SEARCH is the expected outcome (COVER's inputs
++	// are all neutral/zero here, so SEARCH's confidence-driven score wins).
++	CHECK(decision.action == AI_ACTION_SEARCH);
++}
++
+ int main()
+ {
+ 	TestActionName();
+@@ -229,9 +290,11 @@ int main()
+ 	TestDecayConfidence();
+ 	TestClassifyConfidence();
+ 	TestUpdateEnemyMemory();
++	TestUpdateEnemyMemorySquadShared();
+ 	TestScoreFunctions();
+ 	TestDecideActionBasicSelection();
+ 	TestDecideActionHysteresis();
++	TestDecideActionSquadSharedNeverAttacks();
+ 
+ 	if (g_failures == 0)
+ 	{
+-- 
+2.34.1
+
