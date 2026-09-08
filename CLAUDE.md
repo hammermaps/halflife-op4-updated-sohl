@@ -21,11 +21,15 @@ This fork carries one additional, deliberate exception to the "no gameplay chang
 
 #### Current status (check this first on a new session)
 
-- **Approved plan for the next chunk of work:** [`docs/designs/hybrid-ai-core-phase-a.md`](docs/designs/hybrid-ai-core-phase-a.md) — Phase A only (framework scaffolding, zero behavior change). Produced via `/office-hours`, passed 2 rounds of adversarial review (final score 8/10). Read this before writing any `ai_hybrid*` code — it has the concrete file plan, a research-spike step to do first, and 7 ordered Next Steps.
-- **Nothing from Phase A has been implemented yet** as of 2026-09-08 — the design doc is approved but `dlls/ai_hybrid_core.*` / `dlls/ai_hybrid.*` don't exist yet. If they already exist when you read this, the doc is stale — trust the code and update this note.
-- **Standing decisions from that session** (durable, don't re-litigate without a reason):
+- **Implemented and playtest-verified (2026-09-08):**
+  - [`docs/designs/hybrid-ai-core-phase-a.md`](docs/designs/hybrid-ai-core-phase-a.md) — framework scaffolding (`dlls/ai_hybrid_core.h/.cpp`, `dlls/ai_hybrid.h/.cpp`, `ai_hybrid`/`ai_hybrid_debug` CVars). Zero behavior change while `ai_hybrid` is 0.
+  - [`docs/designs/hybrid-ai-core-phase-b.md`](docs/designs/hybrid-ai-core-phase-b.md) — first real tactical logic for `CHGrunt`: enemy-memory confidence decay, utility scoring for ATTACK/COVER/SEARCH, hysteresis, and a narrow `GetSchedule()` integration that only takes over "plain ongoing combat" (never repel/grenade-danger/first-contact/no-ammo/flinch states). Confirmed working in-game on `c2a5f` (19 hostile grunts) with `ai_hybrid 1`.
+  - [`docs/designs/hybrid-ai-core-activity-logger.md`](docs/designs/hybrid-ai-core-activity-logger.md) — JSON-Lines decision log (`ai_hybrid_log` CVar), independent of the console debug output. Confirmed working alongside the Phase B playtest.
+- **Not started:** Phase C (squad-shared enemy memory + squad blackboard/roles, `AGENTS_HYBRID_AI.md` §19-20) — the next planned chunk of work. Read the Phase B design doc's Open Questions before starting it (score-tuning is still first-pass, not yet revisited against real playtest data).
+- **Standing decisions** (durable, don't re-litigate without a reason):
   - `ext-ki` stays fully independent from `master` — no rebase/merge planned, even though `master` is actively diverging (Spirit of Half-Life backport work) in overlapping monster files. This was an explicit user override of a rebase recommendation.
-  - The new AI logic must be split into an engine-free POD core (no HLSDK includes) plus a thin engine-aware adapter, specifically so it can have standalone unit tests — see "Working conventions" below for why this is new territory for this repo.
+  - The AI logic is split into an engine-free POD core (`ai_hybrid_core.*`, no HLSDK includes, unit-tested standalone via `scripts/run-ai-hybrid-core-tests.sh` / `make check`) plus a thin engine-aware adapter (`ai_hybrid.*`) — keep new tactical logic in the core, not the adapter, unless it genuinely needs engine state.
+  - `GetSchedule()` integrations must stay narrow (see the Phase B doc's decision #2) — never wrap a whole monster's `GetSchedule()` in a top-level hybrid check; gate out every safety-critical/scripted state explicitly instead.
 
 ## Build commands
 
