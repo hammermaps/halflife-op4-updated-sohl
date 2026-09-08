@@ -184,12 +184,19 @@ static void TestScoreFunctions()
 	hurtCtx.healthRatio = 0.1f;
 	CHECK(ScoreAttack(hurtCtx, noMemory, profile) < ScoreAttack(ctx, noMemory, profile));
 
-	// ScoreCover rises with damage taken (lower healthRatio).
+	// ScoreCover requires a known enemy - "cover FROM an enemy" makes no
+	// sense otherwise, and this maps to a schedule that needs m_hEnemy set.
+	// Zero regardless of health/profile when nothing is known yet.
 	AIUtilityContext coverCtx;
-	coverCtx.healthRatio = 1.0f;
+	coverCtx.healthRatio = 0.2f; // even badly hurt
+	CHECK(NearlyEqual(ScoreCover(coverCtx, noMemory, profile), 0.0f));
+
+	// ScoreCover rises with damage taken (lower healthRatio), once an enemy is known.
+	AIUtilityContext fullHealthCtx;
+	fullHealthCtx.healthRatio = 1.0f;
 	AIUtilityContext hurtCoverCtx;
 	hurtCoverCtx.healthRatio = 0.2f;
-	CHECK(ScoreCover(hurtCoverCtx, noMemory, profile) > ScoreCover(coverCtx, noMemory, profile));
+	CHECK(ScoreCover(hurtCoverCtx, knownMemory, profile) > ScoreCover(fullHealthCtx, knownMemory, profile));
 
 	// ScoreSearch: 0 while visible or never seen; positive once known and hidden.
 	AIUtilityContext visibleCtx;

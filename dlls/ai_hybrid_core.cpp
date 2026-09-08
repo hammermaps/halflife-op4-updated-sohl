@@ -179,6 +179,17 @@ float ScoreAttack(const AIUtilityContext& context, const AIEnemyMemory& memory, 
 
 float ScoreCover(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile)
 {
+	// Taking cover FROM AN ENEMY makes no sense if no enemy is known yet -
+	// this maps to SCHED_TAKE_COVER_FROM_ENEMY, which requires m_hEnemy
+	// anyway (see ResolveHybridSchedule()). Without this guard, a cautious
+	// profile alone (caution*30 - aggression*15 > 0) scored above 0 even
+	// with a completely unknown enemy, which showed up as a misleading
+	// baseline "COVER" in ai_hybrid_debug/the activity log before any
+	// contact - harmless in-game (blocked downstream by the m_hEnemy check)
+	// but confusing to read. Same guard ScoreSearch already has.
+	if (!memory.enemyKnown)
+		return 0.0f;
+
 	const float danger = 1.0f - context.healthRatio;
 	float score = danger * 50.0f;
 	score += profile.caution * 30.0f;

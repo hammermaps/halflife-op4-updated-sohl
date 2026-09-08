@@ -39,9 +39,13 @@ Per `AGENTS_HYBRID_AI.md` §19 ("check how `CSquadMonster` currently manages lea
 
 - `scripts/run-ai-hybrid-core-tests.sh` — updated + new cases (direct sight still forces 1.0 regardless of squad state; squad-shared floors at 0.7 without lowering an already-higher confidence; `AI_MEMORY_SOURCE_NONE` decays as before **and composes correctly across repeated calls, per the bug fix above**; a squad-shared-only context never scores `ATTACK` above 0).
 - `scripts/build.sh` + `scripts/diff-baseline.sh reference-builds/6a789e7f-release` — `client.so`/`vgui.so` byte-identical; `hl.so` differs, as expected.
-- Manual in-game playtest: **not yet done** — see Open Questions.
+- Manual in-game playtest, via the new `ai_hybrid_log` activity log (see `docs/designs/hybrid-ai-core-activity-logger.md`) on `c2a5f` with `spserver.cfg` auto-enabling `ai_hybrid`/`ai_hybrid_debug`/`ai_hybrid_log`: **confirmed working, 2026-09-08.** Analyzed 16,301 log lines across 41 grunts over ~230s: zero `ATTACK` entries without `enemy_visible: true` (the safety invariant holds); 379 entries with confidence ≈ 0.70 while not directly visible (the squad-shared floor firing as designed); score ranges and action dwell times (ATTACK ~2.6s avg, SEARCH ~6.9s avg, COVER ~23.7s avg) look sane, no thrashing.
+
+### Bug found via log analysis and fixed
+
+`ScoreCover()` didn't require `memory.enemyKnown`, unlike `ScoreSearch()`. Since a cautious profile alone (`caution*30 - aggression*15 > 0`) scores above zero, every grunt showed a baseline `COVER` action in the log **before ever encountering an enemy** (9,395 of 10,227 `COVER` log lines were this false-positive baseline, confidence exactly 0). Harmless in-game — `ResolveHybridSchedule()`'s `m_hEnemy == NULL` check already blocked it from ever producing a real schedule — but misleading to read, and a genuine utility-AI modeling gap ("cover from an enemy" with no enemy known makes no sense). Fixed by adding the same `!memory.enemyKnown → return 0` guard `ScoreSearch()` already had; added a regression test and re-verified `client.so`/`vgui.so` stay byte-identical to baseline.
 
 ## Open Questions
 
-- Manual playtest of the actual squad-sharing behavior (one grunt in a squad spots the player while others are out of sight, confirm the others path toward the LKP via `ai_hybrid_debug`/the activity log showing `SEARCH` with `confidence` around 0.7 instead of decaying toward 0) hasn't happened yet. `c2a5f` (already the recommended multi-grunt map) should already contain squadded grunts, but this needs confirming — the existing squad-forming logic (`SquadJoin`/`SquadRecruit`, called from `StartMonster()`) runs automatically at map load regardless of `ai_hybrid`, so no map changes should be needed.
+None outstanding for this phase.
 - Squad roles (PRIMARY/FLANK/SUPPRESS/RESERVE, spec §20) remain deferred until FLANK/SUPPRESS actions exist to assign them to.
