@@ -1,0 +1,110 @@
+From 5930b700f109610772ddfe4b4a2fae5b14ebc302 Mon Sep 17 00:00:00 2001
+From: Your Name <godkiller_nt@hammermaps.de>
+Date: Tue, 8 Sep 2026 09:36:53 +0200
+Subject: [PATCH] Fix ScoreCover scoring an unknown enemy, found via activity
+ log analysis
+
+Analyzed the ai_hybrid_log.jsonl activity log from a c2a5f playtest
+(16,301 entries, 41 grunts, ~230s): confirmed the Phase C squad-shared
+confidence floor fires correctly (379 entries at confidence ~0.70
+while not directly visible) and ATTACK never fires without visibility
+(0 violations across the whole log) - but 9,395 of 10,227 COVER log
+entries turned out to be a false-positive baseline with confidence
+exactly 0, before any enemy was ever encountered.
+
+Root cause: ScoreCover() lacked the `!memory.enemyKnown -> 0` guard
+ScoreSearch() already had, so a cautious-leaning default AIProfile
+(caution*30 - aggression*15 > 0) always scored COVER above zero even
+with no enemy known. Harmless in-game (ResolveHybridSchedule()'s
+m_hEnemy == NULL check already blocked a real schedule from ever
+resulting), but a genuine utility-AI modeling gap and misleading in
+the debug/activity log. Fixed with the same guard, updated tests.
+
+Also deleted a 204MB stray ai_hybrid_log.jsonl that had accumulated
+at the Half-Life root before spserver.cfg fixed the log path.
+
+Verified: all core tests pass, client.so/vgui.so byte-identical to
+the pre-Phase-A baseline (only hl.so differs). Phase C's manual
+playtest (this log analysis) is now confirmed and closed out in
+docs/designs/hybrid-ai-core-phase-c.md.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016dnTNhips7ADmrfkhV6MGx
+---
+ dlls/ai_hybrid_core.cpp                | 11 +++++++++++
+ docs/designs/hybrid-ai-core-phase-c.md |  8 ++++++--
+ tests/ai_hybrid_core_tests.cpp         | 13 ++++++++++---
+ 3 files changed, 27 insertions(+), 5 deletions(-)
+
+diff --git a/dlls/ai_hybrid_core.cpp b/dlls/ai_hybrid_core.cpp
+index bc075a61..b8509e37 100644
+--- a/dlls/ai_hybrid_core.cpp
++++ b/dlls/ai_hybrid_core.cpp
+@@ -179,6 +179,17 @@ float ScoreAttack(const AIUtilityContext& context, const AIEnemyMemory& memory,
+ 
+ float ScoreCover(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile)
+ {
++	// Taking cover FROM AN ENEMY makes no sense if no enemy is known yet -
++	// this maps to SCHED_TAKE_COVER_FROM_ENEMY, which requires m_hEnemy
++	// anyway (see ResolveHybridSchedule()). Without this guard, a cautious
++	// profile alone (caution*30 - aggression*15 > 0) scored above 0 even
++	// with a completely unknown enemy, which showed up as a misleading
++	// baseline "COVER" in ai_hybrid_debug/the activity log before any
++	// contact - harmless in-game (blocked downstream by the m_hEnemy check)
++	// but confusing to read. Same guard ScoreSearch already has.
++	if (!memory.enemyKnown)
++		return 0.0f;
++
+ 	const float danger = 1.0f - context.healthRatio;
+ 	float score = danger * 50.0f;
+ 	score += profile.caution * 30.0f;
+diff --git a/docs/designs/hybrid-ai-core-phase-c.md b/docs/designs/hybrid-ai-core-phase-c.md
+index bfce5de5..86e09293 100644
+--- a/docs/designs/hybrid-ai-core-phase-c.md
++++ b/docs/designs/hybrid-ai-core-phase-c.md
+@@ -39,9 +39,13 @@ Per `AGENTS_HYBRID_AI.md` §19 ("check how `CSquadMonster` currently manages lea
+ 
+ - `scripts/run-ai-hybrid-core-tests.sh` — updated + new cases (direct sight still forces 1.0 regardless of squad state; squad-shared floors at 0.7 without lowering an already-higher confidence; `AI_MEMORY_SOURCE_NONE` decays as before **and composes correctly across repeated calls, per the bug fix above**; a squad-shared-only context never scores `ATTACK` above 0).
+ - `scripts/build.sh` + `scripts/diff-baseline.sh reference-builds/6a789e7f-release` — `client.so`/`vgui.so` byte-identical; `hl.so` differs, as expected.
+-- Manual in-game playtest: **not yet done** — see Open Questions.
++- Manual in-game playtest, via the new `ai_hybrid_log` activity log (see `docs/designs/hybrid-ai-core-activity-logger.md`) on `c2a5f` with `spserver.cfg` auto-enabling `ai_hybrid`/`ai_hybrid_debug`/`ai_hybrid_log`: **confirmed working, 2026-09-08.** Analyzed 16,301 log lines across 41 grunts over ~230s: zero `ATTACK` entries without `enemy_visible: true` (the safety invariant holds); 379 entries with confidence ≈ 0.70 while not directly visible (the squad-shared floor firing as designed); score ranges and action dwell times (ATTACK ~2.6s avg, SEARCH ~6.9s avg, COVER ~23.7s avg) look sane, no thrashing.
++
++### Bug found via log analysis and fixed
++
++`ScoreCover()` didn't require `memory.enemyKnown`, unlike `ScoreSearch()`. Since a cautious profile alone (`caution*30 - aggression*15 > 0`) scores above zero, every grunt showed a baseline `COVER` action in the log **before ever encountering an enemy** (9,395 of 10,227 `COVER` log lines were this false-positive baseline, confidence exactly 0). Harmless in-game — `ResolveHybridSchedule()`'s `m_hEnemy == NULL` check already blocked it from ever producing a real schedule — but misleading to read, and a genuine utility-AI modeling gap ("cover from an enemy" with no enemy known makes no sense). Fixed by adding the same `!memory.enemyKnown → return 0` guard `ScoreSearch()` already had; added a regression test and re-verified `client.so`/`vgui.so` stay byte-identical to baseline.
+ 
+ ## Open Questions
+ 
+-- Manual playtest of the actual squad-sharing behavior (one grunt in a squad spots the player while others are out of sight, confirm the others path toward the LKP via `ai_hybrid_debug`/the activity log showing `SEARCH` with `confidence` around 0.7 instead of decaying toward 0) hasn't happened yet. `c2a5f` (already the recommended multi-grunt map) should already contain squadded grunts, but this needs confirming — the existing squad-forming logic (`SquadJoin`/`SquadRecruit`, called from `StartMonster()`) runs automatically at map load regardless of `ai_hybrid`, so no map changes should be needed.
++None outstanding for this phase.
+ - Squad roles (PRIMARY/FLANK/SUPPRESS/RESERVE, spec §20) remain deferred until FLANK/SUPPRESS actions exist to assign them to.
+diff --git a/tests/ai_hybrid_core_tests.cpp b/tests/ai_hybrid_core_tests.cpp
+index e44c6e1f..a8734543 100644
+--- a/tests/ai_hybrid_core_tests.cpp
++++ b/tests/ai_hybrid_core_tests.cpp
+@@ -184,12 +184,19 @@ static void TestScoreFunctions()
+ 	hurtCtx.healthRatio = 0.1f;
+ 	CHECK(ScoreAttack(hurtCtx, noMemory, profile) < ScoreAttack(ctx, noMemory, profile));
+ 
+-	// ScoreCover rises with damage taken (lower healthRatio).
++	// ScoreCover requires a known enemy - "cover FROM an enemy" makes no
++	// sense otherwise, and this maps to a schedule that needs m_hEnemy set.
++	// Zero regardless of health/profile when nothing is known yet.
+ 	AIUtilityContext coverCtx;
+-	coverCtx.healthRatio = 1.0f;
++	coverCtx.healthRatio = 0.2f; // even badly hurt
++	CHECK(NearlyEqual(ScoreCover(coverCtx, noMemory, profile), 0.0f));
++
++	// ScoreCover rises with damage taken (lower healthRatio), once an enemy is known.
++	AIUtilityContext fullHealthCtx;
++	fullHealthCtx.healthRatio = 1.0f;
+ 	AIUtilityContext hurtCoverCtx;
+ 	hurtCoverCtx.healthRatio = 0.2f;
+-	CHECK(ScoreCover(hurtCoverCtx, noMemory, profile) > ScoreCover(coverCtx, noMemory, profile));
++	CHECK(ScoreCover(hurtCoverCtx, knownMemory, profile) > ScoreCover(fullHealthCtx, knownMemory, profile));
+ 
+ 	// ScoreSearch: 0 while visible or never seen; positive once known and hidden.
+ 	AIUtilityContext visibleCtx;
+-- 
+2.34.1
+
