@@ -31,18 +31,12 @@ Per `AGENTS_HYBRID_AI.md` §48 (Phase B acceptance) and §32 (CHGrunt reference 
 - `scripts/run-ai-hybrid-core-tests.sh` — all checks pass (enemy memory, confidence classification, all three score functions, `DecideAction` basic selection + hysteresis).
 - `scripts/build.sh` — builds clean.
 - `scripts/diff-baseline.sh reference-builds/6a789e7f-release` — `client.so` and `vgui.so` byte-identical to the pre-Phase-A baseline; only `hl.so` differs, as expected (no client-side changes in either phase).
-- Manual in-game (`ai_hybrid_debug 1`, `map ai_test_grunt`): confirmed working by the user for Phase A's dormant output; Phase B's live attack/cover/search behavior needs a manual playtest against a grunt with `ai_hybrid 1` — **not yet done**, see Open Questions.
+- Manual in-game (`ai_hybrid_debug 1`, `map ai_test_grunt`): confirmed working by the user for Phase A's dormant output.
+- Manual in-game playtest of live behavior (`ai_hybrid 1`, `ai_hybrid_debug 1`, `map c2a5f` — 19 hostile grunts, real cover/sightlines): **confirmed working as expected by the user on 2026-09-08.** Attack/cover/search selection, the narrow `GetSchedule()` gate, and the JSON-Lines activity logger (`docs/designs/hybrid-ai-core-activity-logger.md`) all behaved as designed, no crashes or regressions reported.
 
 ## Open Questions
 
-- Manual playtest of actual behavior (`ai_hybrid 1`) hasn't happened yet — `ai_test_grunt.map`'s single stationary grunt has no real combat scenario (no cover geometry, no way to lose line of sight) to meaningfully exercise COVER/SEARCH. **Resolved which map to use for this:** searched every `.bsp` already present in the test mod's `maps/` folder for the exact classname `monster_human_grunt` (the hostile HECU grunt `CHGrunt` handles — distinct from `monster_human_grunt_ally`, which barely appears with that exact name in Opposing Force's own `of*.bsp` maps since OpFor's grunts are mostly allies). The retail Half-Life 1 campaign maps bundled alongside OpFor's own maps have plenty: `c2a5f` ("Surface Tension") has 19, `c2a2b1` has 14, `c2a4e`/`c2a2e`/`c1a3a` have 10 each. Recommended: `c2a5f` — large-scale multi-grunt firefight with real cover geometry and sightline breaks, ideal for exercising ATTACK/COVER/SEARCH transitions. Test with:
-  ```
-  ai_hybrid 1
-  ai_hybrid_debug 1
-  map c2a5f
-  ```
-  Still not actually run as of this writing — the playtest itself remains open.
-- `ScoreAttack`/`ScoreCover`/`ScoreSearch` weights are first-pass estimates (not derived from the spec's illustrative formulas 1:1, since those reference fields — danger, weaponSuitability, morale — that don't exist yet). Expect to retune after the playtest above.
+- `ScoreAttack`/`ScoreCover`/`ScoreSearch` weights are first-pass estimates (not derived from the spec's illustrative formulas 1:1, since those reference fields — danger, weaponSuitability, morale — that don't exist yet). The `c2a5f` playtest didn't surface a need to retune them, but they haven't been tuned against a large sample of decisions (e.g. via the activity log) either — revisit if a specific behavior complaint comes up.
 - No squad-role awareness yet: a squad of hybrid-enabled grunts will each decide independently (no coordination), which is correct for Phase B but means "one grunt attacks while its squadmate also tries to attack the same angle" is possible — Phase C's squad blackboard addresses this.
 
 ## Next Steps (Phase C, not started)

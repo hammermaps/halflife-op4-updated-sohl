@@ -58,4 +58,4 @@ AIHybrid_MaybeLogActivity(entindex(), "CHGrunt", m_AIHybridState, decision, hybr
 - `scripts/run-ai-hybrid-core-tests.sh` — all pass, unaffected (no core changes; `ai_hybrid_core.h/.cpp` untouched).
 - Build + `scripts/diff-baseline.sh reference-builds/6a789e7f-release` — `client.so`/`vgui.so` byte-identical; only `hl.so` differs, as expected.
 - JSON-Lines format verified standalone (a plain C program using the exact same `printf` format string, output round-tripped through `json.loads`) — confirmed each line is valid JSON.
-- **Still open:** actual manual in-game verification (`ai_hybrid_log 1; ai_hybrid 1; map c2a5f`, then inspecting the generated `.jsonl` for one line per decision tick per grunt) hasn't happened yet — bundled with Phase B's own still-open manual playtest (see `docs/designs/hybrid-ai-core-phase-b.md` Open Questions).
+- Manual in-game verification (`ai_hybrid_log 1; ai_hybrid 1; map c2a5f`): **confirmed working as expected by the user on 2026-09-08**, alongside Phase B's own playtest (see `docs/designs/hybrid-ai-core-phase-b.md`).
