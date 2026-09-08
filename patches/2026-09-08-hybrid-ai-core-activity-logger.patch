@@ -1,0 +1,290 @@
+From efcd4730288e7a12a4d0c91cd127f5f58400dc5f Mon Sep 17 00:00:00 2001
+From: Your Name <godkiller_nt@hammermaps.de>
+Date: Tue, 8 Sep 2026 02:26:45 +0200
+Subject: [PATCH] Add JSON-Lines activity logger for Hybrid AI Core decisions
+
+Per docs/designs/hybrid-ai-core-activity-logger.md:
+
+- dlls/game.h/.cpp: two new CVars, ai_hybrid_log (master switch,
+  default 0) and ai_hybrid_log_file (output path, default
+  ai_hybrid_log.jsonl), independent of ai_hybrid/ai_hybrid_debug.
+- dlls/ai_hybrid.h/.cpp: AIHybrid_MaybeLogActivity() appends one
+  JSON-Lines record per DecideAction() call (time, entity, action,
+  previous action, score, confidence, context, whether hybrid AI is
+  enabled). Keeps a lazily-opened FILE* alive for the process
+  lifetime (unlike stats.cpp's open/write/close-per-call pattern,
+  since decisions happen far more often) and fflushes after every
+  write so a crash doesn't lose the tail. Hand-rolled JSON is safe
+  here since every field is a number/bool/controlled enum-name
+  string, never arbitrary text. ai_hybrid_core.h/.cpp untouched -
+  logging is engine-adapter-only, same layering as every other phase.
+- dlls/hgrunt.cpp: captures DecideAction()'s previously-discarded
+  return value and passes it to the new logger, from the same
+  throttled block that already calls AIHybrid_MaybeLogDebug().
+
+Verified: core tests unaffected (still pass), client.so/vgui.so
+byte-identical to the pre-Phase-A baseline (only hl.so differs), and
+the exact printf format round-trips through a JSON parser. Manual
+in-game verification of the generated log file is still open.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016dnTNhips7ADmrfkhV6MGx
+---
+ dlls/ai_hybrid.cpp                            | 67 +++++++++++++++++++
+ dlls/ai_hybrid.h                              |  8 +++
+ dlls/game.cpp                                 |  4 ++
+ dlls/game.h                                   |  2 +
+ dlls/hgrunt.cpp                               |  3 +-
+ .../designs/hybrid-ai-core-activity-logger.md | 61 +++++++++++++++++
+ scripts/README.md                             | 18 +++++
+ 7 files changed, 162 insertions(+), 1 deletion(-)
+ create mode 100644 docs/designs/hybrid-ai-core-activity-logger.md
+
+diff --git a/dlls/ai_hybrid.cpp b/dlls/ai_hybrid.cpp
+index 5ba75aed..d43f7cd7 100644
+--- a/dlls/ai_hybrid.cpp
++++ b/dlls/ai_hybrid.cpp
+@@ -3,10 +3,46 @@
+ 
+ #include "ai_hybrid.h"
+ 
++#include <cstdio>
++#include <cstring>
++
+ namespace
+ {
+ // Not a CVar in Phase B - see AIHybrid_SwitchThreshold()'s header comment.
+ constexpr float kSwitchThreshold = 5.0f;
++
++// Lazily-opened, kept alive for the process lifetime (unlike dlls/stats.cpp's
++// open/write/close-per-call pattern - Hybrid AI decisions happen far more
++// often than stat snapshots, so reopening every call would be wasteful).
++// Tracks the path it was opened with so a mid-session ai_hybrid_log_file
++// change reopens the right file instead of silently keeping the old one.
++FILE* g_activityLogFile = nullptr;
++char g_activityLogPath[260] = "";
++
++FILE* GetActivityLogFile()
++{
++	const char* path = CVAR_GET_STRING("ai_hybrid_log_file");
++	if (!path || !path[0])
++		path = "ai_hybrid_log.jsonl";
++
++	if (g_activityLogFile && std::strncmp(path, g_activityLogPath, sizeof(g_activityLogPath)) != 0)
++	{
++		std::fclose(g_activityLogFile);
++		g_activityLogFile = nullptr;
++	}
++
++	if (!g_activityLogFile)
++	{
++		g_activityLogFile = std::fopen(path, "a");
++		if (g_activityLogFile)
++		{
++			std::strncpy(g_activityLogPath, path, sizeof(g_activityLogPath) - 1);
++			g_activityLogPath[sizeof(g_activityLogPath) - 1] = '\0';
++		}
++	}
++
++	return g_activityLogFile;
++}
+ } // namespace
+ 
+ bool AIHybrid_Enabled()
+@@ -43,3 +79,34 @@ void AIHybrid_MaybeLogDebug(const AIHybridState& state, const char* monsterLabel
+ 		state.enemyMemory.confidence,
+ 		AIHybrid_Enabled() ? 1 : 0);
+ }
++
++void AIHybrid_MaybeLogActivity(int entityIndex, const char* monsterLabel,
++	const AIHybridState& state, const AIDecision& decision, const AIUtilityContext& context)
++{
++	if (CVAR_GET_FLOAT("ai_hybrid_log") < 1.0f)
++		return;
++
++	FILE* file = GetActivityLogFile();
++	if (!file)
++		return;
++
++	// Hand-rolled JSON: every field is a number, bool, or a controlled
++	// enum-name/classname string (never arbitrary/user-supplied text), so
++	// there is nothing that needs escaping.
++	std::fprintf(file,
++		"{\"time\":%.3f,\"entity\":\"%s#%d\",\"action\":\"%s\",\"previous_action\":\"%s\","
++		"\"score\":%.2f,\"confidence\":%.3f,\"enemy_visible\":%s,\"can_range_attack\":%s,"
++		"\"health_ratio\":%.3f,\"ai_hybrid_enabled\":%s}\n",
++		gpGlobals->time,
++		monsterLabel, entityIndex,
++		ActionName(decision.action),
++		ActionName(state.previousAction),
++		decision.score,
++		state.enemyMemory.confidence,
++		context.enemyVisible ? "true" : "false",
++		context.canRangeAttack ? "true" : "false",
++		context.healthRatio,
++		AIHybrid_Enabled() ? "true" : "false");
++
++	std::fflush(file); // survive a mid-session crash with the tail intact
++}
+diff --git a/dlls/ai_hybrid.h b/dlls/ai_hybrid.h
+index fc8593c6..9f699bff 100644
+--- a/dlls/ai_hybrid.h
++++ b/dlls/ai_hybrid.h
+@@ -34,3 +34,11 @@ float AIHybrid_SwitchThreshold();
+ // otherwise (including when AIHybrid_Enabled() is false, so the debug output
+ // can be checked even while the master switch stays off).
+ void AIHybrid_MaybeLogDebug(const AIHybridState& state, const char* monsterLabel);
++
++// Appends one JSON-Lines record of this decision to the `ai_hybrid_log_file`
++// CVar's path, gated on `ai_hybrid_log >= 1` (independent of `ai_hybrid` and
++// `ai_hybrid_debug` - see docs/designs/hybrid-ai-core-activity-logger.md).
++// No-op otherwise. Call once per DecideAction() call, not every server
++// frame - see the throttled call site in CHGrunt::PrescheduleThink().
++void AIHybrid_MaybeLogActivity(int entityIndex, const char* monsterLabel,
++	const AIHybridState& state, const AIDecision& decision, const AIUtilityContext& context);
+diff --git a/dlls/game.cpp b/dlls/game.cpp
+index d9cb4fb9..413834b8 100644
+--- a/dlls/game.cpp
++++ b/dlls/game.cpp
+@@ -600,6 +600,8 @@ cvar_t ai_hybrid = {"ai_hybrid", "0", FCVAR_SERVER};
+ cvar_t ai_hybrid_debug = {"ai_hybrid_debug", "0", FCVAR_SERVER};
+ cvar_t ai_hybrid_decision_interval = {"ai_hybrid_decision_interval", "0.25", FCVAR_SERVER};
+ cvar_t ai_hybrid_confidence_halflife = {"ai_hybrid_confidence_halflife", "8", FCVAR_SERVER};
++cvar_t ai_hybrid_log = {"ai_hybrid_log", "0", FCVAR_SERVER};
++cvar_t ai_hybrid_log_file = {"ai_hybrid_log_file", "ai_hybrid_log.jsonl", FCVAR_SERVER};
+ 
+ static bool SV_InitServer()
+ {
+@@ -668,6 +670,8 @@ void GameDLLInit()
+ 	CVAR_REGISTER(&ai_hybrid_debug);
+ 	CVAR_REGISTER(&ai_hybrid_decision_interval);
+ 	CVAR_REGISTER(&ai_hybrid_confidence_halflife);
++	CVAR_REGISTER(&ai_hybrid_log);
++	CVAR_REGISTER(&ai_hybrid_log_file);
+ 
+ 	// REGISTER CVARS FOR SKILL LEVEL STUFF
+ 	// Agrunt
+diff --git a/dlls/game.h b/dlls/game.h
+index 6ef34ea6..de07167a 100644
+--- a/dlls/game.h
++++ b/dlls/game.h
+@@ -56,6 +56,8 @@ extern cvar_t ai_hybrid;
+ extern cvar_t ai_hybrid_debug;
+ extern cvar_t ai_hybrid_decision_interval;
+ extern cvar_t ai_hybrid_confidence_halflife;
++extern cvar_t ai_hybrid_log;
++extern cvar_t ai_hybrid_log_file;
+ 
+ // Engine Cvars
+ inline cvar_t* g_psv_gravity;
+diff --git a/dlls/hgrunt.cpp b/dlls/hgrunt.cpp
+index 13763f1d..569ce0c7 100644
+--- a/dlls/hgrunt.cpp
++++ b/dlls/hgrunt.cpp
+@@ -391,8 +391,9 @@ void CHGrunt::PrescheduleThink()
+ 		hybridContext.healthRatio = (pev->max_health > 0) ? Clamp01(pev->health / pev->max_health) : 1.0f;
+ 
+ 		const uint32_t hybridCaps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
+-		DecideAction(m_AIHybridState, hybridContext, AIProfile(), hybridCaps,
++		const AIDecision hybridDecision = DecideAction(m_AIHybridState, hybridContext, AIProfile(), hybridCaps,
+ 			gpGlobals->time, AIHybrid_ConfidenceHalfLife(), AIHybrid_SwitchThreshold());
++		AIHybrid_MaybeLogActivity(entindex(), "CHGrunt", m_AIHybridState, hybridDecision, hybridContext);
+ 
+ 		m_flNextAIDecision = gpGlobals->time + AIHybrid_DecisionInterval();
+ 	}
+diff --git a/docs/designs/hybrid-ai-core-activity-logger.md b/docs/designs/hybrid-ai-core-activity-logger.md
+new file mode 100644
+index 00000000..8c907130
+--- /dev/null
++++ b/docs/designs/hybrid-ai-core-activity-logger.md
+@@ -0,0 +1,61 @@
++# Design: Hybrid AI Core — Activity Logger
++
++Generated on 2026-09-08 (direct planning, user asked to "plan a logger" before implementing)
++Branch: ext-ki
++Repo: hammermaps/halflife-op4-updated-sohl
++Status: APPROVED — implemented 2026-09-08
++
++## Problem Statement
++
++Right now the only visibility into Hybrid AI Core decisions is `ai_hybrid_debug 1`'s console output (`dlls/ai_hybrid.cpp`, `AIHybrid_MaybeLogDebug`) — ephemeral, scrolls away, and only visible while watching the console live during a playtest. There's no durable record to look back at after a session, diff between two runs, or feed into any future automated/replay tooling (the "capture a snapshot, replay it outside the game" idea from the Phase A design doc's Cross-Model Perspective section).
++
++## Scope (confirmed with user)
++
++- **Hybrid AI Core only** — every `DecideAction()` call, not a general game-activity/event log. Damage, spawns, etc. are out of scope; if a broader log is wanted later, it's a separate subsystem.
++- **JSON-Lines** format (one JSON object per line) — machine-parseable for later tooling, at the cost of being less pleasant to eyeball raw than plain text (the console `ai_hybrid_debug` output stays for that).
++
++## Design
++
++### New CVars (`dlls/game.h/.cpp`, alongside the existing `ai_hybrid*` block)
++
++- `ai_hybrid_log` (float, default `"0"`) — master switch for file logging. Independent of `ai_hybrid` (behavior) and `ai_hybrid_debug` (console): you can log to file without enabling hybrid behavior or console spam, and vice versa.
++- `ai_hybrid_log_file` (string, default `"ai_hybrid_log.jsonl"`) — output path, relative to the mod's working directory (same convention `dlls/stats.cpp`'s `UpdateStatsFile()` already uses in this codebase — proven to work, no new path-resolution logic needed).
++
++### New adapter function (`dlls/ai_hybrid.h/.cpp` — engine-aware layer only; `ai_hybrid_core.h/.cpp` stays untouched)
++
++```cpp
++// Appends one JSON-Lines record of this decision to ai_hybrid_log_file,
++// gated on ai_hybrid_log >= 1. No-op otherwise. Call once per DecideAction()
++// call (i.e. from the same throttled block in PrescheduleThink() - not
++// every server frame).
++void AIHybrid_MaybeLogActivity(int entityIndex, const char* monsterLabel,
++	const AIHybridState& state, const AIDecision& decision, const AIUtilityContext& context);
++```
++
++Implementation sketch:
++- Lazily open the file (`fopen(ai_hybrid_log_file, "a")`) on first call and keep a static `FILE*` for the process lifetime (avoids reopen overhead per call, unlike `stats.cpp`'s open/write/close-per-call pattern — Hybrid AI decisions happen far more often than stat snapshots). `fflush()` after every write so a crash mid-session doesn't lose the whole log, only matches the cost already accepted for `ALERT()` console output.
++- One line per call, fields: `time` (`gpGlobals->time`), `entity` (`STRING(pev->classname)` + entindex, e.g. `"CHGrunt#42"`), `action`/`previous_action` (via `ActionName()`), `score`, `confidence`, `enemy_visible`, `can_range_attack`, `health_ratio`, `ai_hybrid_enabled`.
++- Minimal hand-rolled JSON serialization (no library — this codebase has none and pulling one in for a handful of scalar fields would be overkill); escaping isn't a concern since every field is a number, bool, or a controlled enum-name string.
++
++### Call site (`dlls/hgrunt.cpp`)
++
++`PrescheduleThink()`'s existing throttled block already computes everything needed; capture `DecideAction()`'s return value (currently discarded) and pass it straight to the new logger call, right next to the existing `AIHybrid_MaybeLogDebug()` line:
++
++```cpp
++const AIDecision decision = DecideAction(m_AIHybridState, hybridContext, AIProfile(), hybridCaps,
++	gpGlobals->time, AIHybrid_ConfidenceHalfLife(), AIHybrid_SwitchThreshold());
++AIHybrid_MaybeLogActivity(entindex(), "CHGrunt", m_AIHybridState, decision, hybridContext);
++```
++
++### Non-goals / deferred
++
++- **Log rotation/size limits** — not handled in this pass; `ai_hybrid_log_file` append-forever is the same behavior `stats.txt` already has in this codebase. Revisit if file size becomes a real problem in practice.
++- **Per-session unique filenames** (e.g. timestamped) — deferred; `ai_hybrid_log_file` can be set manually per session if needed (e.g. via an autoexec/launch script) until there's a concrete need to automate it.
++- **Actual replay tooling** that reads this log back — out of scope here; this only produces the data.
++
++## Verification
++
++- `scripts/run-ai-hybrid-core-tests.sh` — all pass, unaffected (no core changes; `ai_hybrid_core.h/.cpp` untouched).
++- Build + `scripts/diff-baseline.sh reference-builds/6a789e7f-release` — `client.so`/`vgui.so` byte-identical; only `hl.so` differs, as expected.
++- JSON-Lines format verified standalone (a plain C program using the exact same `printf` format string, output round-tripped through `json.loads`) — confirmed each line is valid JSON.
++- **Still open:** actual manual in-game verification (`ai_hybrid_log 1; ai_hybrid 1; map c2a5f`, then inspecting the generated `.jsonl` for one line per decision tick per grunt) hasn't happened yet — bundled with Phase B's own still-open manual playtest (see `docs/designs/hybrid-ai-core-phase-b.md` Open Questions).
+diff --git a/scripts/README.md b/scripts/README.md
+index 4e3f45f5..391245ba 100644
+--- a/scripts/README.md
++++ b/scripts/README.md
+@@ -122,3 +122,21 @@ ai_hybrid 1
+ ai_hybrid_debug 1
+ map c2a5f
+ ```
++
++### Persistent activity log (`ai_hybrid_log`)
++
++`ai_hybrid_debug` only prints to the console — nothing survives after you
++close it. `ai_hybrid_log 1` additionally appends one JSON-Lines record per
++decision tick per NPC to `ai_hybrid_log_file` (default `ai_hybrid_log.jsonl`,
++written relative to the engine's working directory when it was launched —
++independent of `ai_hybrid` and `ai_hybrid_debug`, so you can log without
++enabling hybrid behavior or console spam). See
++`docs/designs/hybrid-ai-core-activity-logger.md` for the record format.
++
++```
++ai_hybrid_log 1
++ai_hybrid 1
++map c2a5f
++# afterwards, on the host machine:
++tail -f ai_hybrid_log.jsonl   # path is relative to wherever hl_linux was run from
++```
+-- 
+2.34.1
+
