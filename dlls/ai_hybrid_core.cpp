@@ -121,9 +121,9 @@ AIConfidenceLevel ClassifyConfidence(float confidence)
 	return AI_CONFIDENCE_LOST;
 }
 
-void UpdateEnemyMemory(AIEnemyMemory& memory, bool enemyVisible, float now, float confidenceHalfLifeSeconds)
+void UpdateEnemyMemory(AIEnemyMemory& memory, AIMemorySource source, float now, float confidenceHalfLifeSeconds)
 {
-	if (enemyVisible)
+	if (source == AI_MEMORY_SOURCE_DIRECT_SIGHT)
 	{
 		memory.enemyKnown = true;
 		memory.confidence = 1.0f;
@@ -131,11 +131,38 @@ void UpdateEnemyMemory(AIEnemyMemory& memory, bool enemyVisible, float now, floa
 		return;
 	}
 
-	if (!memory.enemyKnown)
-		return; // never seen anything yet - nothing to decay
+	if (!memory.enemyKnown && source != AI_MEMORY_SOURCE_SQUAD_SHARED)
+		return; // nothing known and nothing being shared - nothing to decay
 
-	const float elapsed = (memory.lastSeenTime < 0.0f) ? 0.0f : (now - memory.lastSeenTime);
-	memory.confidence = DecayConfidence(memory.confidence, elapsed, confidenceHalfLifeSeconds);
+	if (memory.enemyKnown)
+	{
+		// Bug fix note: `lastSeenTime` must advance to `now` on every decay
+		// step, not just on a (re)sighting - otherwise repeated calls with
+		// AI_MEMORY_SOURCE_NONE recompute elapsed from the same fixed anchor
+		// each time and re-apply DecayConfidence to an already-decayed value,
+		// double-decaying the overlapping time window. Advancing the anchor
+		// each call makes sequential decay steps compose correctly
+		// (0.5^(dt1/hl) * 0.5^(dt2/hl) == 0.5^((dt1+dt2)/hl)). This means
+		// `lastSeenTime` is really "last time this memory was refreshed",
+		// not literally "last time the enemy was seen" - fine since nothing
+		// reads it for that meaning.
+		const float elapsed = (memory.lastSeenTime < 0.0f) ? 0.0f : (now - memory.lastSeenTime);
+		memory.confidence = DecayConfidence(memory.confidence, elapsed, confidenceHalfLifeSeconds);
+	}
+	else
+	{
+		// AI_MEMORY_SOURCE_SQUAD_SHARED establishing knowledge for the first
+		// time - nothing to decay yet.
+		memory.enemyKnown = true;
+	}
+	memory.lastSeenTime = now;
+
+	if (source == AI_MEMORY_SOURCE_SQUAD_SHARED)
+	{
+		memory.confidence = Clamp01(memory.confidence > AI_CONFIDENCE_SQUAD_REPORT_FLOOR
+										? memory.confidence
+										: AI_CONFIDENCE_SQUAD_REPORT_FLOOR);
+	}
 }
 
 float ScoreAttack(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile)
@@ -173,9 +200,10 @@ float ScoreSearch(const AIUtilityContext& context, const AIEnemyMemory& memory, 
 }
 
 AIDecision DecideAction(AIHybridState& state, const AIUtilityContext& context, const AIProfile& profile,
-	uint32_t capabilityMask, float now, float confidenceHalfLifeSeconds, float switchThreshold)
+	uint32_t capabilityMask, AIMemorySource memorySource, float now, float confidenceHalfLifeSeconds,
+	float switchThreshold)
 {
-	UpdateEnemyMemory(state.enemyMemory, context.enemyVisible, now, confidenceHalfLifeSeconds);
+	UpdateEnemyMemory(state.enemyMemory, memorySource, now, confidenceHalfLifeSeconds);
 
 	struct Candidate
 	{

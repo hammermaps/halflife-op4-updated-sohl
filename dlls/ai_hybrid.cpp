@@ -67,6 +67,12 @@ float AIHybrid_SwitchThreshold()
 	return kSwitchThreshold;
 }
 
+float AIHybrid_SquadReportRecency()
+{
+	const float value = CVAR_GET_FLOAT("ai_hybrid_squad_report_recency");
+	return (value > 0.0f) ? value : 5.0f;
+}
+
 void AIHybrid_MaybeLogDebug(const AIHybridState& state, const char* monsterLabel)
 {
 	if (CVAR_GET_FLOAT("ai_hybrid_debug") < 1.0f)

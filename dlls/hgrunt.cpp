@@ -377,12 +377,12 @@ void CHGrunt::JustSpoke()
 void CHGrunt::PrescheduleThink()
 {
 	// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-
-	// phase-b.md). Decision throttled to AIHybrid_DecisionInterval() (default
-	// ~4Hz, per spec section 14) rather than every server frame. The result
-	// only changes behavior in GetSchedule() when ai_hybrid is enabled - see
-	// ResolveHybridSchedule() - so this runs (cheaply) even while disabled,
-	// which keeps ai_hybrid_debug output meaningful without flipping the
-	// master switch.
+	// phase-b.md, -phase-c.md). Decision throttled to AIHybrid_DecisionInterval()
+	// (default ~4Hz, per spec section 14) rather than every server frame. The
+	// result only changes behavior in GetSchedule() when ai_hybrid is enabled
+	// - see ResolveHybridSchedule() - so this runs (cheaply) even while
+	// disabled, which keeps ai_hybrid_debug output meaningful without
+	// flipping the master switch.
 	if (gpGlobals->time >= m_flNextAIDecision)
 	{
 		AIUtilityContext hybridContext;
@@ -390,9 +390,26 @@ void CHGrunt::PrescheduleThink()
 		hybridContext.canRangeAttack = HasConditions(bits_COND_CAN_RANGE_ATTACK1) || HasConditions(bits_COND_CAN_RANGE_ATTACK2);
 		hybridContext.healthRatio = (pev->max_health > 0) ? Clamp01(pev->health / pev->max_health) : 1.0f;
 
-		const uint32_t hybridCaps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
+		// Phase C: distinguish direct sight from squad-shared knowledge
+		// (AGENTS_HYBRID_AI.md section 8 - "squad information is never
+		// identical to direct sight"). m_flLastEnemySightTime is already
+		// kept up to date on the squad leader by this class's own
+		// pre-existing (non-hybrid) code further down and by
+		// CSquadMonster::SquadMakeEnemy() - no new position/timing plumbing
+		// needed, only reading what's already shared.
+		AIMemorySource hybridMemorySource = AI_MEMORY_SOURCE_NONE;
+		if (hybridContext.enemyVisible)
+		{
+			hybridMemorySource = AI_MEMORY_SOURCE_DIRECT_SIGHT;
+		}
+		else if (InSquad() && (gpGlobals->time - MySquadLeader()->m_flLastEnemySightTime) <= AIHybrid_SquadReportRecency())
+		{
+			hybridMemorySource = AI_MEMORY_SOURCE_SQUAD_SHARED;
+		}
+
+		const uint32_t hybridCaps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH | AI_CAP_SQUAD;
 		const AIDecision hybridDecision = DecideAction(m_AIHybridState, hybridContext, AIProfile(), hybridCaps,
-			gpGlobals->time, AIHybrid_ConfidenceHalfLife(), AIHybrid_SwitchThreshold());
+			hybridMemorySource, gpGlobals->time, AIHybrid_ConfidenceHalfLife(), AIHybrid_SwitchThreshold());
 		AIHybrid_MaybeLogActivity(entindex(), "CHGrunt", m_AIHybridState, hybridDecision, hybridContext);
 
 		m_flNextAIDecision = gpGlobals->time + AIHybrid_DecisionInterval();

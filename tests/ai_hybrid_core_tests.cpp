@@ -1,6 +1,6 @@
 // Standalone host tests for dlls/ai_hybrid_core.{h,cpp} - the engine-free
 // core of the Hybrid AI Core (see AGENTS_HYBRID_AI.md,
-// docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
+// docs/designs/hybrid-ai-core-phase-a.md, -phase-b.md and -phase-c.md).
 //
 // Deliberately minimal: no test framework, no engine headers, no DLL link.
 // Compiled and run via scripts/run-ai-hybrid-core-tests.sh (also wired into
@@ -112,21 +112,56 @@ static void TestUpdateEnemyMemory()
 	CHECK(!memory.enemyKnown);
 
 	// Direct sight: confidence jumps to 1.0 immediately, regardless of prior state.
-	UpdateEnemyMemory(memory, /*enemyVisible=*/true, /*now=*/10.0f, /*halfLife=*/5.0f);
+	UpdateEnemyMemory(memory, AI_MEMORY_SOURCE_DIRECT_SIGHT, /*now=*/10.0f, /*halfLife=*/5.0f);
 	CHECK(memory.enemyKnown);
 	CHECK(NearlyEqual(memory.confidence, 1.0f));
 	CHECK(NearlyEqual(memory.lastSeenTime, 10.0f));
 
 	// Losing sight does not instantly zero confidence - it decays over time.
-	UpdateEnemyMemory(memory, /*enemyVisible=*/false, /*now=*/15.0f, /*halfLife=*/5.0f);
+	UpdateEnemyMemory(memory, AI_MEMORY_SOURCE_NONE, /*now=*/15.0f, /*halfLife=*/5.0f);
 	CHECK(NearlyEqual(memory.confidence, 0.5f, 0.001f)); // one half-life elapsed
-	CHECK(NearlyEqual(memory.lastSeenTime, 10.0f)); // unchanged while not visible
+	CHECK(NearlyEqual(memory.lastSeenTime, 15.0f)); // decay anchor advances every update, not just on (re)sighting
+
+	// A second decay step must compose correctly with the first (not
+	// double-decay the already-elapsed window) - two more half-lives from
+	// here should land at a quarter of the confidence at t=15, i.e. 0.125.
+	UpdateEnemyMemory(memory, AI_MEMORY_SOURCE_NONE, /*now=*/25.0f, /*halfLife=*/5.0f);
+	CHECK(NearlyEqual(memory.confidence, 0.125f, 0.001f));
 
 	// Never having seen an enemy: nothing to decay, stays at defaults.
 	AIEnemyMemory neverSeen;
-	UpdateEnemyMemory(neverSeen, /*enemyVisible=*/false, /*now=*/100.0f, /*halfLife=*/5.0f);
+	UpdateEnemyMemory(neverSeen, AI_MEMORY_SOURCE_NONE, /*now=*/100.0f, /*halfLife=*/5.0f);
 	CHECK(!neverSeen.enemyKnown);
 	CHECK(NearlyEqual(neverSeen.confidence, 0.0f));
+}
+
+static void TestUpdateEnemyMemorySquadShared()
+{
+	// Squad-shared knowledge alone establishes enemyKnown at the 0.7 floor,
+	// even for an NPC that has never personally seen anything.
+	AIEnemyMemory fromSquad;
+	UpdateEnemyMemory(fromSquad, AI_MEMORY_SOURCE_SQUAD_SHARED, /*now=*/10.0f, /*halfLife=*/5.0f);
+	CHECK(fromSquad.enemyKnown);
+	CHECK(NearlyEqual(fromSquad.confidence, AI_CONFIDENCE_SQUAD_REPORT_FLOOR));
+	CHECK(NearlyEqual(fromSquad.lastSeenTime, 10.0f));
+
+	// Squad-shared raises a lower (decayed) confidence up to the floor...
+	AIEnemyMemory decayed;
+	UpdateEnemyMemory(decayed, AI_MEMORY_SOURCE_DIRECT_SIGHT, 0.0f, 5.0f);
+	UpdateEnemyMemory(decayed, AI_MEMORY_SOURCE_NONE, 50.0f, 5.0f); // long decay, confidence near 0
+	CHECK(decayed.confidence < AI_CONFIDENCE_SQUAD_REPORT_FLOOR);
+	UpdateEnemyMemory(decayed, AI_MEMORY_SOURCE_SQUAD_SHARED, 50.0f, 5.0f);
+	CHECK(NearlyEqual(decayed.confidence, AI_CONFIDENCE_SQUAD_REPORT_FLOOR));
+
+	// ...but never LOWERS an already-higher confidence (e.g. a very recent
+	// personal sighting is still worth more than a bare squad report).
+	AIEnemyMemory fresh;
+	UpdateEnemyMemory(fresh, AI_MEMORY_SOURCE_DIRECT_SIGHT, 0.0f, 5.0f);
+	UpdateEnemyMemory(fresh, AI_MEMORY_SOURCE_NONE, 0.1f, 5.0f); // barely any decay
+	const float beforeSquadReport = fresh.confidence;
+	CHECK(beforeSquadReport > AI_CONFIDENCE_SQUAD_REPORT_FLOOR);
+	UpdateEnemyMemory(fresh, AI_MEMORY_SOURCE_SQUAD_SHARED, 0.1f, 5.0f);
+	CHECK(NearlyEqual(fresh.confidence, beforeSquadReport));
 }
 
 static void TestScoreFunctions()
@@ -177,7 +212,8 @@ static void TestDecideActionBasicSelection()
 	ctx.enemyVisible = true;
 	ctx.canRangeAttack = true;
 	ctx.healthRatio = 1.0f;
-	AIDecision decision = DecideAction(state, ctx, profile, caps, /*now=*/0.0f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
+	AIDecision decision = DecideAction(state, ctx, profile, caps, AI_MEMORY_SOURCE_DIRECT_SIGHT,
+		/*now=*/0.0f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
 	CHECK(decision.action == AI_ACTION_ATTACK);
 	CHECK(state.currentAction == AI_ACTION_ATTACK);
 	CHECK(state.previousAction == AI_ACTION_NONE);
@@ -185,7 +221,8 @@ static void TestDecideActionBasicSelection()
 	// Enemy no longer visible, but recently seen -> SEARCH should win (confidence still high).
 	AIUtilityContext lostCtx;
 	lostCtx.enemyVisible = false;
-	decision = DecideAction(state, lostCtx, profile, caps, /*now=*/0.5f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
+	decision = DecideAction(state, lostCtx, profile, caps, AI_MEMORY_SOURCE_NONE,
+		/*now=*/0.5f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
 	CHECK(decision.action == AI_ACTION_SEARCH);
 
 	// Capability gate: without AI_CAP_SEARCH/AI_CAP_COVER, losing sight can only
@@ -194,9 +231,9 @@ static void TestDecideActionBasicSelection()
 	AIUtilityContext gatedCtx;
 	gatedCtx.enemyVisible = true;
 	gatedCtx.canRangeAttack = true;
-	DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, 0.0f, 5.0f, 5.0f);
+	DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, AI_MEMORY_SOURCE_DIRECT_SIGHT, 0.0f, 5.0f, 5.0f);
 	gatedCtx.enemyVisible = false;
-	decision = DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, 1.0f, 5.0f, 5.0f);
+	decision = DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, AI_MEMORY_SOURCE_NONE, 1.0f, 5.0f, 5.0f);
 	CHECK(decision.action == AI_ACTION_NONE);
 }
 
@@ -217,8 +254,32 @@ static void TestDecideActionHysteresis()
 	ctx.enemyVisible = true;
 	ctx.canRangeAttack = true;
 	ctx.healthRatio = 1.0f;
-	AIDecision decision = DecideAction(state, ctx, profile, caps, 0.0f, 5.0f, /*switchThreshold=*/1000.0f);
+	AIDecision decision = DecideAction(state, ctx, profile, caps, AI_MEMORY_SOURCE_DIRECT_SIGHT,
+		0.0f, 5.0f, /*switchThreshold=*/1000.0f);
 	CHECK(decision.action == AI_ACTION_COVER); // huge threshold: nothing can dislodge it
+}
+
+static void TestDecideActionSquadSharedNeverAttacks()
+{
+	// Phase C acceptance: squad-informed knowledge must never be enough to
+	// ATTACK on its own - only genuine direct sight (context.enemyVisible)
+	// does, regardless of how high squad-shared confidence climbs.
+	AIProfile profile;
+	const uint32_t caps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
+
+	AIHybridState state;
+	AIUtilityContext ctx;
+	ctx.enemyVisible = false; // this NPC does not personally see the enemy
+	ctx.canRangeAttack = true;
+	ctx.healthRatio = 1.0f;
+	AIDecision decision = DecideAction(state, ctx, profile, caps, AI_MEMORY_SOURCE_SQUAD_SHARED,
+		0.0f, 5.0f, 5.0f);
+	CHECK(decision.action != AI_ACTION_ATTACK);
+	CHECK(state.enemyMemory.enemyKnown);
+	CHECK(NearlyEqual(state.enemyMemory.confidence, AI_CONFIDENCE_SQUAD_REPORT_FLOOR));
+	// With no direct sight, SEARCH is the expected outcome (COVER's inputs
+	// are all neutral/zero here, so SEARCH's confidence-driven score wins).
+	CHECK(decision.action == AI_ACTION_SEARCH);
 }
 
 int main()
@@ -229,9 +290,11 @@ int main()
 	TestDecayConfidence();
 	TestClassifyConfidence();
 	TestUpdateEnemyMemory();
+	TestUpdateEnemyMemorySquadShared();
 	TestScoreFunctions();
 	TestDecideActionBasicSelection();
 	TestDecideActionHysteresis();
+	TestDecideActionSquadSharedNeverAttacks();
 
 	if (g_failures == 0)
 	{

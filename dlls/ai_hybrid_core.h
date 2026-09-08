@@ -1,12 +1,15 @@
 /*
  * Engine-free core for the Hybrid AI decision layer (see AGENTS_HYBRID_AI.md,
- * docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
+ * docs/designs/hybrid-ai-core-phase-a.md, -phase-b.md and -phase-c.md).
  *
- * Phase B adds the first real tactical decision-making: enemy memory with
- * confidence decay (sections 8-9), and utility scoring for ATTACK/COVER/
- * SEARCH only (sections 10-11) - the remaining actions (flank, suppress,
- * squad coordination, ...) stay unsupported until later phases, per the
- * spec's per-NPC-class, per-capability rollout order.
+ * Phase C teaches the confidence model to distinguish direct sight from
+ * squad-shared knowledge (sections 8-9, 19) - HEARD/INFERRED sources still
+ * stay unimplemented (no soundent integration yet). Squad *position*
+ * sharing and role/slot assignment are NOT reimplemented here:
+ * CSquadMonster already shares m_vecEnemyLKP and "anyone in the squad has
+ * seen the enemy" timing through the leader, and squad slots already exist
+ * for role-like behavior - see docs/designs/hybrid-ai-core-phase-c.md for
+ * what was actually found there before writing this phase.
  *
  * Nothing in this file may include HLSDK/engine headers (extdll.h, cbase.h,
  * util.h, ...) or use engine types (Vector, EHANDLE, entvars_t, ...). It
@@ -96,11 +99,10 @@ float DecayConfidence(float confidence, float elapsedSeconds, float halfLifeSeco
 
 // --- Enemy memory (AGENTS_HYBRID_AI.md sections 8-9) ---
 //
-// Phase B tracks only direct-sight confidence - no heard/squad-shared/
-// inferred sources yet (those need soundent/squad-blackboard integration,
-// deferred to later phases). Position itself is NOT stored here: the
-// engine already tracks it via CBaseMonster::m_vecEnemyLKP, so the hybrid
-// core only needs to know *how sure* the NPC still is, not *where*.
+// Position itself is NOT stored here: the engine already tracks it via
+// CBaseMonster::m_vecEnemyLKP (and, for squads, CSquadMonster already
+// shares it through the leader), so the hybrid core only needs to know
+// *how sure* the NPC still is, not *where*.
 
 enum AIConfidenceLevel
 {
@@ -117,20 +119,46 @@ inline constexpr float AI_CONFIDENCE_CONFIRMED_THRESHOLD = 0.75f;
 inline constexpr float AI_CONFIDENCE_PROBABLE_THRESHOLD = 0.45f;
 inline constexpr float AI_CONFIDENCE_UNCERTAIN_THRESHOLD = 0.20f;
 
+// "Recent squad report: confidence = max(confidence, 0.7)" (section 9) -
+// squad-shared knowledge is never as strong as seeing the enemy yourself,
+// but it doesn't dip below this floor either while it's still being shared.
+inline constexpr float AI_CONFIDENCE_SQUAD_REPORT_FLOOR = 0.7f;
+
 AIConfidenceLevel ClassifyConfidence(float confidence);
+
+// Where this tick's enemy-memory update came from (section 8: "the AI must
+// distinguish DIRECT_SIGHT / HEARD / SQUAD_SHARED / INFERRED... squad
+// information is never identical to direct sight"). HEARD/INFERRED aren't
+// implemented yet - no soundent integration in this phase.
+enum AIMemorySource
+{
+	AI_MEMORY_SOURCE_NONE = 0,      // nothing new this tick - only decay applies
+	AI_MEMORY_SOURCE_DIRECT_SIGHT,  // strongest: confidence set to exactly 1.0
+	AI_MEMORY_SOURCE_SQUAD_SHARED,  // confidence floored at AI_CONFIDENCE_SQUAD_REPORT_FLOOR
+};
 
 struct AIEnemyMemory
 {
 	bool enemyKnown = false;   // true once any sighting has ever occurred
 	float confidence = 0.0f;   // [0, 1], see AIConfidenceLevel
-	float lastSeenTime = -1.0f; // caller's time unit (e.g. gpGlobals->time); -1 = never
+	// Decay anchor: the `now` value as of the last UpdateEnemyMemory() call
+	// that touched this memory (any source, including AI_MEMORY_SOURCE_NONE
+	// while merely decaying) - NOT literally "last time seen". Advances every
+	// call so repeated decay steps compose correctly instead of double-
+	// decaying the same elapsed window. Caller's time unit (e.g.
+	// gpGlobals->time); -1 = never updated.
+	float lastSeenTime = -1.0f;
 };
 
-// Advances `memory` by one decision tick. Direct sight jumps confidence to
-// 1.0 immediately (strongest source, per section 9); otherwise confidence
-// decays via DecayConfidence() using the time elapsed since `lastSeenTime`.
-// `now` must be non-decreasing between calls (matches gpGlobals->time).
-void UpdateEnemyMemory(AIEnemyMemory& memory, bool enemyVisible, float now, float confidenceHalfLifeSeconds);
+// Advances `memory` by one decision tick given `source`. Direct sight jumps
+// confidence to 1.0 immediately (strongest source, per section 9).
+// Squad-shared decays confidence as usual first, then floors it at
+// AI_CONFIDENCE_SQUAD_REPORT_FLOOR - it can raise a lower confidence but
+// never lowers one that's already higher (e.g. from a very recent direct
+// sighting). AI_MEMORY_SOURCE_NONE only decays existing knowledge; if
+// nothing has ever been known, it's a no-op. `now` must be non-decreasing
+// between calls (matches gpGlobals->time).
+void UpdateEnemyMemory(AIEnemyMemory& memory, AIMemorySource source, float now, float confidenceHalfLifeSeconds);
 
 // --- Utility scoring (Phase B: ATTACK/COVER/SEARCH only) ---
 //
@@ -173,11 +201,14 @@ struct AIHybridState
 	AIEnemyMemory enemyMemory;
 };
 
-// Updates `state.enemyMemory` from `context`, scores every action
-// `capabilityMask` supports, and picks a winner with hysteresis: the
+// Updates `state.enemyMemory` from `memorySource` (see AIMemorySource -
+// independent of `context.enemyVisible`, which only gates ScoreAttack: a
+// squad-shared-only sighting must never be enough to attack), scores every
+// action `capabilityMask` supports, and picks a winner with hysteresis: the
 // previous action is kept unless a different action beats its score by more
 // than `switchThreshold` (AGENTS_HYBRID_AI.md section 13 - prevents rapid
 // flapping between near-tied scores). Updates state.currentAction /
 // state.previousAction and returns the decision.
 AIDecision DecideAction(AIHybridState& state, const AIUtilityContext& context, const AIProfile& profile,
-	uint32_t capabilityMask, float now, float confidenceHalfLifeSeconds, float switchThreshold);
+	uint32_t capabilityMask, AIMemorySource memorySource, float now, float confidenceHalfLifeSeconds,
+	float switchThreshold);

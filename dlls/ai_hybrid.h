@@ -1,6 +1,6 @@
 /*
  * Engine-aware adapter for the Hybrid AI Core (see AGENTS_HYBRID_AI.md,
- * docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
+ * docs/designs/hybrid-ai-core-phase-a.md, -phase-b.md and -phase-c.md).
  *
  * This is the only file in the ai_hybrid* subsystem allowed to include
  * HLSDK/engine headers. It owns the ai_hybrid* CVars and bounded debug
@@ -28,6 +28,14 @@ float AIHybrid_ConfidenceHalfLife();
 // Hysteresis switch threshold passed to DecideAction() - not a CVar yet
 // (Phase B keeps it a fixed constant; expose it later if tuning needs arise).
 float AIHybrid_SwitchThreshold();
+
+// How recent (in seconds) a squad's last enemy sighting must be, per
+// CSquadMonster::m_flLastEnemySightTime, for a squad member without direct
+// sight to still count as squad-informed (AIMemorySource::AI_MEMORY_SOURCE_SQUAD_SHARED)
+// rather than knowing nothing - `ai_hybrid_squad_report_recency` CVar
+// (default 5s, matching the recency window the engine's own pre-existing
+// m_fEnemyEluded logic already uses).
+float AIHybrid_SquadReportRecency();
 
 // Prints `state`'s current/previous action and enemy-memory confidence for
 // `monsterLabel` to the console, gated on `ai_hybrid_debug >= 1`. No-op
