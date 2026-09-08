@@ -140,3 +140,24 @@ map c2a5f
 # afterwards, on the host machine:
 tail -f ai_hybrid_log.jsonl   # path is relative to wherever hl_linux was run from
 ```
+
+### Auto-enabling for a test session (`spserver.cfg`)
+
+Typing the three cvars above every launch gets old fast. The mod install has
+`spserver.cfg` (an HLSDK convention — the engine auto-execs it whenever a
+singleplayer game starts, same mechanism as `valve/spserver.cfg`), pre-filled
+with:
+
+```
+ai_hybrid 1
+ai_hybrid_debug 1
+ai_hybrid_log 1
+ai_hybrid_log_file "halflife_op4_updated_ki/ai_hybrid_log.jsonl"
+```
+
+**This only lives in the local mod install** (`~/.var/app/com.valvesoftware.Steam/.../halflife_op4_updated_ki/spserver.cfg`), not in the repo — the compiled-in `cvar_t` defaults in `dlls/game.cpp` stay `0` ("zero behavior change while disabled" is a load-bearing design principle across every `docs/designs/hybrid-ai-core-*.md`; changing the actual code defaults would affect anyone else building this mod, not just this test session). Delete or edit that file to change/disable the auto-enable.
+
+With it in place, just `map <name>` and inspect the log afterward at:
+```
+~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Half-Life/halflife_op4_updated_ki/ai_hybrid_log.jsonl
+```
