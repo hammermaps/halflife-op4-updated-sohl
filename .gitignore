@@ -9,6 +9,10 @@
 # Crash-triage log written by scripts/debug-test-mod.sh --batch
 /debug-test-mod.log
 
+# Map compiler intermediates/output from scripts/build-test-map.sh (the .bsp
+# is deployed straight to the test mod, not kept here)
+/mapsrc/build/
+
 # LLM / AI coding assistant local state (Claude Code, gstack, etc.)
 # Local-only settings and caches; never commit personal/agent configuration.
 .claude/settings.local.json
