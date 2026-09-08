@@ -1,12 +1,10 @@
 // Standalone host tests for dlls/ai_hybrid_core.{h,cpp} - the engine-free
 // core of the Hybrid AI Core (see AGENTS_HYBRID_AI.md,
-// docs/designs/hybrid-ai-core-phase-a.md).
+// docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
 //
 // Deliberately minimal: no test framework, no engine headers, no DLL link.
 // Compiled and run via scripts/run-ai-hybrid-core-tests.sh (also wired into
-// `make check` in linux/Makefile). Covers only the pure functions that exist
-// in Phase A; ScoreAttack/ChooseBestAction/hysteresis etc. get their own
-// cases once Phase B adds them to the same core.
+// `make check` in linux/Makefile).
 
 #include "../dlls/ai_hybrid_core.h"
 
@@ -95,17 +93,132 @@ static void TestDecayConfidence()
 	CHECK(NearlyEqual(DecayConfidence(2.0f, 0.0f, 10.0f), 1.0f));
 }
 
-static void TestUpdateSnapshot()
+static void TestClassifyConfidence()
 {
+	CHECK(ClassifyConfidence(0.0f) == AI_CONFIDENCE_LOST);
+	CHECK(ClassifyConfidence(-1.0f) == AI_CONFIDENCE_LOST);
+	CHECK(ClassifyConfidence(0.1f) == AI_CONFIDENCE_WEAK);
+	CHECK(ClassifyConfidence(0.2f) == AI_CONFIDENCE_UNCERTAIN);
+	CHECK(ClassifyConfidence(0.44f) == AI_CONFIDENCE_UNCERTAIN);
+	CHECK(ClassifyConfidence(0.45f) == AI_CONFIDENCE_PROBABLE);
+	CHECK(ClassifyConfidence(0.74f) == AI_CONFIDENCE_PROBABLE);
+	CHECK(ClassifyConfidence(0.75f) == AI_CONFIDENCE_CONFIRMED);
+	CHECK(ClassifyConfidence(1.0f) == AI_CONFIDENCE_CONFIRMED);
+}
+
+static void TestUpdateEnemyMemory()
+{
+	AIEnemyMemory memory;
+	CHECK(!memory.enemyKnown);
+
+	// Direct sight: confidence jumps to 1.0 immediately, regardless of prior state.
+	UpdateEnemyMemory(memory, /*enemyVisible=*/true, /*now=*/10.0f, /*halfLife=*/5.0f);
+	CHECK(memory.enemyKnown);
+	CHECK(NearlyEqual(memory.confidence, 1.0f));
+	CHECK(NearlyEqual(memory.lastSeenTime, 10.0f));
+
+	// Losing sight does not instantly zero confidence - it decays over time.
+	UpdateEnemyMemory(memory, /*enemyVisible=*/false, /*now=*/15.0f, /*halfLife=*/5.0f);
+	CHECK(NearlyEqual(memory.confidence, 0.5f, 0.001f)); // one half-life elapsed
+	CHECK(NearlyEqual(memory.lastSeenTime, 10.0f)); // unchanged while not visible
+
+	// Never having seen an enemy: nothing to decay, stays at defaults.
+	AIEnemyMemory neverSeen;
+	UpdateEnemyMemory(neverSeen, /*enemyVisible=*/false, /*now=*/100.0f, /*halfLife=*/5.0f);
+	CHECK(!neverSeen.enemyKnown);
+	CHECK(NearlyEqual(neverSeen.confidence, 0.0f));
+}
+
+static void TestScoreFunctions()
+{
+	AIProfile profile;
+	AIEnemyMemory noMemory;
+	AIEnemyMemory knownMemory;
+	knownMemory.enemyKnown = true;
+	knownMemory.confidence = 0.8f;
+
+	// ScoreAttack requires both visibility and a valid attack condition.
+	AIUtilityContext ctx;
+	CHECK(NearlyEqual(ScoreAttack(ctx, noMemory, profile), 0.0f)); // neither set
+	ctx.enemyVisible = true;
+	CHECK(NearlyEqual(ScoreAttack(ctx, noMemory, profile), 0.0f)); // can't range attack
+	ctx.canRangeAttack = true;
+	CHECK(ScoreAttack(ctx, noMemory, profile) > 0.0f);
+	// Low health should pull the attack score down relative to full health.
+	AIUtilityContext hurtCtx = ctx;
+	hurtCtx.healthRatio = 0.1f;
+	CHECK(ScoreAttack(hurtCtx, noMemory, profile) < ScoreAttack(ctx, noMemory, profile));
+
+	// ScoreCover rises with damage taken (lower healthRatio).
+	AIUtilityContext coverCtx;
+	coverCtx.healthRatio = 1.0f;
+	AIUtilityContext hurtCoverCtx;
+	hurtCoverCtx.healthRatio = 0.2f;
+	CHECK(ScoreCover(hurtCoverCtx, noMemory, profile) > ScoreCover(coverCtx, noMemory, profile));
+
+	// ScoreSearch: 0 while visible or never seen; positive once known and hidden.
+	AIUtilityContext visibleCtx;
+	visibleCtx.enemyVisible = true;
+	CHECK(NearlyEqual(ScoreSearch(visibleCtx, knownMemory, profile), 0.0f));
+	AIUtilityContext hiddenCtx;
+	hiddenCtx.enemyVisible = false;
+	CHECK(NearlyEqual(ScoreSearch(hiddenCtx, noMemory, profile), 0.0f)); // never seen anything
+	CHECK(ScoreSearch(hiddenCtx, knownMemory, profile) > 0.0f); // known + hidden
+}
+
+static void TestDecideActionBasicSelection()
+{
+	AIProfile profile;
+	const uint32_t caps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
+
+	// Visible enemy + can attack -> ATTACK should win over COVER/SEARCH at full health.
 	AIHybridState state;
-	CHECK(state.currentAction == AI_ACTION_NONE);
+	AIUtilityContext ctx;
+	ctx.enemyVisible = true;
+	ctx.canRangeAttack = true;
+	ctx.healthRatio = 1.0f;
+	AIDecision decision = DecideAction(state, ctx, profile, caps, /*now=*/0.0f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
+	CHECK(decision.action == AI_ACTION_ATTACK);
+	CHECK(state.currentAction == AI_ACTION_ATTACK);
 	CHECK(state.previousAction == AI_ACTION_NONE);
 
-	// Phase A: every tick resolves to NONE and rotates current into previous.
-	state.currentAction = AI_ACTION_NONE;
-	UpdateSnapshot(state);
-	CHECK(state.currentAction == AI_ACTION_NONE);
-	CHECK(state.previousAction == AI_ACTION_NONE);
+	// Enemy no longer visible, but recently seen -> SEARCH should win (confidence still high).
+	AIUtilityContext lostCtx;
+	lostCtx.enemyVisible = false;
+	decision = DecideAction(state, lostCtx, profile, caps, /*now=*/0.5f, /*halfLife=*/5.0f, /*switchThreshold=*/5.0f);
+	CHECK(decision.action == AI_ACTION_SEARCH);
+
+	// Capability gate: without AI_CAP_SEARCH/AI_CAP_COVER, losing sight can only
+	// resolve to NONE (ATTACK requires visibility, which is false here).
+	AIHybridState gatedState;
+	AIUtilityContext gatedCtx;
+	gatedCtx.enemyVisible = true;
+	gatedCtx.canRangeAttack = true;
+	DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, 0.0f, 5.0f, 5.0f);
+	gatedCtx.enemyVisible = false;
+	decision = DecideAction(gatedState, gatedCtx, profile, /*caps=*/0, 1.0f, 5.0f, 5.0f);
+	CHECK(decision.action == AI_ACTION_NONE);
+}
+
+static void TestDecideActionHysteresis()
+{
+	AIProfile profile;
+	const uint32_t caps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
+
+	AIHybridState state;
+	state.currentAction = AI_ACTION_COVER;
+	state.enemyMemory.enemyKnown = true;
+	state.enemyMemory.confidence = 0.5f;
+
+	// A marginally higher-scoring action (within switchThreshold) should NOT
+	// displace the current action - this is what keeps behavior from
+	// flapping every tick between near-tied scores.
+	AIUtilityContext ctx;
+	ctx.enemyVisible = true;
+	ctx.canRangeAttack = true;
+	ctx.healthRatio = 1.0f;
+	AIDecision decision = DecideAction(state, ctx, profile, caps, 0.0f, 5.0f, /*switchThreshold=*/1000.0f);
+	CHECK(decision.action == AI_ACTION_COVER); // huge threshold: nothing can dislodge it
 }
 
 int main()
@@ -114,7 +227,11 @@ int main()
 	TestActionSupported();
 	TestClamping();
 	TestDecayConfidence();
-	TestUpdateSnapshot();
+	TestClassifyConfidence();
+	TestUpdateEnemyMemory();
+	TestScoreFunctions();
+	TestDecideActionBasicSelection();
+	TestDecideActionHysteresis();
 
 	if (g_failures == 0)
 	{

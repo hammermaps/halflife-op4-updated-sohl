@@ -594,10 +594,12 @@ cvar_t dmjumpsound = {"sv_dmjumpsound", "1", FCVAR_SERVER};
 
 // END Opposing Force variables
 
-// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-phase-a.md)
+// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-phase-a.md, -phase-b.md)
 // Master switch: default off, zero behavior change while 0.
 cvar_t ai_hybrid = {"ai_hybrid", "0", FCVAR_SERVER};
 cvar_t ai_hybrid_debug = {"ai_hybrid_debug", "0", FCVAR_SERVER};
+cvar_t ai_hybrid_decision_interval = {"ai_hybrid_decision_interval", "0.25", FCVAR_SERVER};
+cvar_t ai_hybrid_confidence_halflife = {"ai_hybrid_confidence_halflife", "8", FCVAR_SERVER};
 
 static bool SV_InitServer()
 {
@@ -664,6 +666,8 @@ void GameDLLInit()
 
 	CVAR_REGISTER(&ai_hybrid);
 	CVAR_REGISTER(&ai_hybrid_debug);
+	CVAR_REGISTER(&ai_hybrid_decision_interval);
+	CVAR_REGISTER(&ai_hybrid_confidence_halflife);
 
 	// REGISTER CVARS FOR SKILL LEVEL STUFF
 	// Agrunt

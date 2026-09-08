@@ -1,12 +1,12 @@
 /*
- * Engine-free core for the Hybrid AI decision layer (see AGENTS_HYBRID_AI.md
- * and docs/designs/hybrid-ai-core-phase-a.md).
+ * Engine-free core for the Hybrid AI decision layer (see AGENTS_HYBRID_AI.md,
+ * docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
  *
- * Phase A: framework scaffolding only. There is no tactical decision logic
- * here yet - UpdateSnapshot() always reports AI_ACTION_NONE. This file
- * defines the shared vocabulary and pure helper functions that the
- * engine-aware adapter (ai_hybrid.h/.cpp) and, from Phase B on, the real
- * scoring logic will build on.
+ * Phase B adds the first real tactical decision-making: enemy memory with
+ * confidence decay (sections 8-9), and utility scoring for ATTACK/COVER/
+ * SEARCH only (sections 10-11) - the remaining actions (flank, suppress,
+ * squad coordination, ...) stay unsupported until later phases, per the
+ * spec's per-NPC-class, per-capability rollout order.
  *
  * Nothing in this file may include HLSDK/engine headers (extdll.h, cbase.h,
  * util.h, ...) or use engine types (Vector, EHANDLE, entvars_t, ...). It
@@ -94,21 +94,90 @@ float Clamp01(float value);
 // half-life means "decays instantly").
 float DecayConfidence(float confidence, float elapsedSeconds, float halfLifeSeconds);
 
-// Minimal, inert per-NPC state. Phase A only ever holds AI_ACTION_NONE in
-// both fields - this struct exists so a monster class has a stable member
-// to zero-initialize and observe from PrescheduleThink(), instead of
-// hand-waving "observe" as a no-op comment. Deliberately not part of
-// m_SaveData yet (see AGENTS_HYBRID_AI.md section 38): nothing here is
-// meaningful yet, so it needs no save/restore support until Phase B gives
-// it real state.
+// --- Enemy memory (AGENTS_HYBRID_AI.md sections 8-9) ---
+//
+// Phase B tracks only direct-sight confidence - no heard/squad-shared/
+// inferred sources yet (those need soundent/squad-blackboard integration,
+// deferred to later phases). Position itself is NOT stored here: the
+// engine already tracks it via CBaseMonster::m_vecEnemyLKP, so the hybrid
+// core only needs to know *how sure* the NPC still is, not *where*.
+
+enum AIConfidenceLevel
+{
+	AI_CONFIDENCE_LOST,       // <= 0
+	AI_CONFIDENCE_WEAK,       // < 0.20
+	AI_CONFIDENCE_UNCERTAIN,  // < 0.45
+	AI_CONFIDENCE_PROBABLE,   // < 0.75
+	AI_CONFIDENCE_CONFIRMED,  // >= 0.75
+};
+
+// Named thresholds from AGENTS_HYBRID_AI.md section 9, so callers never
+// hardcode the raw numbers.
+inline constexpr float AI_CONFIDENCE_CONFIRMED_THRESHOLD = 0.75f;
+inline constexpr float AI_CONFIDENCE_PROBABLE_THRESHOLD = 0.45f;
+inline constexpr float AI_CONFIDENCE_UNCERTAIN_THRESHOLD = 0.20f;
+
+AIConfidenceLevel ClassifyConfidence(float confidence);
+
+struct AIEnemyMemory
+{
+	bool enemyKnown = false;   // true once any sighting has ever occurred
+	float confidence = 0.0f;   // [0, 1], see AIConfidenceLevel
+	float lastSeenTime = -1.0f; // caller's time unit (e.g. gpGlobals->time); -1 = never
+};
+
+// Advances `memory` by one decision tick. Direct sight jumps confidence to
+// 1.0 immediately (strongest source, per section 9); otherwise confidence
+// decays via DecayConfidence() using the time elapsed since `lastSeenTime`.
+// `now` must be non-decreasing between calls (matches gpGlobals->time).
+void UpdateEnemyMemory(AIEnemyMemory& memory, bool enemyVisible, float now, float confidenceHalfLifeSeconds);
+
+// --- Utility scoring (Phase B: ATTACK/COVER/SEARCH only) ---
+//
+// Inputs deliberately stay minimal - only what Phase B's engine adapter can
+// cheaply provide from existing HLSDK conditions (hgrunt.cpp), not the full
+// AIUtilityContext envisioned by the spec (danger, squad state, grenade
+// awareness, ... all deferred to the phases that actually use them).
+
+struct AIUtilityContext
+{
+	bool enemyVisible = false;    // HasConditions(bits_COND_SEE_ENEMY)
+	bool canRangeAttack = false;  // HasConditions(bits_COND_CAN_RANGE_ATTACK1/2)
+	float healthRatio = 1.0f;     // pev->health / pev->max_health, clamped [0,1]
+};
+
+// Each Score* function is pure and independently testable. All return a
+// value in [0, 100] (via ClampScore) or exactly 0 when the action plainly
+// doesn't apply (e.g. attacking an enemy that isn't visible).
+float ScoreAttack(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile);
+float ScoreCover(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile);
+float ScoreSearch(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile);
+
+struct AIDecision
+{
+	AITacticalAction action = AI_ACTION_NONE;
+	float score = 0.0f;
+};
+
+// Per-NPC, per-tick tactical state. Phase B state.enemyMemory carries real
+// data; currentAction/previousAction now reflect DecideAction()'s actual
+// choice instead of always being NONE. Deliberately still not part of
+// m_SaveData (see AGENTS_HYBRID_AI.md section 38): losing this on load just
+// means one tick of "forgot the enemy" until the next sighting/decision
+// re-establishes it, which is safe by construction (never forces movement,
+// never crashes) - revisit if that proves noticeable in practice.
 struct AIHybridState
 {
 	AITacticalAction currentAction = AI_ACTION_NONE;
 	AITacticalAction previousAction = AI_ACTION_NONE;
+	AIEnemyMemory enemyMemory;
 };
 
-// Advances `state` by one decision tick. Phase A performs no decision-making
-// - this only rotates current into previous and always sets current back to
-// AI_ACTION_NONE, so the call site in PrescheduleThink() has real plumbing
-// to invoke.
-void UpdateSnapshot(AIHybridState& state);
+// Updates `state.enemyMemory` from `context`, scores every action
+// `capabilityMask` supports, and picks a winner with hysteresis: the
+// previous action is kept unless a different action beats its score by more
+// than `switchThreshold` (AGENTS_HYBRID_AI.md section 13 - prevents rapid
+// flapping between near-tied scores). Updates state.currentAction /
+// state.previousAction and returns the decision.
+AIDecision DecideAction(AIHybridState& state, const AIUtilityContext& context, const AIProfile& profile,
+	uint32_t capabilityMask, float now, float confidenceHalfLifeSeconds, float switchThreshold);

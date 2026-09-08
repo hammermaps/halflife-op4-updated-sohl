@@ -51,9 +51,11 @@ extern cvar_t coopplay;
 extern cvar_t coopweprespawn;
 extern cvar_t spamdelay;
 
-// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-phase-a.md)
+// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-phase-a.md, -phase-b.md)
 extern cvar_t ai_hybrid;
 extern cvar_t ai_hybrid_debug;
+extern cvar_t ai_hybrid_decision_interval;
+extern cvar_t ai_hybrid_confidence_halflife;
 
 // Engine Cvars
 inline cvar_t* g_psv_gravity;

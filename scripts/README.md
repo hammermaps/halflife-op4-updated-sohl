@@ -98,3 +98,27 @@ scripts/debug-test-mod.sh release --batch  # unattended crash triage
   alone. `mapsrc/gen_ai_test_grunt.py` computes and verifies each face's
   normal sign programmatically instead of hand-deriving point order — prefer
   extending it over writing new `.map` brushes by hand.
+
+### Testing against a real multi-grunt combat scenario
+
+`ai_test_grunt.map` is a single stationary grunt in an empty room — useful for
+checking that `ai_hybrid_debug` output plumbing works, but too small to
+exercise real ATTACK/COVER/SEARCH transitions (no cover geometry, no way to
+lose line of sight). For that, load an existing campaign map instead.
+
+The exact classname `monster_human_grunt` is the hostile HECU grunt
+`CHGrunt` handles (distinct from `monster_human_grunt_ally` — Opposing
+Force's own `of*.bsp` maps mostly use the ally variant, so they're a poor
+fit). The retail Half-Life 1 campaign maps bundled alongside OpFor's own
+maps in the test mod's `maps/` folder have plenty of the hostile kind
+(counted 2026-09-08 via `strings <bsp> | grep -c '"classname" "monster_human_grunt"$'`):
+`c2a5f` (19), `c2a2b1` (14), `c2a4e`/`c2a2e`/`c1a3a` (10 each).
+
+**Recommended: `c2a5f`** ("Surface Tension") — large-scale multi-grunt
+firefight with real cover and sightline breaks.
+
+```
+ai_hybrid 1
+ai_hybrid_debug 1
+map c2a5f
+```

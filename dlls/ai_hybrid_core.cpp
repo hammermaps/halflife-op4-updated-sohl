@@ -108,9 +108,126 @@ float DecayConfidence(float confidence, float elapsedSeconds, float halfLifeSeco
 	return Clamp01(decayed);
 }
 
-void UpdateSnapshot(AIHybridState& state)
+AIConfidenceLevel ClassifyConfidence(float confidence)
 {
-	// Phase A never decides anything; the dormant state always reports NONE.
+	if (confidence >= AI_CONFIDENCE_CONFIRMED_THRESHOLD)
+		return AI_CONFIDENCE_CONFIRMED;
+	if (confidence >= AI_CONFIDENCE_PROBABLE_THRESHOLD)
+		return AI_CONFIDENCE_PROBABLE;
+	if (confidence >= AI_CONFIDENCE_UNCERTAIN_THRESHOLD)
+		return AI_CONFIDENCE_UNCERTAIN;
+	if (confidence > 0.0f)
+		return AI_CONFIDENCE_WEAK;
+	return AI_CONFIDENCE_LOST;
+}
+
+void UpdateEnemyMemory(AIEnemyMemory& memory, bool enemyVisible, float now, float confidenceHalfLifeSeconds)
+{
+	if (enemyVisible)
+	{
+		memory.enemyKnown = true;
+		memory.confidence = 1.0f;
+		memory.lastSeenTime = now;
+		return;
+	}
+
+	if (!memory.enemyKnown)
+		return; // never seen anything yet - nothing to decay
+
+	const float elapsed = (memory.lastSeenTime < 0.0f) ? 0.0f : (now - memory.lastSeenTime);
+	memory.confidence = DecayConfidence(memory.confidence, elapsed, confidenceHalfLifeSeconds);
+}
+
+float ScoreAttack(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile)
+{
+	if (!context.enemyVisible || !context.canRangeAttack)
+		return 0.0f;
+
+	float score = 50.0f;
+	score += profile.aggression * 30.0f;
+	score += memory.confidence * 20.0f;
+	score -= (1.0f - context.healthRatio) * 40.0f;
+	return ClampScore(score);
+}
+
+float ScoreCover(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile)
+{
+	const float danger = 1.0f - context.healthRatio;
+	float score = danger * 50.0f;
+	score += profile.caution * 30.0f;
+	if (context.enemyVisible)
+		score += 10.0f;
+	score += memory.confidence * 10.0f;
+	score -= profile.aggression * 15.0f;
+	return ClampScore(score);
+}
+
+float ScoreSearch(const AIUtilityContext& context, const AIEnemyMemory& memory, const AIProfile& profile)
+{
+	if (context.enemyVisible || !memory.enemyKnown)
+		return 0.0f;
+
+	float score = memory.confidence * 60.0f;
+	score += profile.aggression * 10.0f;
+	return ClampScore(score);
+}
+
+AIDecision DecideAction(AIHybridState& state, const AIUtilityContext& context, const AIProfile& profile,
+	uint32_t capabilityMask, float now, float confidenceHalfLifeSeconds, float switchThreshold)
+{
+	UpdateEnemyMemory(state.enemyMemory, context.enemyVisible, now, confidenceHalfLifeSeconds);
+
+	struct Candidate
+	{
+		AITacticalAction action;
+		float score;
+	};
+
+	const Candidate candidates[] = {
+		{AI_ACTION_ATTACK, ActionSupported(AI_ACTION_ATTACK, capabilityMask)
+							   ? ScoreAttack(context, state.enemyMemory, profile)
+							   : 0.0f},
+		{AI_ACTION_COVER, ActionSupported(AI_ACTION_COVER, capabilityMask)
+							  ? ScoreCover(context, state.enemyMemory, profile)
+							  : 0.0f},
+		{AI_ACTION_SEARCH, ActionSupported(AI_ACTION_SEARCH, capabilityMask)
+							   ? ScoreSearch(context, state.enemyMemory, profile)
+							   : 0.0f},
+	};
+
+	AITacticalAction bestAction = AI_ACTION_NONE;
+	float bestScore = 0.0f;
+	for (const Candidate& candidate : candidates)
+	{
+		if (candidate.score > bestScore)
+		{
+			bestScore = candidate.score;
+			bestAction = candidate.action;
+		}
+	}
+
+	// Hysteresis: don't abandon the previous action for a new one that only
+	// marginally beats it - avoids flapping between near-tied scores.
+	const AITacticalAction previous = state.currentAction;
+	if (previous != AI_ACTION_NONE && previous != bestAction)
+	{
+		float previousScore = 0.0f;
+		for (const Candidate& candidate : candidates)
+		{
+			if (candidate.action == previous)
+			{
+				previousScore = candidate.score;
+				break;
+			}
+		}
+		if (previousScore > 0.0f && bestScore <= previousScore + switchThreshold)
+		{
+			bestAction = previous;
+			bestScore = previousScore;
+		}
+	}
+
 	state.previousAction = state.currentAction;
-	state.currentAction = AI_ACTION_NONE;
+	state.currentAction = bestAction;
+	return {bestAction, bestScore};
 }

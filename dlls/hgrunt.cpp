@@ -152,6 +152,11 @@ public:
 	CBaseEntity* Kick();
 	Schedule_t* GetSchedule() override;
 	Schedule_t* GetScheduleOfType(int Type) override;
+
+	// Hybrid AI Core, Phase B (see AGENTS_HYBRID_AI.md,
+	// docs/designs/hybrid-ai-core-phase-b.md).
+	bool ShouldUseHybridDecision();
+	Schedule_t* ResolveHybridSchedule(AITacticalAction action);
 	void TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType) override;
 	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override;
 
@@ -185,12 +190,13 @@ public:
 
 	static const char* pGruntSentences[];
 
-	// Hybrid AI Core, Phase A (see AGENTS_HYBRID_AI.md,
-	// docs/designs/hybrid-ai-core-phase-a.md): dormant, observation-only
-	// state. Zero-initialized in Spawn(); updated and logged from
-	// PrescheduleThink(). Deliberately not in m_SaveData yet - see the
+	// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-
+	// phase-a.md and -phase-b.md). Zero-initialized in Spawn(); updated and
+	// logged from PrescheduleThink(), consumed by GetSchedule() via
+	// ResolveHybridSchedule(). Deliberately not in m_SaveData yet - see the
 	// comment on AIHybridState in ai_hybrid_core.h.
 	AIHybridState m_AIHybridState;
+	float m_flNextAIDecision; // gpGlobals->time of the next DecideAction() call; see AIHybrid_DecisionInterval()
 };
 
 LINK_ENTITY_TO_CLASS(monster_human_grunt, CHGrunt);
@@ -370,10 +376,26 @@ void CHGrunt::JustSpoke()
 //=========================================================
 void CHGrunt::PrescheduleThink()
 {
-	// Hybrid AI Core, Phase A: observation-only. UpdateSnapshot() always
-	// resolves to AI_ACTION_NONE and nothing here feeds back into
-	// GetSchedule() - see docs/designs/hybrid-ai-core-phase-a.md.
-	UpdateSnapshot(m_AIHybridState);
+	// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-
+	// phase-b.md). Decision throttled to AIHybrid_DecisionInterval() (default
+	// ~4Hz, per spec section 14) rather than every server frame. The result
+	// only changes behavior in GetSchedule() when ai_hybrid is enabled - see
+	// ResolveHybridSchedule() - so this runs (cheaply) even while disabled,
+	// which keeps ai_hybrid_debug output meaningful without flipping the
+	// master switch.
+	if (gpGlobals->time >= m_flNextAIDecision)
+	{
+		AIUtilityContext hybridContext;
+		hybridContext.enemyVisible = HasConditions(bits_COND_SEE_ENEMY);
+		hybridContext.canRangeAttack = HasConditions(bits_COND_CAN_RANGE_ATTACK1) || HasConditions(bits_COND_CAN_RANGE_ATTACK2);
+		hybridContext.healthRatio = (pev->max_health > 0) ? Clamp01(pev->health / pev->max_health) : 1.0f;
+
+		const uint32_t hybridCaps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
+		DecideAction(m_AIHybridState, hybridContext, AIProfile(), hybridCaps,
+			gpGlobals->time, AIHybrid_ConfidenceHalfLife(), AIHybrid_SwitchThreshold());
+
+		m_flNextAIDecision = gpGlobals->time + AIHybrid_DecisionInterval();
+	}
 	AIHybrid_MaybeLogDebug(m_AIHybridState, "CHGrunt");
 
 	if (InSquad() && m_hEnemy != NULL)
@@ -1016,6 +1038,7 @@ void CHGrunt::Spawn()
 	// Hybrid AI Core, Phase A: reset to a clean, inert state so entity-slot
 	// reuse never sees a previous occupant's leftover POD state.
 	m_AIHybridState = AIHybridState();
+	m_flNextAIDecision = 0.0f;
 
 	m_HackedGunPos = Vector(0, 0, 55);
 
@@ -1953,6 +1976,22 @@ Schedule_t* CHGrunt::GetSchedule()
 	// clear old sentence
 	m_iSentence = HGRUNT_SENT_NONE;
 
+	// Hybrid AI Core (see AGENTS_HYBRID_AI.md, docs/designs/hybrid-ai-core-
+	// phase-b.md). Only ever takes over the "plain ongoing combat" tactical
+	// choice between attack/cover/search - ShouldUseHybridDecision() excludes
+	// every safety-critical or scripted-feeling state below (repel, grenade
+	// danger, first contact, no-ammo, flinch) so none of their original
+	// variety or priority is lost when ai_hybrid is enabled. If the hybrid
+	// layer doesn't resolve a schedule, execution falls through to the
+	// unmodified original logic below - the hybrid layer is never the only
+	// path to a schedule.
+	if (AIHybrid_Enabled() && ShouldUseHybridDecision())
+	{
+		Schedule_t* hybridSchedule = ResolveHybridSchedule(m_AIHybridState.currentAction);
+		if (hybridSchedule)
+			return hybridSchedule;
+	}
+
 	// flying? If PRONE, barnacle has me. IF not, it's assumed I am rapelling.
 	if (pev->movetype == MOVETYPE_FLY && m_MonsterState != MONSTERSTATE_PRONE)
 	{
@@ -2191,6 +2230,69 @@ Schedule_t* CHGrunt::GetSchedule()
 
 	// no special cases here, call the base class
 	return CSquadMonster::GetSchedule();
+}
+
+//=========================================================
+// ShouldUseHybridDecision - Hybrid AI Core, Phase B. True only for the
+// "plain ongoing combat" state the utility layer is meant to replace; false
+// for every state handled above in GetSchedule() that must keep its
+// original, hand-tuned behavior and priority (repel movement, grenade-danger
+// cover-seeking, first sight of a new enemy, reloading, flinching).
+//=========================================================
+bool CHGrunt::ShouldUseHybridDecision()
+{
+	if (pev->movetype == MOVETYPE_FLY && m_MonsterState != MONSTERSTATE_PRONE)
+		return false;
+
+	if (HasConditions(bits_COND_HEAR_SOUND))
+	{
+		CSound* pSound = PBestSound();
+		if (pSound && (pSound->m_iType & bits_SOUND_DANGER) != 0)
+			return false;
+	}
+
+	if (m_MonsterState != MONSTERSTATE_COMBAT)
+		return false;
+
+	if (HasConditions(bits_COND_ENEMY_DEAD) ||
+		HasConditions(bits_COND_NEW_ENEMY) ||
+		HasConditions(bits_COND_NO_AMMO_LOADED) ||
+		HasConditions(bits_COND_LIGHT_DAMAGE))
+		return false;
+
+	return true;
+}
+
+//=========================================================
+// ResolveHybridSchedule - maps a Hybrid AI Core decision onto an existing
+// HLSDK schedule (AGENTS_HYBRID_AI.md section 3: "GetSchedule() remains
+// technically an adapter"). Returns nullptr - falling back to the original
+// logic - for any action this grunt doesn't have a sensible schedule for, or
+// when the engine's own conditions don't actually support it (never force
+// movement toward an invalid state).
+//=========================================================
+Schedule_t* CHGrunt::ResolveHybridSchedule(AITacticalAction action)
+{
+	switch (action)
+	{
+	case AI_ACTION_ATTACK:
+		if (!HasConditions(bits_COND_CAN_RANGE_ATTACK1) && !HasConditions(bits_COND_CAN_RANGE_ATTACK2))
+			return nullptr;
+		return GetScheduleOfType(SCHED_RANGE_ATTACK1);
+
+	case AI_ACTION_COVER:
+		if (m_hEnemy == NULL)
+			return nullptr;
+		return GetScheduleOfType(SCHED_TAKE_COVER_FROM_ENEMY);
+
+	case AI_ACTION_SEARCH:
+		if (m_hEnemy == NULL)
+			return nullptr;
+		return GetScheduleOfType(SCHED_CHASE_ENEMY); // paths to the enemy or its last known position
+
+	default:
+		return nullptr;
+	}
 }
 
 //=========================================================

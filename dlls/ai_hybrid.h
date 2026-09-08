@@ -1,6 +1,6 @@
 /*
- * Engine-aware adapter for the Hybrid AI Core (see AGENTS_HYBRID_AI.md and
- * docs/designs/hybrid-ai-core-phase-a.md).
+ * Engine-aware adapter for the Hybrid AI Core (see AGENTS_HYBRID_AI.md,
+ * docs/designs/hybrid-ai-core-phase-a.md and -phase-b.md).
  *
  * This is the only file in the ai_hybrid* subsystem allowed to include
  * HLSDK/engine headers. It owns the ai_hybrid* CVars and bounded debug
@@ -11,14 +11,26 @@
 
 #include "ai_hybrid_core.h"
 
-// True if the Hybrid AI master switch (`ai_hybrid` CVar) is enabled. Phase A
-// callers must not change behavior based on this yet - it exists so later
-// phases have a single place to check, and so the debug output below can
-// note whether the subsystem is armed.
+// True if the Hybrid AI master switch (`ai_hybrid` CVar) is enabled. When
+// false, callers must not deviate from original behavior.
 bool AIHybrid_Enabled();
 
-// Prints `state`'s current/previous action for `monsterLabel` to the
-// console, gated on `ai_hybrid_debug >= 1`. No-op otherwise (including when
-// AIHybrid_Enabled() is false - Phase A logs unconditionally on the debug
-// CVar so it can be verified even while the master switch stays off).
+// How often (in seconds) a monster should re-run DecideAction() rather than
+// reusing last tick's result - `ai_hybrid_decision_interval` CVar (default
+// 0.25s, within the combat range AGENTS_HYBRID_AI.md section 14 suggests).
+float AIHybrid_DecisionInterval();
+
+// Confidence half-life in seconds for DecayConfidence() - `ai_hybrid_confidence_halflife`
+// CVar (default 8s, matching the "usable for search ~8-15s" guidance in
+// AGENTS_HYBRID_AI.md section 43).
+float AIHybrid_ConfidenceHalfLife();
+
+// Hysteresis switch threshold passed to DecideAction() - not a CVar yet
+// (Phase B keeps it a fixed constant; expose it later if tuning needs arise).
+float AIHybrid_SwitchThreshold();
+
+// Prints `state`'s current/previous action and enemy-memory confidence for
+// `monsterLabel` to the console, gated on `ai_hybrid_debug >= 1`. No-op
+// otherwise (including when AIHybrid_Enabled() is false, so the debug output
+// can be checked even while the master switch stays off).
 void AIHybrid_MaybeLogDebug(const AIHybridState& state, const char* monsterLabel);
