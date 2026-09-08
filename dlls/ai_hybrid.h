@@ -34,3 +34,11 @@ float AIHybrid_SwitchThreshold();
 // otherwise (including when AIHybrid_Enabled() is false, so the debug output
 // can be checked even while the master switch stays off).
 void AIHybrid_MaybeLogDebug(const AIHybridState& state, const char* monsterLabel);
+
+// Appends one JSON-Lines record of this decision to the `ai_hybrid_log_file`
+// CVar's path, gated on `ai_hybrid_log >= 1` (independent of `ai_hybrid` and
+// `ai_hybrid_debug` - see docs/designs/hybrid-ai-core-activity-logger.md).
+// No-op otherwise. Call once per DecideAction() call, not every server
+// frame - see the throttled call site in CHGrunt::PrescheduleThink().
+void AIHybrid_MaybeLogActivity(int entityIndex, const char* monsterLabel,
+	const AIHybridState& state, const AIDecision& decision, const AIUtilityContext& context);

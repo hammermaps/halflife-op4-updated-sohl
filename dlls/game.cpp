@@ -600,6 +600,8 @@ cvar_t ai_hybrid = {"ai_hybrid", "0", FCVAR_SERVER};
 cvar_t ai_hybrid_debug = {"ai_hybrid_debug", "0", FCVAR_SERVER};
 cvar_t ai_hybrid_decision_interval = {"ai_hybrid_decision_interval", "0.25", FCVAR_SERVER};
 cvar_t ai_hybrid_confidence_halflife = {"ai_hybrid_confidence_halflife", "8", FCVAR_SERVER};
+cvar_t ai_hybrid_log = {"ai_hybrid_log", "0", FCVAR_SERVER};
+cvar_t ai_hybrid_log_file = {"ai_hybrid_log_file", "ai_hybrid_log.jsonl", FCVAR_SERVER};
 
 static bool SV_InitServer()
 {
@@ -668,6 +670,8 @@ void GameDLLInit()
 	CVAR_REGISTER(&ai_hybrid_debug);
 	CVAR_REGISTER(&ai_hybrid_decision_interval);
 	CVAR_REGISTER(&ai_hybrid_confidence_halflife);
+	CVAR_REGISTER(&ai_hybrid_log);
+	CVAR_REGISTER(&ai_hybrid_log_file);
 
 	// REGISTER CVARS FOR SKILL LEVEL STUFF
 	// Agrunt

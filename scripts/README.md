@@ -122,3 +122,21 @@ ai_hybrid 1
 ai_hybrid_debug 1
 map c2a5f
 ```
+
+### Persistent activity log (`ai_hybrid_log`)
+
+`ai_hybrid_debug` only prints to the console — nothing survives after you
+close it. `ai_hybrid_log 1` additionally appends one JSON-Lines record per
+decision tick per NPC to `ai_hybrid_log_file` (default `ai_hybrid_log.jsonl`,
+written relative to the engine's working directory when it was launched —
+independent of `ai_hybrid` and `ai_hybrid_debug`, so you can log without
+enabling hybrid behavior or console spam). See
+`docs/designs/hybrid-ai-core-activity-logger.md` for the record format.
+
+```
+ai_hybrid_log 1
+ai_hybrid 1
+map c2a5f
+# afterwards, on the host machine:
+tail -f ai_hybrid_log.jsonl   # path is relative to wherever hl_linux was run from
+```

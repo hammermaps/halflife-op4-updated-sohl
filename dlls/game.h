@@ -56,6 +56,8 @@ extern cvar_t ai_hybrid;
 extern cvar_t ai_hybrid_debug;
 extern cvar_t ai_hybrid_decision_interval;
 extern cvar_t ai_hybrid_confidence_halflife;
+extern cvar_t ai_hybrid_log;
+extern cvar_t ai_hybrid_log_file;
 
 // Engine Cvars
 inline cvar_t* g_psv_gravity;

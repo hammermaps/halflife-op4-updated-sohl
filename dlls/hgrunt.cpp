@@ -391,8 +391,9 @@ void CHGrunt::PrescheduleThink()
 		hybridContext.healthRatio = (pev->max_health > 0) ? Clamp01(pev->health / pev->max_health) : 1.0f;
 
 		const uint32_t hybridCaps = AI_CAP_MEMORY | AI_CAP_COVER | AI_CAP_SEARCH;
-		DecideAction(m_AIHybridState, hybridContext, AIProfile(), hybridCaps,
+		const AIDecision hybridDecision = DecideAction(m_AIHybridState, hybridContext, AIProfile(), hybridCaps,
 			gpGlobals->time, AIHybrid_ConfidenceHalfLife(), AIHybrid_SwitchThreshold());
+		AIHybrid_MaybeLogActivity(entindex(), "CHGrunt", m_AIHybridState, hybridDecision, hybridContext);
 
 		m_flNextAIDecision = gpGlobals->time + AIHybrid_DecisionInterval();
 	}
